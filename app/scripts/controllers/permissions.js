@@ -225,10 +225,15 @@ class PermissionsController {
     }
 
     this.pendingApprovals = {}
+    const api = this.getApi();
+    const translatedApi = {};
+    Object.keys(api).forEach(methodKey => {
+      translatedApi[`metamask_${methodKey}`] = api[methodKey];
+    });
 
     const externalMethodsToAddToRestricted = {
       ...this.pluginRestrictedMethods,
-      ...this.getApi(),
+      ...translatedApi,
     }
     const pluginRestrictedMethods = Object.keys(externalMethodsToAddToRestricted).reduce((acc, methodKey) => {
       const hasDescription = externalMethodsToAddToRestricted[methodKey];
