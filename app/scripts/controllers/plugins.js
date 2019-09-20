@@ -184,6 +184,8 @@ class PluginsController extends EventEmitter {
     const sessedPlugin = s.evaluate(sourceCode, {
       wallet: ethereumProvider,
       console, // Adding console for now for logging purposes.
+      fetch, // Allow network access for now, because mocking this via RPC is obnoxious.
+             // TODO: Determine whether we're okay giving plugins network access by default.
     })
     sessedPlugin.run()
     this._setPluginToActive(pluginName)
