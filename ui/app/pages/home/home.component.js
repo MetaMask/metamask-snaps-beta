@@ -8,7 +8,6 @@ import MultipleNotifications from '../../components/app/multiple-notifications'
 import WalletView from '../../components/app/wallet-view'
 import TransactionView from '../../components/app/transaction-view'
 import PermissionApproval from '../permission-approval'
-import TextField from '../../components/ui/text-field'
 import Button from '../../components/ui/button'
 
 import {
