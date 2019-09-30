@@ -125,7 +125,7 @@ function getExternalRestrictedMethods (permissionsController) {
           res.error = err
           end(err)
         }
-      }
+      },
     },
 
     'alert': {
