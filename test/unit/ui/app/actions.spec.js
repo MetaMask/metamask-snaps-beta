@@ -37,6 +37,11 @@ describe('Actions', () => {
 
   beforeEach(async () => {
 
+    global.iframe = {
+      contentWindow: {
+        eval: eval
+      }
+    }
 
     metamaskController = new MetaMaskController({
       provider,

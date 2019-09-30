@@ -50,6 +50,8 @@ export default class Home extends PureComponent {
     threeBoxLastUpdated: PropTypes.string,
     threeBoxFeatureFlagIsTrue: PropTypes.bool,
     permissionsRequests: PropTypes.array,
+    deletePlugin: PropTypes.func,
+    clearPluginState: PropTypes.func,
   }
 
   state = {
