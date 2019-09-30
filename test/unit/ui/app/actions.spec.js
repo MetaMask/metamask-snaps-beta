@@ -37,12 +37,6 @@ describe('Actions', () => {
 
   beforeEach(async () => {
 
-    // console.log('kabobviously')
-    // const iframe = document.createElement('iframe')
-    // console.log(iframe)
-    // console.log(iframe.contentWindow)
-    // process.exit(1)
-
     metamaskController = new MetaMaskController({
       provider,
       keyringController: new KeyringController({}),

@@ -3,7 +3,10 @@ const EventEmitter = require('safe-event-emitter')
 const extend = require('xtend')
 const SES = require('ses')
 
-const env = process.env.METAMASK_ENV
+const isTest = process.env.IN_TEST || process.env.METAMASK_ENV === 'test'
+console.log('_TEST_')
+console.log(process.env.IN_TEST)
+console.log(process.env.METAMASK_ENV)
 
 class PluginsController extends EventEmitter {
 
@@ -15,16 +18,16 @@ class PluginsController extends EventEmitter {
     }, opts.initState)
     this.store = new ObservableStore(initState)
 
-    // TODO:SECURITY disable errorStackMode for production
-    if (env !== 'test') {
-      this.rootRealm = SES.makeSESRootRealm({consoleMode: 'allow', errorStackMode: 'allow', mathRandomMode: 'allow'})
-    } else {
+    // if (isTest) {
       this.rootRealm = {
         evaluate: () => {
           return () => true
         },
       }
-    }
+    // } else {
+    // TODO:SECURITY disable errorStackMode for production
+    //   this.rootRealm = SES.makeSESRootRealm({consoleMode: 'allow', errorStackMode: 'allow', mathRandomMode: 'allow'})
+    // }
 
     this.setupProvider = opts.setupProvider
     this._txController = opts._txController
