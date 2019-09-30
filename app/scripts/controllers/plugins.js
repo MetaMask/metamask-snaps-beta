@@ -3,6 +3,8 @@ const EventEmitter = require('safe-event-emitter')
 const extend = require('xtend')
 const SES = require('ses')
 
+const env = process.env.METAMASK_ENV
+
 class PluginsController extends EventEmitter {
 
   constructor (opts = {}) {
@@ -14,7 +16,15 @@ class PluginsController extends EventEmitter {
     this.store = new ObservableStore(initState)
 
     // TODO:SECURITY disable errorStackMode for production
-    this.rootRealm = SES.makeSESRootRealm({consoleMode: 'allow', errorStackMode: 'allow', mathRandomMode: 'allow'})
+    if (env !== 'test') {
+      this.rootRealm = SES.makeSESRootRealm({consoleMode: 'allow', errorStackMode: 'allow', mathRandomMode: 'allow'})
+    } else {
+      this.rootRealm = {
+        evaluate: () => {
+          return () => true
+        },
+      }
+    }
 
     this.setupProvider = opts.setupProvider
     this._txController = opts._txController

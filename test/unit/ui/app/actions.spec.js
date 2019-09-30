@@ -37,11 +37,11 @@ describe('Actions', () => {
 
   beforeEach(async () => {
 
-    global.iframe = {
-      contentWindow: {
-        eval: eval
-      }
-    }
+    // console.log('kabobviously')
+    // const iframe = document.createElement('iframe')
+    // console.log(iframe)
+    // console.log(iframe.contentWindow)
+    // process.exit(1)
 
     metamaskController = new MetaMaskController({
       provider,
