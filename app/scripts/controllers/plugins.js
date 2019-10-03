@@ -124,6 +124,10 @@ class PluginsController extends EventEmitter {
     }
     const pluginState = this.store.getState().plugins
 
+    if (!pluginName || typeof pluginName !== 'string') {
+      throw new Error(`Invalid plugin name: ${pluginName}`)
+    }
+
     let _initialPermissions
     let plugin = await fetch(sourceUrl)
       .then(pluginRes => {
@@ -134,6 +138,7 @@ class PluginsController extends EventEmitter {
         // bundle is an object with: { local: string, url: string }
         return fetch(bundle.url) // TODO: validate params?
       })
+      // TODO: parse bundle here and throw if it's no good?
       .then(bundleRes => bundleRes.text())
       .then(sourceCode => {
         return {
@@ -146,12 +151,8 @@ class PluginsController extends EventEmitter {
     // restore relevant plugin state if it exists
     if (pluginState[pluginName]) {
       plugin = { ...pluginState[pluginName], ...plugin }
-    } else {
-      plugin.pluginName = pluginName
-      plugin.handleRpcRequest = async (result) => {
-        return Promise.resolve(result)
-      }
     }
+    plugin.pluginName = pluginName
 
     console.log('running add plugin with ', plugin)
     const { sourceCode, initialPermissions } = plugin
