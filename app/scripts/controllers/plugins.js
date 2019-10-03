@@ -146,11 +146,12 @@ class PluginsController extends EventEmitter {
           initialPermissions: _initialPermissions,
         }
       })
-      .catch(err => console.log('add plugin error:', err))
 
     // restore relevant plugin state if it exists
     if (pluginState[pluginName]) {
       plugin = { ...pluginState[pluginName], ...plugin }
+    } else {
+      plugin = {}
     }
     plugin.pluginName = pluginName
 
