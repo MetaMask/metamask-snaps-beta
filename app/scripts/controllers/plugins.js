@@ -146,6 +146,10 @@ class PluginsController extends EventEmitter {
           initialPermissions: _initialPermissions,
         }
       })
+      .catch(err => {
+        console.error(err)
+        throw new Error(`Problem loading plugin from ${pluginName}: ${err.message}`)
+      })
 
     // restore relevant plugin state if it exists
     if (pluginState[pluginName]) {
