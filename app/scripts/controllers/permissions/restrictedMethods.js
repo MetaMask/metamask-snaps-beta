@@ -129,9 +129,10 @@ function getExternalRestrictedMethods (permissionsController) {
 
     'alert': {
       description: 'Show alerts over the current page.',
-      method: (req, _res, _next, end, engine) => {
+      method: (req, res, _next, end, engine) => {
         const requestor = engine.domain
         alert(`MetaMask Notice:\n${requestor} States:\n${req.params[0]}`)
+        res.result = true // JsonRpcEngine throws if no result or error
         end()
       },
     },
@@ -166,7 +167,7 @@ function getExternalRestrictedMethods (permissionsController) {
           const requestor = engine.domain
 
           // Handler is an async function that takes an origin string and a request object.
-          // It should return the result it would like returned to the reqeustor as part of response.result
+          // It should return the result it would like returned to the requestor as part of response.result
           res.result = await handler(requestor, req.params[0])
           return end()
 
@@ -197,7 +198,9 @@ function getExternalRestrictedMethods (permissionsController) {
 
         const { initialPermissions, sourceCode, ethereumProvider } = req.params[0]
         try {
-          const result = await permissionsController.pluginsController.run(pluginName, initialPermissions, sourceCode, ethereumProvider)
+          const result = await permissionsController.pluginsController.run(
+            pluginName, initialPermissions, sourceCode, ethereumProvider
+          )
           res.result = result
           return end()
         } catch (err) {

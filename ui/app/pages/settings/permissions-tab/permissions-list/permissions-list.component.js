@@ -138,6 +138,7 @@ export default class PermissionsList extends Component {
       <ul>
         {
           Object.keys(permissions).sort().map(domain => {
+            console.log(domain)
             if (
               permissions[domain].permissions.length === 0 ||
               !this.state.domains[domain] // state may lag behind props slightly
