@@ -142,7 +142,7 @@ class PluginsController extends EventEmitter {
         }
       })
       .catch(err => console.log('add plugin error:', err))
-    
+
     if (pluginState[pluginName]) {
       plugin = { ...pluginState[pluginName], ...plugin }
     } else {
@@ -194,9 +194,9 @@ class PluginsController extends EventEmitter {
         })
       })
     })
-    .finally(() => {
-      delete this.adding[pluginName]
-    })
+      .finally(() => {
+        delete this.adding[pluginName]
+      })
   }
 
   async run (pluginName, initialPermissions, sourceCode, ethereumProvider) {

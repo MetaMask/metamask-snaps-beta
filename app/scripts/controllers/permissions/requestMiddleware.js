@@ -50,7 +50,7 @@ module.exports = function createRequestMiddleware ({
       [storeKey]: {
         ...getOwnState(),
         [origin]: metadata,
-      }
+      },
     })
   }
 
