@@ -178,22 +178,10 @@ function getExternalRestrictedMethods (permissionsController) {
       },
     },
 
-    'eth_addPlugin_*': {
-      description: 'Install plugin $1, which will download new functionality to MetaMask from $2.',
-      method: async (req, _res, _next, _end) => {
-        const pluginNameMatch = req.method.match(/eth_addPlugin_(.+)/)
-        const pluginName = pluginNameMatch && pluginNameMatch[1]
-        const sourceUrl = req.params[0].sourceUrl
-
-        const response = await permissionsController.pluginsController.add(pluginName, sourceUrl)
-        return response
-      },
-    },
-
-    'eth_runPlugin_*': {
+    'wallet_runPlugin_*': {
       description: 'Run plugin $1, which will be able to do the following:',
       method: async (req, res, _next, end) => {
-        const pluginNameMatch = req.method.match(/eth_runPlugin_(.+)/)
+        const pluginNameMatch = req.method.match(/wallet_runPlugin_(.+)/)
         const pluginName = pluginNameMatch && pluginNameMatch[1]
 
         const { initialPermissions, sourceCode, ethereumProvider } = req.params[0]

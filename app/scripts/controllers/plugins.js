@@ -143,6 +143,7 @@ class PluginsController extends EventEmitter {
       })
       .catch(err => console.log('add plugin error:', err))
 
+    // restore relevant plugin state if it exists
     if (pluginState[pluginName]) {
       plugin = { ...pluginState[pluginName], ...plugin }
     } else {
@@ -161,13 +162,13 @@ class PluginsController extends EventEmitter {
       ethereumProvider.sendAsync({
         method: 'wallet_requestPermissions',
         jsonrpc: '2.0',
-        params: [{ ['eth_runPlugin_' + pluginName]: {}, ...initialPermissions }, { sourceCode, ethereumProvider }],
+        params: [{ ['wallet_runPlugin_' + pluginName]: {}, ...initialPermissions }, { sourceCode, ethereumProvider }],
       }, (err1, res1) => {
         console.log('err1, res1', err1, res1)
         if (err1) reject(err1)
 
         const approvedPermissions = res1.result.map(perm => perm.parentCapability)
-          .filter(perm => !perm.startsWith('eth_runPlugin_'))
+          .filter(perm => !perm.startsWith('wallet_runPlugin_'))
 
         // the stored initial permissions are the permissions approved
         // by the user
@@ -181,7 +182,7 @@ class PluginsController extends EventEmitter {
         })
 
         ethereumProvider.sendAsync({
-          method: 'eth_runPlugin_' + pluginName,
+          method: 'wallet_runPlugin_' + pluginName,
           params: [{
             initialPermissions: approvedPermissions,
             sourceCode,
