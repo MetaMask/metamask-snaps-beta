@@ -128,34 +128,25 @@ class PluginsController extends EventEmitter {
       throw new Error(`Invalid plugin name: ${pluginName}`)
     }
 
-    let _initialPermissions
-    let plugin = await fetch(sourceUrl)
-      .then(pluginRes => {
-        return pluginRes.json()
-      })
-      .then(({ web3Wallet: { bundle, initialPermissions } }) => {
-        _initialPermissions = initialPermissions
-        // bundle is an object with: { local: string, url: string }
-        return fetch(bundle.url) // TODO: validate params?
-      })
-      // TODO: parse bundle here and throw if it's no good?
-      .then(bundleRes => bundleRes.text())
-      .then(sourceCode => {
-        return {
-          sourceCode,
-          initialPermissions: _initialPermissions,
-        }
-      })
-      .catch(err => {
-        console.error(err)
-        throw new Error(`Problem loading plugin from ${pluginName}: ${err.message}`)
-      })
+    let plugin
+
+    try {
+      const pluginSource = await fetch(sourceUrl)
+      const pluginJson = await pluginSource.json()
+      const { web3Wallet: { bundle, initialPermissions } } = pluginJson
+      const bundle = await fetch(bundle.url)
+      const sourceCode = await bundle.text()
+      plugin = {
+        sourceCode,
+        initialPermissions,
+      }
+    } catch (err) {
+      throw new Error(`Problem loading plugin ${pluginName}: ${err.message}`)
+    }
 
     // restore relevant plugin state if it exists
     if (pluginState[pluginName]) {
       plugin = { ...pluginState[pluginName], ...plugin }
-    } else {
-      plugin = {}
     }
     plugin.pluginName = pluginName
 
