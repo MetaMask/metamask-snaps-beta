@@ -173,7 +173,6 @@ class PermissionsController {
     const pluginNames = this.pluginsFromPerms(approved.permissions)
     try {
       await Promise.all(pluginNames.map((plugin) => {
-        console.log(`adding plugin ${plugin}`)
         return this.pluginsController.add(plugin)
       }))
 
@@ -181,12 +180,12 @@ class PermissionsController {
       resolve(approved.permissions)
       delete this.pendingApprovals[id]
 
+      // Once we've approved the initial app permissions,
+      // we are free to prompt for the plugin permissions:
       Promise.all(pluginNames.map(async (pluginName) => {
-        console.log('authorizing plugin ' + pluginName)
         const plugin = await this.pluginsController.authorize(pluginName)
         const { sourceCode, approvedPermissions } = plugin
         const ethereumProvider = this.pluginsController.setupProvider(pluginName, async () => { return {name: pluginName } }, true)
-        console.log('running plugin ' + pluginName)
         await this.pluginsController.run(pluginName, approvedPermissions, sourceCode, ethereumProvider)
       }))
         .catch((reason) => {
