@@ -280,6 +280,7 @@ class PluginsController extends EventEmitter {
     try {
       const sessedPlugin = this.rootRealm.evaluate(sourceCode, {
         wallet: ethereumProvider,
+        console, // Adding console for now for logging purposes.
         BigInt,
         window: {
           crypto,
