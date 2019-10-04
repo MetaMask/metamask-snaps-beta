@@ -20,8 +20,9 @@ const SES = (
 /*
  * A plugin is initialized in three phases:
  * - Add: Loads the plugin from a remote source and parses it.
- * - Authorize: Requests the plugin's required permissions from the user.
+ * - Authorize: Requests the plugin's requestedPermissions from the user.
  * - Start: Initializes the plugin in its SES realm with the authorized permissions.
+ *          Called on any previously loaded plugins at app start.
  */
 
 class PluginsController extends EventEmitter {
