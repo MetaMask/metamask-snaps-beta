@@ -189,7 +189,7 @@ class PluginsController extends EventEmitter {
 
         const approvedPermissions = res1.result.map(perm => perm.parentCapability)
 
-        // the stored initial permissions are the permissions approved
+        // the stored approved permissions are the permissions approved
         // by the user
         plugin.approvedPermissions = approvedPermissions
 
