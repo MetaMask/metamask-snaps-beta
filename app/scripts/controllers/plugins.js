@@ -134,8 +134,8 @@ class PluginsController extends EventEmitter {
       const pluginSource = await fetch(sourceUrl)
       const pluginJson = await pluginSource.json()
       const { web3Wallet: { bundle, initialPermissions } } = pluginJson
-      const bundle = await fetch(bundle.url)
-      const sourceCode = await bundle.text()
+      const pluginBundle = await fetch(bundle.url)
+      const sourceCode = await pluginBundle.text()
       plugin = {
         sourceCode,
         initialPermissions,
