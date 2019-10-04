@@ -169,14 +169,16 @@ class PermissionsController {
     const approval = this.pendingApprovals[id]
     this._closePopup && this._closePopup()
 
-    const pluginNames  = this.pluginsFromPerms(approved.permissions)
-    const plugins = await Promise.all(pluginNames.map((plugin) => {
-      return this.pluginsController.add(plugin)
-    }))
-    .catch((reason) => {
+    // Load any requested plugins first:
+    const pluginNames = this.pluginsFromPerms(approved.permissions)
+    try {
+      await Promise.all(pluginNames.map((plugin) => {
+        return this.pluginsController.add(plugin)
+      }))
+    } catch (reason) {
       const { reject } = approval
       reject(reason)
-    })
+    }
 
     const resolve = approval.resolve
     resolve(approved.permissions)
