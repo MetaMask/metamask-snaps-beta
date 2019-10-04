@@ -17,6 +17,13 @@ const SES = (
     : require('ses')
 )
 
+/*
+ * A plugin is initialized in three phases:
+ * - Add: Loads the plugin from a remote source and parses it.
+ * - Authorize: Requests the plugin's required permissions from the user.
+ * - Start: Initializes the plugin in its SES realm with the authorized permissions.
+ */
+
 class PluginsController extends EventEmitter {
 
   constructor (opts = {}) {
@@ -119,6 +126,7 @@ class PluginsController extends EventEmitter {
   }
 
   async _add (pluginName, sourceUrl) {
+    console.log('attempting to add ' + pluginName)
     if (!sourceUrl) {
       sourceUrl = pluginName
     }
@@ -129,7 +137,6 @@ class PluginsController extends EventEmitter {
     }
 
     let plugin
-
     try {
       const pluginSource = await fetch(sourceUrl)
       const pluginJson = await pluginSource.json()
@@ -153,9 +160,23 @@ class PluginsController extends EventEmitter {
     console.log('running add plugin with ', plugin)
     const { sourceCode, initialPermissions } = plugin
 
+    // store the plugin back in state
+    this.store.updateState({
+      plugins: {
+        ...pluginState,
+        [pluginName]: plugin,
+      },
+    })
+  }
+
+  async authorize (pluginName) {
+    const pluginState = this.store.getState().plugins
+    const plugin = pluginState[plugin]
+    const { sourceCode, initialPermissions } = plugin
     const ethereumProvider = this.setupProvider(pluginName, async () => { return {name: pluginName } }, true)
 
     return new Promise((resolve, reject) => {
+      console.log('requesting the plugins own perms ' + pluginName)
       ethereumProvider.sendAsync({
         method: 'wallet_requestPermissions',
         jsonrpc: '2.0',
@@ -178,6 +199,7 @@ class PluginsController extends EventEmitter {
           },
         })
 
+        console.log('and NOW we ask to RUN the plugin, lets seeeee')
         ethereumProvider.sendAsync({
           method: 'wallet_runPlugin_' + pluginName,
           params: [{
@@ -198,6 +220,7 @@ class PluginsController extends EventEmitter {
   }
 
   async run (pluginName, initialPermissions, sourceCode, ethereumProvider) {
+    console.log('internal run thing was called now bc perm to run')
     return this._startPlugin(pluginName, initialPermissions, sourceCode, ethereumProvider)
   }
 

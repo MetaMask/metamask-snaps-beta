@@ -181,6 +181,7 @@ function getExternalRestrictedMethods (permissionsController) {
     'wallet_runPlugin_*': {
       description: 'Run plugin $1, which will be able to do the following:',
       method: async (req, res, _next, end) => {
+        console.log('the run method was called')
         const pluginNameMatch = req.method.match(/wallet_runPlugin_(.+)/)
         const pluginName = pluginNameMatch && pluginNameMatch[1]
 
