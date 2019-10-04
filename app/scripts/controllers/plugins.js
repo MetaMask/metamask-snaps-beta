@@ -126,7 +126,6 @@ class PluginsController extends EventEmitter {
   }
 
   async _add (pluginName, sourceUrl) {
-    console.log('attempting to add ' + pluginName)
     if (!sourceUrl) {
       sourceUrl = pluginName
     }
@@ -157,9 +156,6 @@ class PluginsController extends EventEmitter {
     }
     plugin.pluginName = pluginName
 
-    console.log('running add plugin with ', plugin)
-    const { sourceCode, initialPermissions } = plugin
-
     // store the plugin back in state
     this.store.updateState({
       plugins: {
@@ -176,7 +172,6 @@ class PluginsController extends EventEmitter {
     const ethereumProvider = this.setupProvider(pluginName, async () => { return {name: pluginName } }, true)
 
     return new Promise((resolve, reject) => {
-      console.log('requesting the plugins own perms ' + pluginName, initialPermissions)
 
       // Don't prompt if there are no permissions requested:
       if (Object.keys(initialPermissions).length === 0) {
@@ -189,7 +184,6 @@ class PluginsController extends EventEmitter {
         jsonrpc: '2.0',
         params: [ initialPermissions, { sourceCode, ethereumProvider }],
       }, (err1, res1) => {
-        console.log('err1, res1', err1, res1)
         if (err1) reject(err1)
 
         const approvedPermissions = res1.result.map(perm => perm.parentCapability)
@@ -205,7 +199,7 @@ class PluginsController extends EventEmitter {
           },
         })
 
-        resolve(plugin);
+        resolve(plugin)
       })
     })
       .finally(() => {
@@ -214,7 +208,6 @@ class PluginsController extends EventEmitter {
   }
 
   async run (pluginName, approvedPermissions, sourceCode, ethereumProvider) {
-    console.log('internal run thing was called now bc perm to run')
     return this._startPlugin(pluginName, approvedPermissions, sourceCode, ethereumProvider)
   }
 
@@ -287,7 +280,6 @@ class PluginsController extends EventEmitter {
     try {
       const sessedPlugin = this.rootRealm.evaluate(sourceCode, {
         wallet: ethereumProvider,
-        console, // Adding console for now for logging purposes.
         BigInt,
         window: {
           crypto,
