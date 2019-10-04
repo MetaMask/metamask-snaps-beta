@@ -177,31 +177,30 @@ class PermissionsController {
         return this.pluginsController.add(plugin)
       }))
 
-      // Authorize plugin after completing this.
-      setTimeout(() => {
-        Promise.all(pluginNames.map(async (pluginName) => {
-          console.log('authorizing plugin ' + pluginName)
-          const plugin = await this.pluginsController.authorize(pluginName)
-          const { sourceCode, initialPermissions } = plugin
-          const ethereumProvider = this.pluginsController.setupProvider(pluginName, async () => { return {name: pluginName } }, true)
-          console.log('running plugin ' + pluginName)
-          await this.pluginsController.run(pluginName, initialPermissions, sourceCode, ethereumProvider)
-        }))
-        .catch((reason) => {
-          // We swallow this error, we don't want the plugin permissions prompt to block the resolution
-          // Of the main dapp's permissions prompt.
-          console.error(`Plugin had its permissions rejected: ${reason.message}`)
-        })
-      }, 1)
+      const resolve = approval.resolve
+      resolve(approved.permissions)
+      delete this.pendingApprovals[id]
+
+      Promise.all(pluginNames.map(async (pluginName) => {
+        console.log('authorizing plugin ' + pluginName)
+        const plugin = await this.pluginsController.authorize(pluginName)
+        const { sourceCode, approvedPermissions } = plugin
+        const ethereumProvider = this.pluginsController.setupProvider(pluginName, async () => { return {name: pluginName } }, true)
+        console.log('running plugin ' + pluginName)
+        await this.pluginsController.run(pluginName, approvedPermissions, sourceCode, ethereumProvider)
+      }))
+      .catch((reason) => {
+        // We swallow this error, we don't want the plugin permissions prompt to block the resolution
+        // Of the main dapp's permissions prompt.
+        console.error(`Plugin had its permissions rejected: ${reason.message}`)
+      })
+
     } catch (reason) {
       const { reject } = approval
       reject(reason)
     }
 
-    const resolve = approval.resolve
-    resolve(approved.permissions)
-    delete this.pendingApprovals[id]
-  }
+ }
 
   pluginsFromPerms (permissions) {
     const permStrings = Object.keys(permissions)

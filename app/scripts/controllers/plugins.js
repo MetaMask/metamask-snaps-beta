@@ -52,11 +52,11 @@ class PluginsController extends EventEmitter {
   runExistingPlugins () {
     const plugins = this.store.getState().plugins
     console.log('running existing plugins')
-    Object.values(plugins).forEach(({ pluginName, initialPermissions, sourceCode }) => {
+    Object.values(plugins).forEach(({ pluginName, approvedPermissions, sourceCode }) => {
       console.log(`running: ${pluginName}`)
       const ethereumProvider = this.setupProvider(pluginName, async () => { return {name: pluginName } }, true)
       try {
-        this._startPlugin(pluginName, initialPermissions, sourceCode, ethereumProvider)
+        this._startPlugin(pluginName, approvedPermissions, sourceCode, ethereumProvider)
       } catch (err) {
         console.warn(`failed to start '${pluginName}', deleting it`)
         // Clean up failed plugins:
@@ -171,26 +171,32 @@ class PluginsController extends EventEmitter {
 
   async authorize (pluginName) {
     const pluginState = this.store.getState().plugins
-    const plugin = pluginState[plugin]
+    const plugin = pluginState[pluginName]
     const { sourceCode, initialPermissions } = plugin
     const ethereumProvider = this.setupProvider(pluginName, async () => { return {name: pluginName } }, true)
 
     return new Promise((resolve, reject) => {
-      console.log('requesting the plugins own perms ' + pluginName)
+      console.log('requesting the plugins own perms ' + pluginName, initialPermissions)
+
+      // Don't prompt if there are no permissions requested:
+      if (Object.keys(initialPermissions).length === 0) {
+        plugin.approvedPermissions = []
+        return resolve(plugin)
+      }
+
       ethereumProvider.sendAsync({
         method: 'wallet_requestPermissions',
         jsonrpc: '2.0',
-        params: [{ ['wallet_runPlugin_' + pluginName]: {}, ...initialPermissions }, { sourceCode, ethereumProvider }],
+        params: [ initialPermissions, { sourceCode, ethereumProvider }],
       }, (err1, res1) => {
         console.log('err1, res1', err1, res1)
         if (err1) reject(err1)
 
         const approvedPermissions = res1.result.map(perm => perm.parentCapability)
-          .filter(perm => !perm.startsWith('wallet_runPlugin_'))
 
         // the stored initial permissions are the permissions approved
         // by the user
-        plugin.initialPermissions = approvedPermissions
+        plugin.approvedPermissions = approvedPermissions
 
         this.store.updateState({
           plugins: {
@@ -199,19 +205,7 @@ class PluginsController extends EventEmitter {
           },
         })
 
-        console.log('and NOW we ask to RUN the plugin, lets seeeee')
-        ethereumProvider.sendAsync({
-          method: 'wallet_runPlugin_' + pluginName,
-          params: [{
-            initialPermissions: approvedPermissions,
-            sourceCode,
-            ethereumProvider,
-          }],
-        }, (err2, res2) => {
-          console.log('plugin.add err2, res2', err2, res2)
-          if (err2) reject(err2)
-          resolve(res2)
-        })
+        resolve(plugin);
       })
     })
       .finally(() => {
@@ -219,9 +213,9 @@ class PluginsController extends EventEmitter {
       })
   }
 
-  async run (pluginName, initialPermissions, sourceCode, ethereumProvider) {
+  async run (pluginName, approvedPermissions, sourceCode, ethereumProvider) {
     console.log('internal run thing was called now bc perm to run')
-    return this._startPlugin(pluginName, initialPermissions, sourceCode, ethereumProvider)
+    return this._startPlugin(pluginName, approvedPermissions, sourceCode, ethereumProvider)
   }
 
   _eventEmitterToListenerMap (eventEmitter) {
