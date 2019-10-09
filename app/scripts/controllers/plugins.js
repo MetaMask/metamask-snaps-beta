@@ -257,21 +257,37 @@ class PluginsController extends EventEmitter {
 
     const onMetaMaskEvent = this._createMetaMaskEventListener(apiList)
 
+    /**
+     * PossibleAPIs is an object of functions that may be desribed
+     * in the `pluginRestrictedMethodDescriptions` object.
+     *
+     * If the permission by that name was granted at auth time,
+     * the provider should be constructed with that method.
+     *
+     * TODO: Allow dynamic adding of these methods!
+     */
     const possibleApis = {
       updatePluginState: this.updatePluginState.bind(this, pluginName),
       getPluginState: this.getPluginState.bind(this, pluginName),
-      onNewTx: () => {},
       onUnlock: this._onUnlock,
       ...this.getApi(),
     }
     const registerRpcMessageHandler = this._registerRpcMessageHandler.bind(this, pluginName)
+
+    /**
+     * apisToProvide are APIs that are always appended to the `wallet` object.
+     */
     const apisToProvide = {
       onMetaMaskEvent,
       registerRpcMessageHandler,
+      onNewTx: (listener) => this._txController.on('newUnapprovedTx', listener),
       getAppKey: () => this.getAppKeyForDomain(pluginName),
     }
     apiList.forEach(apiKey => {
-      apisToProvide[apiKey] = possibleApis[apiKey]
+      if (apiKey in possibleApis) {
+        console.log(`Plugin was permitted with ${apiKey}, adding to provider.`)
+        apisToProvide[apiKey] = possibleApis[apiKey]
+      }
     })
     return apisToProvide
   }
