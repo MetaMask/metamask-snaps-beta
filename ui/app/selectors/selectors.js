@@ -65,6 +65,8 @@ const selectors = {
   getAddressBookEntry,
   getAddressBookEntryName,
   getFeatureFlags,
+  getResourceTokens,
+  getResourceAccounts,
 }
 
 module.exports = selectors
@@ -84,7 +86,7 @@ function getCurrentKeyring (state) {
 
   const simpleAddress = stripHexPrefix(identity.address).toLowerCase()
 
-  const keyring = state.metamask.keyrings.find((kr) => {
+  const keyring = state.metamask.accountrings.find((kr) => {
     return kr.accounts.includes(simpleAddress) ||
       kr.accounts.includes(identity.address)
   })
@@ -425,4 +427,14 @@ function getKnownMethodData (state, data) {
 
 function getFeatureFlags (state) {
   return state.metamask.featureFlags
+}
+
+function getResourceTokens (state) {
+  const resources = state.metamask['resources:assets'] // TODO: create constant
+  return resources.filter(resource => resource.identifier)
+}
+
+function getResourceAccounts (state) {
+  const resources = state.metamask['resources:pluginAccounts'] // TODO: create constant
+  return resources.filter(resource => resource.address)
 }

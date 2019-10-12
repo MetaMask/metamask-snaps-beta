@@ -210,6 +210,7 @@ class TransactionController extends EventEmitter {
     }
 
     txUtils.validateTxParams(normalizedTxParams)
+
     // construct txMeta
     const { transactionCategory, getCodeResponse } = await this._determineTransactionCategory(txParams)
     let txMeta = this.txStateManager.generateTxMeta({
@@ -455,7 +456,6 @@ class TransactionController extends EventEmitter {
 
     // set state to signed
     this.txStateManager.setTxStatusSigned(txMeta.id)
-    const rawTx = ethUtil.bufferToHex(ethTx.serialize())
     return rawTx
   }
 
