@@ -67,7 +67,7 @@ const pluginRestrictedMethodDescriptions = {
 }
 
 function getExternalRestrictedMethods (permissionsController) {
-  const { assetsController } = permissionsController
+  const { assetsController, identitiesController } = permissionsController
 
   return {
     'eth_accounts': {
@@ -111,13 +111,43 @@ function getExternalRestrictedMethods (permissionsController) {
         try {
           switch (method) {
             case 'addAsset':
-              res.result = assetsController.addAsset(requestor, opts)
+            case 'add':
+              res.result = assetsController.add(requestor, opts)
               return end()
             case 'updateAsset':
-              res.result = assetsController.updateAsset(requestor, opts)
+            case 'update':
+              res.result = assetsController.update(requestor, opts)
               return end()
             case 'removeAsset':
-              res.result = assetsController.removeAsset(requestor, opts)
+            case 'remove':
+              res.result = assetsController.remove(requestor, opts)
+              return end()
+            default:
+              res.error = rpcErrors.methodNotFound(null, `${req.method}:${method}`)
+              end(res.error)
+          }
+        } catch (err) {
+          res.error = err
+          end(err)
+        }
+      },
+    },
+
+    'wallet_manageIdentities': {
+      description: 'Provide accounts to your wallet and be responsible for their security.',
+      method: (req, res, _next, end, engine) => {
+        const [method, opts] = req.params
+        const requestor = engine.domain
+        try {
+          switch (method) {
+            case 'add':
+              res.result = identitiesController.add(requestor, opts)
+              return end()
+            case 'update':
+              res.result = identitiesController.update(requestor, opts)
+              return end()
+            case 'remove':
+              res.result = identitiesController.remove(requestor, opts)
               return end()
             default:
               res.error = rpcErrors.methodNotFound(null, `${req.method}:${method}`)

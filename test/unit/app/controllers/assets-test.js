@@ -1,8 +1,11 @@
 const assert = require('assert')
-const AssetsController = require('../../../../app/scripts/controllers/assets')
+const ResourcesController = require('../../../../app/scripts/controllers/resource')
 
-describe('AssetsController', () => {
+describe('ResourcesController as AssetsController', () => {
   let assets
+
+  const requiredFields = ['symbol', 'balance', 'identifier', 'decimals', 'customViewUrl']
+
   const domain = 'www.domain.com'
   const sampleAsset = {
     symbol: 'TEST_ASSET',
@@ -13,13 +16,15 @@ describe('AssetsController', () => {
   }
 
   beforeEach(() => {
-    assets = new AssetsController({})
+    assets = new ResourcesController({
+      requiredFields,
+    })
   })
 
   it('should allow adding an asset', () => {
-    const assetCount = assets.assets.length
-    assets.addAsset(domain, sampleAsset)
-    const result = assets.assets[assetCount]
+    const assetCount = assets.resources.length
+    assets.add(domain, sampleAsset)
+    const result = assets.resources[assetCount]
     Object.keys(result).forEach((key) => {
       if (key === 'fromDomain') return
       assert.equal(result[key], sampleAsset[key], `${key} should be same`)
@@ -27,12 +32,11 @@ describe('AssetsController', () => {
   })
 
   it('should allow updating an asset', () => {
-    const assetCount = assets.assets.length
-    assets.addAsset(domain, sampleAsset)
-    console.dir(assets.assets)
-    const result = assets.assets[assetCount]
+    const assetCount = assets.resources.length
+    assets.add(domain, sampleAsset)
+    const result = assets.resources[assetCount]
     result.balance = '200'
-    assets.updateAsset(domain, result)
+    assets.update(domain, result)
 
     Object.keys(result).forEach((key) => {
       if (key === 'fromDomain') return
@@ -45,9 +49,10 @@ describe('AssetsController', () => {
   })
 
   it('should allow deleting an asset', () => {
-    const assetCount = assets.assets.length
-    assets.addAsset(domain, sampleAsset)
-    assets.removeAsset(domain, sampleAsset)
-    assert.equal(assets.assets.length, assetCount, 'only stock asset remains')
+    const assetCount = assets.resources.length
+    assets.add(domain, sampleAsset)
+    assets.remove(domain, sampleAsset)
+    assert.equal(assets.resources.length, assetCount, 'only stock asset remains')
   })
 })
+

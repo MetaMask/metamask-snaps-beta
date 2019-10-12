@@ -39,7 +39,7 @@ const TokenRatesController = require('./controllers/token-rates')
 const DetectTokensController = require('./controllers/detect-tokens')
 const { PermissionsController } = require('./controllers/permissions')
 const PluginsController = require('./controllers/plugins')
-const AssetsController = require('./controllers/assets')
+const ResourceController = require('./controllers/resource')
 const AddressAuditController = require('./controllers/address-audit')
 const nodeify = require('./lib/nodeify')
 const accountImporter = require('./account-import-strategies')
@@ -279,7 +279,14 @@ module.exports = class MetamaskController extends EventEmitter {
       getAppKeyForDomain: this.getAppKeyForDomain.bind(this),
     })
 
-    this.assetsController = new AssetsController({
+    this.assetsController = new ResourceController({
+      requiredFields: ['symbol', 'balance', 'identifier', 'decimals', 'customViewUrl'],
+      // TODO: Persist asset state?
+      // For now handled by plugin persistence.
+    })
+
+    this.identitiesController = new ResourceController({
+      requiredFields: ['address'],
       // TODO: Persist asset state?
       // For now handled by plugin persistence.
     })
@@ -288,6 +295,7 @@ module.exports = class MetamaskController extends EventEmitter {
       setupProvider: this.setupProvider.bind(this),
       keyringController: this.keyringController,
       assetsController: this.assetsController,
+      identitiesController: this.identitiesController,
       openPopup: opts.openPopup,
       closePopup: opts.closePopup,
       pluginsController: this.pluginsController,
@@ -349,6 +357,7 @@ module.exports = class MetamaskController extends EventEmitter {
       PermissionsMetadata: this.permissionsController.store,
       PluginsController: this.pluginsController.store,
       AssetsController: this.assetsController.store,
+      IdentitiesController: this.identitiesController.store,
       AddressAuditController: this.addressAuditController.store,
       ThreeBoxController: this.threeBoxController.store,
     })
