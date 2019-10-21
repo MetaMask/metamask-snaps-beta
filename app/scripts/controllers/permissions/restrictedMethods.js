@@ -73,7 +73,7 @@ function getExternalRestrictedMethods (permissionsController) {
     'eth_accounts': {
       description: 'View Ethereum accounts',
       method: (_, res, __, end) => {
-        permissionsController.keyringController.getAccounts()
+        permissionsController.accountsController.getAccounts()
           .then((accounts) => {
             res.result = accounts
             end()

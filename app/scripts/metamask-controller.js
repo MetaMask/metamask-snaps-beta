@@ -40,6 +40,7 @@ const DetectTokensController = require('./controllers/detect-tokens')
 const { PermissionsController } = require('./controllers/permissions')
 const PluginsController = require('./controllers/plugins')
 const ResourceController = require('./controllers/resource')
+const AccountsController = require('./controllers/accounts')
 const AddressAuditController = require('./controllers/address-audit')
 const nodeify = require('./lib/nodeify')
 const accountImporter = require('./account-import-strategies')
@@ -190,8 +191,6 @@ module.exports = class MetamaskController extends EventEmitter {
       encryptor: opts.encryptor || undefined,
     })
 
-    this.keyringController.memStore.subscribe((s) => this._onKeyringControllerUpdate(s))
-
     // detect tokens controller
     this.detectTokensController = new DetectTokensController({
       preferences: this.preferencesController,
@@ -291,9 +290,16 @@ module.exports = class MetamaskController extends EventEmitter {
       // For now handled by plugin persistence.
     })
 
+    this.accountsController = new AccountsController({
+      keyringController: this.keyringController,
+      identitiesController: this.identitiesController,
+    }, initState.AccountsController)
+
+    this.accountsController.store.subscribe((s) => this._onAccountControllerUpdate(s))
+
     this.permissionsController = new PermissionsController({
       setupProvider: this.setupProvider.bind(this),
-      keyringController: this.keyringController,
+      accountsController: this.accountsController,
       assetsController: this.assetsController,
       identitiesController: this.identitiesController,
       openPopup: opts.openPopup,
@@ -317,6 +323,7 @@ module.exports = class MetamaskController extends EventEmitter {
       AppStateController: this.appStateController.store,
       TransactionController: this.txController.store,
       KeyringController: this.keyringController.store,
+      AccountsController: this.AccountsController.store,
       PreferencesController: this.preferencesController.store,
       AddressBookController: this.addressBookController,
       CurrencyController: this.currencyRateController,
@@ -345,6 +352,7 @@ module.exports = class MetamaskController extends EventEmitter {
       PersonalMessageManager: this.personalMessageManager.memStore,
       TypesMessageManager: this.typedMessageManager.memStore,
       KeyringController: this.keyringController.memStore,
+      AccountsController: this.accountsController.memStore,
       PreferencesController: this.preferencesController.store,
       RecentBlocksController: this.recentBlocksController.store,
       AddressBookController: this.addressBookController,
@@ -460,6 +468,7 @@ module.exports = class MetamaskController extends EventEmitter {
    */
   getApi () {
     const keyringController = this.keyringController
+    const accountsController = this.accountsController
     const preferencesController = this.preferencesController
     const txController = this.txController
     const networkController = this.networkController
@@ -537,7 +546,7 @@ module.exports = class MetamaskController extends EventEmitter {
       createNewVaultAndKeychain: nodeify(this.createNewVaultAndKeychain, this),
       createNewVaultAndRestore: nodeify(this.createNewVaultAndRestore, this),
       addNewKeyring: nodeify(keyringController.addNewKeyring, keyringController),
-      exportAccount: nodeify(keyringController.exportAccount, keyringController),
+      exportAccount: nodeify(accountsController.exportAccount, accountsController),
 
       // txController
       cancelTransaction: nodeify(txController.cancelTransaction, txController),
@@ -666,7 +675,7 @@ module.exports = class MetamaskController extends EventEmitter {
       createNewVaultAndKeychain: nodeify(this.createNewVaultAndKeychain, this),
       createNewVaultAndRestore: nodeify(this.createNewVaultAndRestore, this),
       addNewKeyring: nodeify(keyringController.addNewKeyring, keyringController),
-      exportAccount: nodeify(keyringController.exportAccount, keyringController),
+      exportAccount: nodeify(accountsController.exportAccount, accountsController),
 
       // txController
       cancelTransaction: nodeify(txController.cancelTransaction, txController),
@@ -911,7 +920,7 @@ module.exports = class MetamaskController extends EventEmitter {
       }
     }
 
-    return this.keyringController.fullUpdate()
+    return this.accountsController.fullUpdate()
   }
 
   /**
@@ -1130,7 +1139,7 @@ module.exports = class MetamaskController extends EventEmitter {
     this.accountTracker.removeAccount([address])
 
     // Remove account from the keyring
-    await this.keyringController.removeAccount(address)
+    await this.accountsController.removeAccount(address)
     return address
   }
 
@@ -1203,7 +1212,7 @@ module.exports = class MetamaskController extends EventEmitter {
     return this.messageManager.approveMessage(msgParams)
       .then((cleanMsgParams) => {
       // signs the message
-        return this.keyringController.signMessage(cleanMsgParams)
+        return this.accountsController.signMessage(cleanMsgParams)
       })
       .then((rawSig) => {
       // tells the listener that the message has been signed
@@ -1261,7 +1270,7 @@ module.exports = class MetamaskController extends EventEmitter {
     return this.personalMessageManager.approveMessage(msgParams)
       .then((cleanMsgParams) => {
       // signs the message
-        return this.keyringController.signPersonalMessage(cleanMsgParams)
+        return this.accountsController.signPersonalMessage(cleanMsgParams)
       })
       .then((rawSig) => {
       // tells the listener that the message has been signed
@@ -1356,10 +1365,10 @@ module.exports = class MetamaskController extends EventEmitter {
   }
 
   async getAppKeyForDomain (domain) {
-    const keyringController = this.keyringController
-    const accounts = await keyringController.getAccounts()
+    const accountsController = this.accountsController
+    const accounts = await accountsController.getAccounts()
     const firstAccount = accounts[0]
-    const privateAppKey = await keyringController.exportAppKeyForAddress(firstAccount, domain)
+    const privateAppKey = await accountsController.exportAppKeyForAddress(firstAccount, domain)
     return privateAppKey
   }
 
@@ -1675,9 +1684,9 @@ module.exports = class MetamaskController extends EventEmitter {
    * @return {Promise<void>}
    * @private
    */
-  async _onKeyringControllerUpdate (state) {
-    const {isUnlocked, keyrings} = state
-    const addresses = keyrings.reduce((acc, {accounts}) => acc.concat(accounts), [])
+  async _onAccountControllerUpdate (state) {
+    const {isUnlocked, accountRings} = state
+    const addresses = accountRings.reduce((acc, {accounts}) => acc.concat(accounts), [])
 
     if (!addresses.length) {
       return
