@@ -67,7 +67,7 @@ const pluginRestrictedMethodDescriptions = {
 }
 
 function getExternalRestrictedMethods (permissionsController) {
-  const { assetsController, identitiesController } = permissionsController
+  const { assetsController, pluginAccountsController } = permissionsController
 
   return {
     'eth_accounts': {
@@ -106,57 +106,14 @@ function getExternalRestrictedMethods (permissionsController) {
     'wallet_manageAssets': {
       description: 'Display custom assets in your wallet.',
       method: (req, res, _next, end, engine) => {
-        const [method, opts] = req.params
-        const requestor = engine.domain
-        try {
-          switch (method) {
-            case 'addAsset':
-            case 'add':
-              res.result = assetsController.add(requestor, opts)
-              return end()
-            case 'updateAsset':
-            case 'update':
-              res.result = assetsController.update(requestor, opts)
-              return end()
-            case 'removeAsset':
-            case 'remove':
-              res.result = assetsController.remove(requestor, opts)
-              return end()
-            default:
-              res.error = rpcErrors.methodNotFound(null, `${req.method}:${method}`)
-              end(res.error)
-          }
-        } catch (err) {
-          res.error = err
-          end(err)
-        }
+        assetsController.handleRpcRequest(req, res, next, end, engine)
       },
     },
 
     'wallet_manageIdentities': {
       description: 'Provide accounts to your wallet and be responsible for their security.',
-      method: (req, res, _next, end, engine) => {
-        const [method, opts] = req.params
-        const requestor = engine.domain
-        try {
-          switch (method) {
-            case 'add':
-              res.result = identitiesController.add(requestor, opts)
-              return end()
-            case 'update':
-              res.result = identitiesController.update(requestor, opts)
-              return end()
-            case 'remove':
-              res.result = identitiesController.remove(requestor, opts)
-              return end()
-            default:
-              res.error = rpcErrors.methodNotFound(null, `${req.method}:${method}`)
-              end(res.error)
-          }
-        } catch (err) {
-          res.error = err
-          end(err)
-        }
+      method: (req, res, next, end, engine) => {
+        plutinAccountsController.handleRpcRequest(req, res, next, end, engine)
       },
     },
 

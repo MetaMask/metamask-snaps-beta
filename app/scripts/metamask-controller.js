@@ -280,19 +280,15 @@ module.exports = class MetamaskController extends EventEmitter {
 
     this.assetsController = new ResourceController({
       requiredFields: ['symbol', 'balance', 'identifier', 'decimals', 'customViewUrl'],
-      // TODO: Persist asset state?
-      // For now handled by plugin persistence.
     })
 
-    this.identitiesController = new ResourceController({
+    this.pluginAccountsController = new ResourceController({
       requiredFields: ['address'],
-      // TODO: Persist asset state?
-      // For now handled by plugin persistence.
     })
 
     this.accountsController = new AccountsController({
       keyringController: this.keyringController,
-      identitiesController: this.identitiesController,
+      pluginAccountsController: this.pluginAccountsController,
     }, initState.AccountsController)
 
     this.accountsController.store.subscribe((s) => this._onAccountControllerUpdate(s))
@@ -301,7 +297,7 @@ module.exports = class MetamaskController extends EventEmitter {
       setupProvider: this.setupProvider.bind(this),
       accountsController: this.accountsController,
       assetsController: this.assetsController,
-      identitiesController: this.identitiesController,
+      pluginAccountsController: this.pluginAccountsController,
       openPopup: opts.openPopup,
       closePopup: opts.closePopup,
       pluginsController: this.pluginsController,
@@ -365,7 +361,7 @@ module.exports = class MetamaskController extends EventEmitter {
       PermissionsMetadata: this.permissionsController.store,
       PluginsController: this.pluginsController.store,
       AssetsController: this.assetsController.store,
-      IdentitiesController: this.identitiesController.store,
+      PluginAccountsController: this.pluginAccountsController.store,
       AddressAuditController: this.addressAuditController.store,
       ThreeBoxController: this.threeBoxController.store,
     })
