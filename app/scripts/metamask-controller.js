@@ -289,6 +289,7 @@ module.exports = class MetamaskController extends EventEmitter {
     this.accountsController = new AccountsController({
       keyringController: this.keyringController,
       pluginAccountsController: this.pluginAccountsController,
+      pluginsController: this.pluginsController,
     }, initState.AccountsController)
 
     this.accountsController.store.subscribe((s) => this._onAccountControllerUpdate(s))
@@ -319,7 +320,7 @@ module.exports = class MetamaskController extends EventEmitter {
       AppStateController: this.appStateController.store,
       TransactionController: this.txController.store,
       KeyringController: this.keyringController.store,
-      AccountsController: this.AccountsController.store,
+      AccountsController: this.accountsController.store,
       PreferencesController: this.preferencesController.store,
       AddressBookController: this.addressBookController,
       CurrencyController: this.currencyRateController,
@@ -348,7 +349,7 @@ module.exports = class MetamaskController extends EventEmitter {
       PersonalMessageManager: this.personalMessageManager.memStore,
       TypesMessageManager: this.typedMessageManager.memStore,
       KeyringController: this.keyringController.memStore,
-      AccountsController: this.accountsController.memStore,
+      AccountsController: this.accountsController.store,
       PreferencesController: this.preferencesController.store,
       RecentBlocksController: this.recentBlocksController.store,
       AddressBookController: this.addressBookController,
@@ -595,6 +596,7 @@ module.exports = class MetamaskController extends EventEmitter {
 
   getPluginsApi () {
     const keyringController = this.keyringController
+    const accountsController = this.accountsController
     const preferencesController = this.preferencesController
     const txController = this.txController
     const networkController = this.networkController
@@ -1360,11 +1362,18 @@ module.exports = class MetamaskController extends EventEmitter {
     }
   }
 
-  async getAppKeyForDomain (domain) {
+  async getAppKeyForDomain (domain, requestedAccount) {
+    let account
     const accountsController = this.accountsController
-    const accounts = await accountsController.getAccounts()
-    const firstAccount = accounts[0]
-    const privateAppKey = await accountsController.exportAppKeyForAddress(firstAccount, domain)
+
+    if (requestedAccount) {
+      account = requestedAccount
+    } else {
+      const accounts = await accountsController.getAccounts()
+      account = accounts[0]
+    }
+
+    const privateAppKey = await accountsController.exportAppKeyForAddress(account, domain)
     return privateAppKey
   }
 

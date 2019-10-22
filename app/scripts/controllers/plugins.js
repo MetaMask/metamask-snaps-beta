@@ -49,6 +49,7 @@ class PluginsController extends EventEmitter {
     this.getAppKeyForDomain = opts.getAppKeyForDomain
 
     this.rpcMessageHandlers = new Map()
+    this.accountMessageHandlers = new Map()
     this.adding = {}
   }
 
@@ -92,6 +93,7 @@ class PluginsController extends EventEmitter {
 
   clearPluginState () {
     this.rpcMessageHandlers.clear()
+    this.accountMessageHandlers.clear()
     this.store.updateState({
       plugins: {},
       pluginStates: {},
@@ -279,9 +281,11 @@ class PluginsController extends EventEmitter {
       ...this.getApi(),
     }
     const registerRpcMessageHandler = this._registerRpcMessageHandler.bind(this, pluginName)
+    const registerAccountMessageHandler = this._registerAccountMessageHandler.bind(this, pluginName)
     const apisToProvide = {
       onMetaMaskEvent,
       registerRpcMessageHandler,
+      registerAccountMessageHandler,
       getAppKey: () => this.getAppKeyForDomain(pluginName),
     }
     apiList.forEach(apiKey => {
@@ -292,6 +296,10 @@ class PluginsController extends EventEmitter {
 
   _registerRpcMessageHandler (pluginName, handler) {
     this.rpcMessageHandlers.set(pluginName, handler)
+  }
+
+  _registerAccountMessageHandler(pluginName, handler) {
+    this.accountMessageHandlers.set(pluginName, handler)
   }
 
   _startPlugin (pluginName, approvedPermissions, sourceCode, ethereumProvider) {

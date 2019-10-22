@@ -18,9 +18,12 @@ class AccountsController extends EventEmitter {
   constructor (opts = {}) {
     super()
 
-    const { keyringController, pluginAccountsController } = opts
+    const {
+      keyringController, pluginAccountsController, pluginsController
+    } = opts
     this.keyringController = keyringController
-    this.pluginAccountsController = pluginAccountsController
+    this.pluginAccounts = pluginAccountsController
+    this.pluginsController = pluginsController
 
     const initState = extend({
       accountRings: [],
@@ -30,7 +33,7 @@ class AccountsController extends EventEmitter {
 
   async getAccounts() {
     const keyAccounts = await this.keyringController.getAccounts()
-    const pluginAccounts = this.pluginAccountsController.resources.map(acct => acct.address)
+    const pluginAccounts = this.pluginAccounts.resources.map(acct => acct.address)
     return [...keyAccounts, ...pluginAccounts]
   }
 
@@ -67,6 +70,42 @@ class AccountsController extends EventEmitter {
     return update
   }
 
+  getHandlerForAccount (address) {
+    const pluginAccounts = this.pluginAccounts.resources
+    const accounts = pluginAccounts.filter(acct => normalizeAddress(acct.address) === address)
+    const domains = accounts.map(acct => acct.fromDomain)
+    const uniques = domains.filter(onlyUnique)
+
+    if (uniques.length > 1) {
+      throw new Error(`Multiple plugins claiming ownership of account ${address}, please request from plugin directly.`)
+    }
+
+    const handler = this.pluginsController.accountMessageHandlers.get(uniques[0])
+    if (uniques.length === 0 || !handler) {
+      throw new Error(`No handler plugin for account ${address} found.`)
+    }
+
+    return handler
+  }
+
+  async signTransaction (ethTx, fromAddress, opts) {
+    try {
+      return this.keyringController.signTransaction(ethTx, fromAddress, opts)
+    } catch (err) {
+      const address = normalizeAddress(fromAddress)
+      if (!this.pluginManagesAddress(address)) {
+        throw new Error('No keyring or plugin found for the requested account.')
+      }
+      const handler = getHandlerForAccount(address)
+      const tx = ethTx.toJSON(true)
+      tx.from = fromAddress
+      return handler({
+        method: 'eth_signTransaction',
+        params: [tx],
+      })
+    }
+  }
+
   async signMessage (msgParams) {
     try {
       return this.keyringController.signMessage(msgParams)
@@ -75,8 +114,27 @@ class AccountsController extends EventEmitter {
       if (!this.pluginManagesAddress(address)) {
         throw new Error('No keyring or plugin found for the requested account.')
       }
+      const handler = getHandlerForAccount(address)
+      return handler({
+        method: 'eth_sign',
+        params: [msgParams.from, msgParams.data],
+      })
+    }
+  }
 
-      throw new Error('MetaMask needs to impelment this method for plugins.')
+  async signPersonalMessage (msgParams) {
+    try {
+      return this.keyringController.signPersonalMessage(msgParams)
+    } catch (err) {
+      const address = normalizeAddress(msgParams.from)
+      if (!this.pluginManagesAddress(address)) {
+        throw new Error('No keyring or plugin found for the requested account.')
+      }
+      const handler = getHandlerForAccount(address)
+      return handler({
+        method: 'personal_sign',
+        params: [msgParams.from, msgParams.data],
+      })
     }
   }
 
@@ -86,16 +144,31 @@ class AccountsController extends EventEmitter {
     return normalized.includes(address)
   }
 
+  async exportAppKeyForAddress(account, origin) {
+    try {
+      return this.keyringController.exportAppKeyForAddress(account, origin)
+    } catch (err) {
+      const address = normalizeAddress(msgParams.from)
+      if (!this.pluginManagesAddress(address)) {
+        throw new Error('No keyring or plugin found for the requested account.')
+      }
+      throw new Error('Plugins cannot currently export app keys.')
+    }
+  }
+
   /**
    * TO IMPLEMENT:
    */
 
+  async signTypedData (msgParams) {
+    throw new Error ('This method is not yet supported on this plugin branch.')
+  }
 
-  async signMessage (msgParams) {}
-  async signPersonalMessage (msgParams) {}
-  async signTypedData (msgParams) {}
-  async exportAppKeyForAddress(account, domain) {}
+}
 
+// https://stackoverflow.com/a/14438954/272576
+function onlyUnique(value, index, self) {
+  return self.indexOf(value) === index
 }
 
 module.exports = AccountsController
