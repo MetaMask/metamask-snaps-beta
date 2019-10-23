@@ -304,7 +304,6 @@ class PluginsController extends EventEmitter {
     Object.assign(ethereumProvider, apisToProvide)
     try {
       const sessedPlugin = this.rootRealm.evaluate(sourceCode, {
-        wallet: ethereumProvider,
         console, // Adding console for now for logging purposes.
         BigInt,
         window: {
@@ -321,6 +320,7 @@ class PluginsController extends EventEmitter {
         WebSocket,
         Buffer,
         Date,
+        registerPlugin: initializer => initializer(ethereumProvider),
       })
       sessedPlugin()
     } catch (err) {
