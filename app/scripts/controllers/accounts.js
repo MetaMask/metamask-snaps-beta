@@ -19,11 +19,10 @@ class AccountsController extends EventEmitter {
     super()
 
     const {
-      keyringController, pluginAccountsController, pluginsController
+      keyringController, pluginAccountsController
     } = opts
     this.keyringController = keyringController
     this.pluginAccounts = pluginAccountsController
-    this.pluginsController = pluginsController
 
     const initState = extend({
       accountRings: [],
@@ -66,7 +65,8 @@ class AccountsController extends EventEmitter {
       }
     })
 
-    update.keyrings = update.keyrings.concat(pluginKeyrings)
+    update.accountRings = update.keyrings.concat(pluginKeyrings)
+    this.store.updateState(update)
     return update
   }
 
@@ -78,6 +78,10 @@ class AccountsController extends EventEmitter {
 
     if (uniques.length > 1) {
       throw new Error(`Multiple plugins claiming ownership of account ${address}, please request from plugin directly.`)
+    }
+
+    if (!this.pluginsController) {
+      throw new Error('No handlers exist to manage account.')
     }
 
     const handler = this.pluginsController.accountMessageHandlers.get(uniques[0])
@@ -161,7 +165,11 @@ class AccountsController extends EventEmitter {
    */
 
   async signTypedData (msgParams) {
-    throw new Error ('This method is not yet supported on this plugin branch.')
+    throw new Error('This method is not yet supported on this plugin branch.')
+  }
+
+  async addNewAccount () {
+    throw new Error('Plugin accounts must be added by that plugin.')
   }
 
 }

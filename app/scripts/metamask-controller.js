@@ -191,10 +191,21 @@ module.exports = class MetamaskController extends EventEmitter {
       encryptor: opts.encryptor || undefined,
     })
 
+    this.pluginAccountsController = new ResourceController({
+      requiredFields: ['address'],
+    })
+
+    this.accountsController = new AccountsController({
+      keyringController: this.keyringController,
+      pluginAccountsController: this.pluginAccountsController,
+    }, initState.AccountsController)
+    this.accountsController.store.subscribe((s) => this._onAccountControllerUpdate(s))
+
     // detect tokens controller
     this.detectTokensController = new DetectTokensController({
       preferences: this.preferencesController,
       network: this.networkController,
+      // Used only to detect unlocks:
       keyringMemStore: this.keyringController.memStore,
     })
 
@@ -203,6 +214,7 @@ module.exports = class MetamaskController extends EventEmitter {
     this.threeBoxController = new ThreeBoxController({
       preferencesController: this.preferencesController,
       addressBookController: this.addressBookController,
+      // Used only to generate app key from first account for encrypting 3box vault:
       keyringController: this.keyringController,
       initState: initState.ThreeBoxController,
       getKeyringControllerState: this.keyringController.memStore.getState.bind(this.keyringController.memStore),
@@ -217,7 +229,7 @@ module.exports = class MetamaskController extends EventEmitter {
       preferencesStore: this.preferencesController.store,
       txHistoryLimit: 40,
       getNetwork: this.networkController.getNetworkState.bind(this),
-      signTransaction: this.keyringController.signTransaction.bind(this.keyringController),
+      signTransaction: this.accountsController.signTransaction.bind(this.accountsController),
       provider: this.provider,
       blockTracker: this.blockTracker,
       getGasPrice: this.getGasPrice.bind(this),
@@ -266,33 +278,21 @@ module.exports = class MetamaskController extends EventEmitter {
     this.addressAuditController = new AddressAuditController({
       initState: initState.AddressAuditController,
     })
+    this.assetsController = new ResourceController({
+      requiredFields: ['symbol', 'balance', 'identifier', 'decimals', 'customViewUrl'],
+    })
 
     this.pluginsController = new PluginsController({
       setupProvider: this.setupProvider.bind(this),
       _txController: this.txController,
       _networkController: this.networkController,
       _blockTracker: this.blockTracker,
-      _getAccounts: this.keyringController.getAccounts.bind(this.keyringController),
+      _getAccounts: this.getAccounts.bind(this),
       getApi: this.getPluginsApi.bind(this),
       initState: initState.PluginsController,
       getAppKeyForDomain: this.getAppKeyForDomain.bind(this),
     })
-
-    this.assetsController = new ResourceController({
-      requiredFields: ['symbol', 'balance', 'identifier', 'decimals', 'customViewUrl'],
-    })
-
-    this.pluginAccountsController = new ResourceController({
-      requiredFields: ['address'],
-    })
-
-    this.accountsController = new AccountsController({
-      keyringController: this.keyringController,
-      pluginAccountsController: this.pluginAccountsController,
-      pluginsController: this.pluginsController,
-    }, initState.AccountsController)
-
-    this.accountsController.store.subscribe((s) => this._onAccountControllerUpdate(s))
+    this.accountsController.pluginsController = this.pluginsController
 
     this.permissionsController = new PermissionsController({
       setupProvider: this.setupProvider.bind(this),
@@ -304,8 +304,8 @@ module.exports = class MetamaskController extends EventEmitter {
       pluginsController: this.pluginsController,
       provider: this.provider,
       pluginRestrictedMethods: {
-        updatePluginState: this.pluginsController.updatePluginState.bind(this.pluginController),
-        getPluginState: this.pluginsController.getPluginState.bind(this.pluginController),
+        updatePluginState: this.pluginsController.updatePluginState.bind(this.pluginsController),
+        getPluginState: this.pluginsController.getPluginState.bind(this.pluginsController),
         onNewTx: this.txController.on.bind(this.txController, 'newUnapprovedTx'),
         getTxById: this.txController.txStateManager.getTx.bind(this.txController.txStateManager),
       },
@@ -735,6 +735,7 @@ module.exports = class MetamaskController extends EventEmitter {
         vault = await this.keyringController.fullUpdate()
       } else {
         vault = await this.keyringController.createNewVaultAndKeychain(password)
+        this.accountsController.resources = []
         const accounts = await this.keyringController.getAccounts()
         this.preferencesController.setAddresses(accounts)
         this.selectFirstIdentity()
@@ -763,6 +764,7 @@ module.exports = class MetamaskController extends EventEmitter {
       this.preferencesController.setAddresses([])
       // create new vault
       const vault = await keyringController.createNewVaultAndRestore(password, seed)
+      this.accountsController.resources = []
 
       const ethQuery = new EthQuery(this.provider)
       accounts = await keyringController.getAccounts()
@@ -895,10 +897,10 @@ module.exports = class MetamaskController extends EventEmitter {
    */
   async submitPassword (password) {
     await this.keyringController.submitPassword(password)
-    const accounts = await this.keyringController.getAccounts()
+    const accounts = await this.accountsController.getAccounts()
 
     // verify keyrings
-    const nonSimpleKeyrings = this.keyringController.keyrings.filter(keyring => keyring.type !== 'Simple Key Pair')
+    const nonSimpleKeyrings = this.accountsController.store.getState().accountRings.filter(keyring => keyring.type !== 'Simple Key Pair')
     if (nonSimpleKeyrings.length > 1 && this.diagnostics) {
       await this.diagnostics.reportMultipleKeyrings(nonSimpleKeyrings)
     }
@@ -1156,7 +1158,7 @@ module.exports = class MetamaskController extends EventEmitter {
     const keyring = await this.keyringController.addNewKeyring('Simple Key Pair', [ privateKey ])
     const accounts = await keyring.getAccounts()
     // update accounts in preferences controller
-    const allAccounts = await this.keyringController.getAccounts()
+    const allAccounts = await this.accountsController.getAccounts()
     this.preferencesController.setAddresses(allAccounts)
     // set new account as selected
     await this.preferencesController.setSelectedAddress(accounts[0])
@@ -1711,22 +1713,6 @@ module.exports = class MetamaskController extends EventEmitter {
     }
   }
 
-  _onUnlock (keyRingControllerMemStore, cb) {
-    const { keyrings } = keyRingControllerMemStore.getState()
-    let addressesWereEmpty = keyrings.reduce((acc, {accounts}) => acc.concat(accounts), []).length === 0
-    keyRingControllerMemStore.subscribe(state => {
-      const { isUnlocked, keyrings } = state
-      const addresses = keyrings.reduce((acc, {accounts}) => acc.concat(accounts), [])
-      if (addressesWereEmpty && addresses.length && isUnlocked) {
-        addressesWereEmpty = false
-        console.log('!!! _onUnlock addresses[0]', addresses[0])
-        return cb(addresses[0])
-      } else {
-        addressesWereEmpty = addresses.length === 0
-      }
-    })
-  }
-
   /**
    * A method for emitting the full MetaMask state to all registered listeners.
    * @private
@@ -2005,5 +1991,12 @@ module.exports = class MetamaskController extends EventEmitter {
    */
   setLocked () {
     return this.keyringController.setLocked()
+  }
+
+  async getAccounts () {
+    if (!this.accountsController) {
+      return []
+    }
+    return this.accountsController.getAccounts()
   }
 }

@@ -277,7 +277,6 @@ class PluginsController extends EventEmitter {
       updatePluginState: this.updatePluginState.bind(this, pluginName),
       getPluginState: this.getPluginState.bind(this, pluginName),
       onNewTx: () => {},
-      onUnlock: this._onUnlock,
       ...this.getApi(),
     }
     const registerRpcMessageHandler = this._registerRpcMessageHandler.bind(this, pluginName)
