@@ -8,7 +8,8 @@ const normalizeAddress = sigUtil.normalize
  * Accounts Controller
  *
  * Provides methods with the same interface as KeyringController
- * except will also fallback route requests to the IdentitiesController,
+ * ( https://www.npmjs.com/package/eth-keyring-controller )
+ * except will also fallback methods to the plugin accounts controller,
  * which allows Plugin account management.
  *
  */
