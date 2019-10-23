@@ -49,9 +49,10 @@ class AccountsController extends EventEmitter {
     const update = await this.keyringController.fullUpdate()
     const pluginAccounts = this.pluginAccounts.resources
 
-    const pluginTypes = pluginAccounts.filter((account) => {
+    const pluginTypes = pluginAccounts.map((account) => {
       return account.fromDomain
     })
+    .filter(onlyUnique)
     update.keyringTypes = update.keyringTypes.concat(pluginTypes)
 
     const pluginKeyrings = pluginTypes.map((domain) => {

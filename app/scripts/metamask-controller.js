@@ -298,10 +298,11 @@ module.exports = class MetamaskController extends EventEmitter {
       setupProvider: this.setupProvider.bind(this),
       accountsController: this.accountsController,
       assetsController: this.assetsController,
+      pluginsController: this.pluginsController,
       pluginAccountsController: this.pluginAccountsController,
       openPopup: opts.openPopup,
       closePopup: opts.closePopup,
-      pluginsController: this.pluginsController,
+      pluginAccountsController: this.pluginAccountsController,
       provider: this.provider,
       pluginRestrictedMethods: {
         updatePluginState: this.pluginsController.updatePluginState.bind(this.pluginsController),
@@ -360,7 +361,9 @@ module.exports = class MetamaskController extends EventEmitter {
       IncomingTransactionsController: this.incomingTransactionsController.store,
       PermissionsController: this.permissionsController.permissions,
       PermissionsMetadata: this.permissionsController.store,
-      PluginsController: this.pluginsController.store,
+      // Disabling to avoid piping plugin source codes to UI with every update:
+      // TODO: Optimize in a different way:
+      // PluginsController: this.pluginsController.store,
       AssetsController: this.assetsController.store,
       PluginAccountsController: this.pluginAccountsController.store,
       AddressAuditController: this.addressAuditController.store,

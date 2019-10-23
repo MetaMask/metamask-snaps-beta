@@ -17,6 +17,7 @@ const SINGLE_CALL_BALANCES_ABI = require('single-call-balance-checker-abi')
 const { bnToHex } = require('./util')
 const { MAINNET_CODE, RINKEBY_CODE, ROPSTEN_CODE, KOVAN_CODE } = require('../controllers/network/enums')
 const { SINGLE_CALL_BALANCES_ADDRESS, SINGLE_CALL_BALANCES_ADDRESS_RINKEBY, SINGLE_CALL_BALANCES_ADDRESS_ROPSTEN, SINGLE_CALL_BALANCES_ADDRESS_KOVAN } = require('../controllers/network/contract-addresses')
+const { isValidAddress } = require('ethereumjs-util')
 
 
 class AccountTracker {
@@ -228,11 +229,16 @@ class AccountTracker {
    * @param {*} addresses
    * @param {*} deployedContractAddress
    */
-  async _updateAccountsViaBalanceChecker (addresses, deployedContractAddress) {
+  async _updateAccountsViaBalanceChecker (_addresses, deployedContractAddress) {
     const accounts = this.store.getState().accounts
     this.web3.setProvider(this._provider)
     const ethContract = this.web3.eth.contract(SINGLE_CALL_BALANCES_ABI).at(deployedContractAddress)
     const ethBalance = ['0x0']
+
+    // To tolerate plugins providing arbitrarily formatted non-Ethereum addresses:
+    const addresses = _addresses.filter(isValidAddress)
+    const result = {}
+    _addresses.forEach((address) => { result[address] = { address, balance: '0x0' } })
 
     ethContract.balances(addresses, ethBalance, (error, result) => {
       if (error) {
@@ -241,9 +247,9 @@ class AccountTracker {
       }
       addresses.forEach((address, index) => {
         const balance = bnToHex(result[index])
-        accounts[address] = { address, balance }
+        result[address] = { address, balance }
       })
-      this.store.updateState({ accounts })
+      this.store.updateState({ accounts: result })
     })
   }
 

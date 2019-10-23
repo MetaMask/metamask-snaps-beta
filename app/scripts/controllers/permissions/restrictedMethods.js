@@ -113,7 +113,7 @@ function getExternalRestrictedMethods (permissionsController) {
     'wallet_manageIdentities': {
       description: 'Provide accounts to your wallet and be responsible for their security.',
       method: (req, res, next, end, engine) => {
-        plutinAccountsController.handleRpcRequest(req, res, next, end, engine)
+        pluginAccountsController.handleRpcRequest(req, res, next, end, engine)
       },
     },
 
