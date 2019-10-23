@@ -30,7 +30,7 @@ class PermissionsController {
 
   constructor ({
     openPopup, closePopup, pluginAccountsController,
-    pluginsController, assetsController, identitiesController,
+    pluginsController, assetsController,
     setupProvider, pluginRestrictedMethods, getApi, metamaskEventMethods,
   } = {},
   restoredPermissions = {}, restoredState = {}
@@ -45,7 +45,6 @@ class PermissionsController {
     this.pluginAccountsController = pluginAccountsController
     this.pluginsController = pluginsController
     this.assetsController = assetsController
-    this.identitiesController = identitiesController
     this.setupProvider = setupProvider
     this.externalRestrictedMethods = getExternalRestrictedMethods(this)
     this.pluginRestrictedMethods = pluginRestrictedMethods
