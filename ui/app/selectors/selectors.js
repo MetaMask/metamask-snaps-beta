@@ -84,7 +84,7 @@ function getCurrentKeyring (state) {
 
   const simpleAddress = stripHexPrefix(identity.address).toLowerCase()
 
-  const keyring = state.metamask.keyrings.find((kr) => {
+  const keyring = state.metamask.accountrings.find((kr) => {
     return kr.accounts.includes(simpleAddress) ||
       kr.accounts.includes(identity.address)
   })

@@ -26,7 +26,7 @@ class AccountsController extends EventEmitter {
     this.pluginAccounts = pluginAccountsController
 
     const initState = extend({
-      accountRings: [],
+      accountrings: [],
     }, opts.initState)
     this.store = new ObservableStore(initState)
   }
@@ -67,7 +67,7 @@ class AccountsController extends EventEmitter {
       }
     })
 
-    update.accountRings = update.keyrings.concat(pluginKeyrings)
+    update.accountrings = update.keyrings.concat(pluginKeyrings)
     this.store.updateState(update)
     return update
   }
