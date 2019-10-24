@@ -903,7 +903,8 @@ module.exports = class MetamaskController extends EventEmitter {
     const accounts = await this.accountsController.getAccounts()
 
     // verify keyrings
-    const nonSimpleKeyrings = this.accountsController.store.getState().accountRings.filter(keyring => keyring.type !== 'Simple Key Pair')
+    const { accountrings } = this.accountsController.store.getState()
+    const nonSimpleKeyrings = accountrings.filter(keyring => keyring.type !== 'Simple Key Pair')
     if (nonSimpleKeyrings.length > 1 && this.diagnostics) {
       await this.diagnostics.reportMultipleKeyrings(nonSimpleKeyrings)
     }
@@ -1695,8 +1696,8 @@ module.exports = class MetamaskController extends EventEmitter {
    * @private
    */
   async _onAccountControllerUpdate (state) {
-    const {isUnlocked, accountRings} = state
-    const addresses = accountRings.reduce((acc, {accounts}) => acc.concat(accounts), [])
+    const {isUnlocked, accountrings} = state
+    const addresses = accountrings.reduce((acc, {accounts}) => acc.concat(accounts), [])
 
     if (!addresses.length) {
       return
