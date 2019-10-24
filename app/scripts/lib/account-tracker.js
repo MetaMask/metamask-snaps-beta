@@ -230,15 +230,14 @@ class AccountTracker {
    * @param {*} deployedContractAddress
    */
   async _updateAccountsViaBalanceChecker (_addresses, deployedContractAddress) {
-    const accounts = this.store.getState().accounts
     this.web3.setProvider(this._provider)
     const ethContract = this.web3.eth.contract(SINGLE_CALL_BALANCES_ABI).at(deployedContractAddress)
     const ethBalance = ['0x0']
 
     // To tolerate plugins providing arbitrarily formatted non-Ethereum addresses:
     const addresses = _addresses.filter(isValidAddress)
-    const result = {}
-    _addresses.forEach((address) => { result[address] = { address, balance: '0x0' } })
+    const accounts = {}
+    _addresses.forEach((address) => { accounts[address] = { address, balance: '0x0' } })
 
     ethContract.balances(addresses, ethBalance, (error, result) => {
       if (error) {
@@ -247,9 +246,9 @@ class AccountTracker {
       }
       addresses.forEach((address, index) => {
         const balance = bnToHex(result[index])
-        result[address] = { address, balance }
+        accounts[address] = { address, balance }
       })
-      this.store.updateState({ accounts: result })
+      this.store.updateState({ accounts })
     })
   }
 
