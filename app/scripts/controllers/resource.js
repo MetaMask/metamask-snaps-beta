@@ -37,6 +37,7 @@ class ResourceController extends EventEmitter {
   }
 
   add (fromDomain, opts) {
+    const resources = this.resources
     this.validateResource(fromDomain, opts)
     const priors = this.getPriorResources(fromDomain, opts)
     if (priors.length > 0) {
@@ -47,7 +48,8 @@ class ResourceController extends EventEmitter {
       ...opts,
     }
     resource.fromDomain = fromDomain
-    this.resources.push(resource)
+    resources.push(resource)
+    this.resources = resources
     return resource
   }
 

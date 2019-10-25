@@ -29,6 +29,10 @@ class AccountsController extends EventEmitter {
       accountrings: [],
     }, opts.initState)
     this.store = new ObservableStore(initState)
+
+    this.pluginAccounts.store.subscribe((accounts) => {
+      this.fullUpdate()
+    })
   }
 
   async getAccounts() {
@@ -105,6 +109,7 @@ class AccountsController extends EventEmitter {
       const handler = getHandlerForAccount(address)
       const tx = ethTx.toJSON(true)
       tx.from = fromAddress
+
       return handler({
         method: 'eth_signTransaction',
         params: [tx],
