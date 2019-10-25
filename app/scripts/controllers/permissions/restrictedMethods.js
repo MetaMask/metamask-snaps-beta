@@ -136,6 +136,16 @@ function getExternalRestrictedMethods (permissionsController) {
       },
     },
 
+    'prompt': {
+      description: 'Prompt you for input via popup.',
+      method: (req, res, _next, end, engine) => {
+        const requestor = engine.domain
+        prompt(`MetaMask Notice:\n${requestor} Asks:\n${req.params[0]}`)
+        res.result = true // JsonRpcEngine throws if no result or error
+        end()
+      },
+    },
+
     'wallet_plugin_*': {
       description: 'Connect to plugin $1, and install it if not available yet.',
       method: async (req, res, _next, end, engine) => {
