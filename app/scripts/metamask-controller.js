@@ -789,6 +789,7 @@ module.exports = class MetamaskController extends EventEmitter {
       this.preferencesController.setAddresses(accounts)
       this.selectFirstIdentity()
       releaseLock()
+      await this.accountsController.fullUpdate()
       return vault
     } catch (err) {
       releaseLock()
