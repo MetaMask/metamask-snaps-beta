@@ -76,13 +76,18 @@ class AccountsController extends EventEmitter {
     return update
   }
 
-  getHandlerForAccount (address) {
+  _getUniquePluginAccountDomains (address) {
     const pluginAccounts = this.pluginAccounts.resources
     const accounts = pluginAccounts.filter(acct => normalizeAddress(acct.address) === address)
     const domains = accounts.map(acct => acct.fromDomain)
-    const uniques = domains.filter(onlyUnique)
+    const uniquePluginAccountDomains = domains.filter(onlyUnique)
+    return uniquePluginAccountDomains
+  }
 
-    if (uniques.length > 1) {
+  getHandlerForAccount (address) {
+    const uniquePluginAccountDomains = this._getUniquePluginAccountDomains(address)
+
+    if (uniquePluginAccountDomains.length > 1) {
       throw new Error(`Multiple plugins claiming ownership of account ${address}, please request from plugin directly.`)
     }
 
@@ -90,8 +95,8 @@ class AccountsController extends EventEmitter {
       throw new Error('No handlers exist to manage account.')
     }
 
-    const handler = this.pluginsController.accountMessageHandlers.get(uniques[0])
-    if (uniques.length === 0 || !handler) {
+    const handler = this.pluginsController.accountMessageHandlers.get(uniquePluginAccountDomains[0])
+    if (uniquePluginAccountDomains.length === 0 || !handler) {
       throw new Error(`No handler plugin for account ${address} found.`)
     }
 
@@ -111,7 +116,15 @@ class AccountsController extends EventEmitter {
       const tx = ethTx.toJSON(true)
       tx.from = fromAddress
 
-      return handler({
+      const uniquePluginAccountDomains = this._getUniquePluginAccountDomains(address)
+
+      if (uniquePluginAccountDomains.length > 1) {
+        throw new Error(`Multiple plugins claiming ownership of account ${address}, please request from plugin directly.`)
+      }
+
+      const origin = uniquePluginAccountDomains[0]
+
+      return handler(origin, {
         method: 'eth_signTransaction',
         params: [tx],
       })
