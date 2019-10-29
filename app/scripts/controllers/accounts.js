@@ -100,7 +100,8 @@ class AccountsController extends EventEmitter {
 
   async signTransaction (ethTx, fromAddress, opts) {
     try {
-      return this.keyringController.signTransaction(ethTx, fromAddress, opts)
+      const signedTx = await this.keyringController.signTransaction(ethTx, fromAddress, opts)
+      return signedTx
     } catch (err) {
       const address = normalizeAddress(fromAddress)
       if (!this.pluginManagesAddress(address)) {
