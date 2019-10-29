@@ -30,7 +30,7 @@ class AccountsController extends EventEmitter {
     }, opts.initState)
     this.store = new ObservableStore(initState)
 
-    this.pluginAccounts.store.subscribe((accounts) => {
+    this.pluginAccounts.store.subscribe(() => {
       this.fullUpdate()
     })
   }
@@ -106,7 +106,7 @@ class AccountsController extends EventEmitter {
       if (!this.pluginManagesAddress(address)) {
         throw new Error('No keyring or plugin found for the requested account.')
       }
-      const handler = getHandlerForAccount(address)
+      const handler = this.getHandlerForAccount(address)
       const tx = ethTx.toJSON(true)
       tx.from = fromAddress
 
@@ -125,7 +125,7 @@ class AccountsController extends EventEmitter {
       if (!this.pluginManagesAddress(address)) {
         throw new Error('No keyring or plugin found for the requested account.')
       }
-      const handler = getHandlerForAccount(address)
+      const handler = this.getHandlerForAccount(address)
       return handler({
         method: 'eth_sign',
         params: [msgParams.from, msgParams.data],
@@ -141,7 +141,7 @@ class AccountsController extends EventEmitter {
       if (!this.pluginManagesAddress(address)) {
         throw new Error('No keyring or plugin found for the requested account.')
       }
-      const handler = getHandlerForAccount(address)
+      const handler = this.getHandlerForAccount(address)
       return handler({
         method: 'personal_sign',
         params: [msgParams.from, msgParams.data],
@@ -159,7 +159,7 @@ class AccountsController extends EventEmitter {
     try {
       return this.keyringController.exportAppKeyForAddress(account, origin)
     } catch (err) {
-      const address = normalizeAddress(msgParams.from)
+      const address = normalizeAddress(account)
       if (!this.pluginManagesAddress(address)) {
         throw new Error('No keyring or plugin found for the requested account.')
       }
@@ -171,7 +171,7 @@ class AccountsController extends EventEmitter {
    * TO IMPLEMENT:
    */
 
-  async signTypedData (msgParams) {
+  async signTypedData () {
     throw new Error('This method is not yet supported on this plugin branch.')
   }
 
