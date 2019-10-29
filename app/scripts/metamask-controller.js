@@ -1749,6 +1749,8 @@ module.exports = class MetamaskController extends EventEmitter {
         await this.preferencesController.setSelectedAddress(address)
       }
     }
+
+    this.accountsController.fullUpdate()
   }
 
   /**
