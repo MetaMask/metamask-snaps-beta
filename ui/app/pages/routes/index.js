@@ -98,6 +98,18 @@ class Routes extends Component {
     })
   }
 
+  componentDidUpdate ({ prompts: prevPrompts = [] }) {
+    const {
+      prompts = [],
+      showPromptsModal,
+    } = this.props
+
+    if (Object.keys(prompts).length > Object.keys(prevPrompts).length) {
+      const newKey = Object.keys(prompts).find(promptKey => !prevPrompts[prevPrompts])
+      showPromptsModal(prompts[newKey])
+    }
+  }
+
   renderRoutes () {
     const { autoLogoutTimeLimit, setLastActiveTime } = this.props
 
@@ -162,7 +174,7 @@ class Routes extends Component {
     }
 
     if (window.METAMASK_UI_TYPE === ENVIRONMENT_TYPE_POPUP) {
-      return this.onConfirmPage() || this.hasPermissionsRequests()
+      return this.onConfirmPage() || this.hasPermissionsRequests() || this.hasPrompts()
     }
   }
 
@@ -360,6 +372,7 @@ function mapStateToProps (state) {
 
   const {
     permissionsRequests,
+    prompts,
   } = metamask
 
   return {
@@ -381,6 +394,7 @@ function mapStateToProps (state) {
     providerId: getNetworkIdentifier(state),
     autoLogoutTimeLimit,
     permissionsRequests,
+    prompts,
   }
 }
 
@@ -391,6 +405,7 @@ function mapDispatchToProps (dispatch) {
     setCurrentCurrencyToUSD: () => dispatch(actions.setCurrentCurrency('usd')),
     setMouseUserState: (isMouseUser) => dispatch(actions.setMouseUserState(isMouseUser)),
     setLastActiveTime: () => dispatch(actions.setLastActiveTime()),
+    showPromptsModal: (prompt) => dispatch(actions.showModal({ name: 'SHOW_PROMPT', prompt }))
   }
 }
 

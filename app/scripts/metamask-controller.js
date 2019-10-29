@@ -39,6 +39,7 @@ const TokenRatesController = require('./controllers/token-rates')
 const DetectTokensController = require('./controllers/detect-tokens')
 const { PermissionsController } = require('./controllers/permissions')
 const PluginsController = require('./controllers/plugins')
+const PromptsController = require('./controllers/prompts')
 const ResourceController = require('./controllers/resource')
 const AccountsController = require('./controllers/accounts')
 const AddressAuditController = require('./controllers/address-audit')
@@ -282,6 +283,8 @@ module.exports = class MetamaskController extends EventEmitter {
       requiredFields: ['symbol', 'balance', 'identifier', 'decimals', 'customViewUrl'],
     })
 
+    this.promptsController = new PromptsController()
+
     this.pluginsController = new PluginsController({
       setupProvider: this.setupProvider.bind(this),
       _txController: this.txController,
@@ -312,6 +315,7 @@ module.exports = class MetamaskController extends EventEmitter {
       },
       getApi: this.getPluginsApi.bind(this),
       metamaskEventMethods: this.pluginsController.generateMetaMaskListenerMethodsMap(),
+      addPrompt: this.promptsController.addPrompt.bind(this.promptsController),
     },
     initState.PermissionsController, initState.PermissionsMetadata)
 
@@ -368,6 +372,7 @@ module.exports = class MetamaskController extends EventEmitter {
       PluginAccountsController: this.pluginAccountsController.store,
       AddressAuditController: this.addressAuditController.store,
       ThreeBoxController: this.threeBoxController.store,
+      PromptsController: this.promptsController.store,
     })
     this.memStore.subscribe(this.sendUpdate.bind(this))
   }
@@ -594,6 +599,10 @@ module.exports = class MetamaskController extends EventEmitter {
       // plugins
       deletePlugin: this.pluginsController.deletePlugin.bind(this.pluginsController),
       clearPluginState: this.pluginsController.clearPluginState.bind(this.pluginsController),
+
+      // prompts
+      resolvePrompt: this.promptsController.resolvePrompt.bind(this.promptsController),
+      rejectPrompt: this.promptsController.resolvePrompt.bind(this.promptsController),
     }
   }
 
