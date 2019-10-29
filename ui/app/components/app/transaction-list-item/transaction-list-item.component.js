@@ -175,7 +175,7 @@ export default class TransactionListItem extends PureComponent {
       rpcPrefs,
       isEarliestNonce,
     } = this.props
-    const { txParams = {} } = transaction
+    const { txParams = {} } = primaryTransaction
     const { showTransactionDetails } = this.state
     const toAddress = tokenData
       ? tokenData.params && tokenData.params[0] && tokenData.params[0].value || txParams.to
