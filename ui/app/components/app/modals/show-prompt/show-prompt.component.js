@@ -27,6 +27,20 @@ export default class ShowPrompt extends PureComponent {
     this.setState({ value: event.target.value })
   }
 
+  iframe () {
+    return {
+      __html: this.props.iframe
+    }
+  }
+
+  promptIframe = (content) => {
+    return <iframe
+      title={ 'title' }
+      srcDoc={ content }
+    />
+  }
+
+
   render () {
     const { t } = this.context
     const {
@@ -50,6 +64,7 @@ export default class ShowPrompt extends PureComponent {
           <ModalContent
             title={prompt.title}
             description={prompt.message}
+            ContentSubComponent={this.promptIframe(prompt.customHtml)}
           />
           <input
             type="text"

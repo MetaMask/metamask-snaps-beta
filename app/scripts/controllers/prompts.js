@@ -10,7 +10,7 @@ class PromptController {
     this.promptPromises = {}
   }
 
-  addPrompt (title, message) {
+  addPrompt (title, { message, customHtml }) {
     const currentPrompts = this.store.getState().prompts
     const newPromptId = this._getNewPromptId(currentPrompts)
     this.store.updateState({
@@ -19,6 +19,7 @@ class PromptController {
         [newPromptId]: {
           title,
           message,
+          customHtml,
           id: newPromptId,
         },
       },

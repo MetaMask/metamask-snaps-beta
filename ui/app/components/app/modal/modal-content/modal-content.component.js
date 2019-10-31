@@ -8,7 +8,7 @@ export default class ModalContent extends PureComponent {
   }
 
   render () {
-    const { title, description } = this.props
+    const { title, description, ContentSubComponent } = this.props
 
     return (
       <div className="modal-content">
@@ -23,6 +23,13 @@ export default class ModalContent extends PureComponent {
           description && (
             <div className="modal-content__description">
               { description }
+            </div>
+          )
+        }
+        {
+          ContentSubComponent && (
+            <div className="modal-content__description">
+              { ContentSubComponent }
             </div>
           )
         }
