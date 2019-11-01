@@ -158,11 +158,6 @@ class Routes extends Component {
     return Array.isArray(permissionsRequests) && permissionsRequests.length > 0
   }
 
-  hasPrompts () {
-    const { prompts } = this.props
-    return Object.keys(prompts).length > 0
-  }
-
   hideAppHeader () {
     const { location } = this.props
 
@@ -179,7 +174,7 @@ class Routes extends Component {
     }
 
     if (window.METAMASK_UI_TYPE === ENVIRONMENT_TYPE_POPUP) {
-      return this.onConfirmPage() || this.hasPermissionsRequests() || this.hasPrompts()
+      return this.onConfirmPage() || this.hasPermissionsRequests()
     }
   }
 
