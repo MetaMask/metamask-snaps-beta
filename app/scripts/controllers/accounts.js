@@ -103,6 +103,18 @@ class AccountsController extends EventEmitter {
     return handler
   }
 
+  getOrigin (address) {
+    const uniquePluginAccountDomains = this._getUniquePluginAccountDomains(address)
+
+    if (uniquePluginAccountDomains.length > 1) {
+      throw new Error(`Multiple plugins claiming ownership of account ${address}, please request from plugin directly.`)
+    }
+
+    const origin = uniquePluginAccountDomains[0]
+
+    return origin
+  }
+
   async signTransaction (ethTx, fromAddress, opts) {
     try {
       const signedTx = await this.keyringController.signTransaction(ethTx, fromAddress, opts)
@@ -116,15 +128,7 @@ class AccountsController extends EventEmitter {
       const tx = ethTx.toJSON(true)
       tx.from = fromAddress
 
-      const uniquePluginAccountDomains = this._getUniquePluginAccountDomains(address)
-
-      if (uniquePluginAccountDomains.length > 1) {
-        throw new Error(`Multiple plugins claiming ownership of account ${address}, please request from plugin directly.`)
-      }
-
-      const origin = uniquePluginAccountDomains[0]
-
-      return handler(origin, {
+      return handler(getOrigin(address), {
         method: 'eth_signTransaction',
         params: [tx],
       })
@@ -133,14 +137,15 @@ class AccountsController extends EventEmitter {
 
   async signMessage (msgParams) {
     try {
-      return this.keyringController.signMessage(msgParams)
+      const signedMessage = this.keyringController.signMessage(msgParams)
+      return signedMessage
     } catch (err) {
       const address = normalizeAddress(msgParams.from)
       if (!this.pluginManagesAddress(address)) {
         throw new Error('No keyring or plugin found for the requested account.')
       }
       const handler = this.getHandlerForAccount(address)
-      return handler({
+      return handler(getOrigin(address), {
         method: 'eth_sign',
         params: [msgParams.from, msgParams.data],
       })
@@ -149,14 +154,15 @@ class AccountsController extends EventEmitter {
 
   async signPersonalMessage (msgParams) {
     try {
-      return this.keyringController.signPersonalMessage(msgParams)
+      const signedPersonalMessage = this.keyringController.signPersonalMessage(msgParams)
+      return signedPersonalMessage
     } catch (err) {
       const address = normalizeAddress(msgParams.from)
       if (!this.pluginManagesAddress(address)) {
         throw new Error('No keyring or plugin found for the requested account.')
       }
       const handler = this.getHandlerForAccount(address)
-      return handler({
+      return handler(getOrigin(address), {
         method: 'personal_sign',
         params: [msgParams.from, msgParams.data],
       })
