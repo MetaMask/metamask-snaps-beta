@@ -5,6 +5,7 @@ export default class ModalContent extends PureComponent {
   static propTypes = {
     title: PropTypes.string,
     description: PropTypes.string,
+    ContentSubComponent: PropTypes.element,
   }
 
   render () {

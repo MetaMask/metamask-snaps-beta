@@ -27,12 +27,6 @@ export default class ShowPrompt extends PureComponent {
     this.setState({ value: event.target.value })
   }
 
-  iframe () {
-    return {
-      __html: this.props.iframe
-    }
-  }
-
   promptIframe = (content) => {
     return <iframe
       title={ 'title' }
