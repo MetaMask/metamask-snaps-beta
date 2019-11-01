@@ -40,8 +40,6 @@ const mapStateToProps = (state, ownProps) => {
     identities,
     addressBook,
     currentCurrency,
-    selectedAddress,
-    selectedAddressTxList,
     assetImages,
     network,
     unapprovedTxs,

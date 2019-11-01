@@ -20,7 +20,7 @@ class AccountsController extends EventEmitter {
     super()
 
     const {
-      keyringController, pluginAccountsController
+      keyringController, pluginAccountsController,
     } = opts
     this.keyringController = keyringController
     this.pluginAccounts = pluginAccountsController
@@ -35,7 +35,7 @@ class AccountsController extends EventEmitter {
     })
   }
 
-  async getAccounts() {
+  async getAccounts () {
     const keyAccounts = await this.keyringController.getAccounts()
     const pluginAccounts = this.pluginAccounts.resources.map(acct => acct.address)
     return [...keyAccounts, ...pluginAccounts]
@@ -56,14 +56,14 @@ class AccountsController extends EventEmitter {
     const pluginTypes = pluginAccounts.map((account) => {
       return account.fromDomain
     })
-    .filter(onlyUnique)
+      .filter(onlyUnique)
     update.keyringTypes = update.keyringTypes.concat(pluginTypes)
 
     const pluginKeyrings = pluginTypes.map((domain) => {
       const accounts = pluginAccounts.filter((account) => {
         return account.fromDomain === domain
       })
-      .map(account => normalizeAddress(account.address))
+        .map(account => normalizeAddress(account.address))
 
       return {
         type: domain,
@@ -169,7 +169,7 @@ class AccountsController extends EventEmitter {
     return normalized.includes(address)
   }
 
-  async exportAppKeyForAddress(account, origin) {
+  async exportAppKeyForAddress (account, origin) {
     try {
       return this.keyringController.exportAppKeyForAddress(account, origin)
     } catch (err) {
@@ -196,7 +196,7 @@ class AccountsController extends EventEmitter {
 }
 
 // https://stackoverflow.com/a/14438954/272576
-function onlyUnique(value, index, self) {
+function onlyUnique (value, index, self) {
   return self.indexOf(value) === index
 }
 

@@ -105,7 +105,7 @@ class Routes extends Component {
     } = this.props
 
     if (Object.keys(prompts).length > Object.keys(prevPrompts).length) {
-      const newKey = Object.keys(prompts).find(promptKey => !prevPrompts[prevPrompts])
+      const newKey = Object.keys(prompts).find(promptKey => !prevPrompts[promptKey])
       showPromptsModal(prompts[newKey])
     }
   }
@@ -356,6 +356,8 @@ Routes.propTypes = {
   providerId: PropTypes.string,
   permissionsRequests: PropTypes.array,
   autoLogoutTimeLimit: PropTypes.number,
+  prompts: PropTypes.object,
+  showPromptsModal: PropTypes.func,
 }
 
 function mapStateToProps (state) {
@@ -405,7 +407,7 @@ function mapDispatchToProps (dispatch) {
     setCurrentCurrencyToUSD: () => dispatch(actions.setCurrentCurrency('usd')),
     setMouseUserState: (isMouseUser) => dispatch(actions.setMouseUserState(isMouseUser)),
     setLastActiveTime: () => dispatch(actions.setLastActiveTime()),
-    showPromptsModal: (prompt) => dispatch(actions.showModal({ name: 'SHOW_PROMPT', prompt }))
+    showPromptsModal: (prompt) => dispatch(actions.showModal({ name: 'SHOW_PROMPT', prompt })),
   }
 }
 

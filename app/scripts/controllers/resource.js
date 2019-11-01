@@ -89,28 +89,28 @@ class ResourceController extends EventEmitter {
     return deleted
   }
 
-  handleRpcRequest(req, res, _next, end, engine) {
+  handleRpcRequest (req, res, _next, end, engine) {
     const [method, opts] = req.params
-      const requestor = engine.domain
-      try {
-        switch (method) {
-          case 'add':
-            res.result = this.add(requestor, opts)
-            return end()
-          case 'update':
-            res.result = this.update(requestor, opts)
-            return end()
-          case 'remove':
-            res.result = this.remove(requestor, opts)
-            return end()
-          default:
-            res.error = rpcErrors.methodNotFound(null, `${req.method}:${method}`)
-            end(res.error)
-        }
-      } catch (err) {
-        res.error = err
-        end(err)
+    const requestor = engine.domain
+    try {
+      switch (method) {
+        case 'add':
+          res.result = this.add(requestor, opts)
+          return end()
+        case 'update':
+          res.result = this.update(requestor, opts)
+          return end()
+        case 'remove':
+          res.result = this.remove(requestor, opts)
+          return end()
+        default:
+          res.error = rpcErrors.methodNotFound(null, `${req.method}:${method}`)
+          end(res.error)
       }
+    } catch (err) {
+      res.error = err
+      end(err)
+    }
   }
 
 }

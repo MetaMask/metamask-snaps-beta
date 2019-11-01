@@ -413,10 +413,10 @@ function getFeatureFlags (state) {
 
 function getResourceTokens (state) {
   const { resources } = state.metamask
-  return resources.filter(resource => resources.indentifier)
+  return resources.filter(resource => resource.indentifier)
 }
 
 function getResourceAccounts (state) {
   const { resources } = state.metamask
-  return resources.filter(resource => resources.address)
+  return resources.filter(resource => resource.address)
 }

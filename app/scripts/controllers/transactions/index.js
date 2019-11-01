@@ -417,7 +417,7 @@ class TransactionController extends EventEmitter {
     let rawTx
     if (signedTx.serialize) {
       rawTx = ethUtil.bufferToHex(signedTx.serialize())
-    } else if (signedTx === '0x' || (signedTx.slice(0,2) === '0x' && signedTx.slice(2).match(/^[A-Fa-f0-9]+$/))) {
+    } else if (signedTx === '0x' || (signedTx.slice(0, 2) === '0x' && signedTx.slice(2).match(/^[A-Fa-f0-9]+$/))) {
       rawTx = signedTx
     } else {
       throw new Error('signedTx is not of correct type')

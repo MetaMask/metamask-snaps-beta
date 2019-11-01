@@ -4,13 +4,13 @@ import withModalProps from '../../../../helpers/higher-order-components/with-mod
 import ShowPrompt from './show-prompt.component'
 import { resolvePrompt, rejectPrompt } from '../../../../store/actions'
 
-const mapStateToProps = (state, ownProps) => {
+const mapStateToProps = (state) => {
   return {
     prompt: state.appState.modal.modalState.props.prompt,
   }
 }
 
-const mapDispatchToProps = dispatch => {
+const mapDispatchToProps = () => {
   return {
     resolvePrompt: (id, value) => resolvePrompt(id, value),
     rejectPrompt: (id) => rejectPrompt(id),
