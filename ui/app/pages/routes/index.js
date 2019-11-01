@@ -158,6 +158,11 @@ class Routes extends Component {
     return Array.isArray(permissionsRequests) && permissionsRequests.length > 0
   }
 
+  hasPrompts () {
+    const { prompts } = this.props
+    return Object.keys(prompts).length > 0
+  }
+
   hideAppHeader () {
     const { location } = this.props
 
