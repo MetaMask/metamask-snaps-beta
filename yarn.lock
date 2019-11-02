@@ -6028,6 +6028,14 @@ capnode@^4.0.1:
     crypto-random-string "^1.0.0"
     stream "0.0.2"
 
+capnode@^4.0.2:
+  version "4.0.2"
+  resolved "https://registry.yarnpkg.com/capnode/-/capnode-4.0.2.tgz#405f88de12220d9ffb0eed5a133c28761158385e"
+  integrity sha512-U+7VWe6cH1qLnZNvScGTRMU1n3pIDX8QSPmZ5gjEJniuSDIMgBpfiammo3XSZLumwDqYf8zlOnxc7tzEbRa4bA==
+  dependencies:
+    crypto-random-string "^1.0.0"
+    stream "0.0.2"
+
 capture-stack-trace@^1.0.0:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/capture-stack-trace/-/capture-stack-trace-1.0.1.tgz#a6c0bbe1f38f3aa0b92238ecb6ff42c344d4135d"
@@ -15597,27 +15605,7 @@ json-rpc-engine@^3.4.0, json-rpc-engine@^3.6.0:
     promise-to-callback "^1.0.0"
     safe-event-emitter "^1.0.1"
 
-json-rpc-engine@^5.1.3:
-  version "5.1.3"
-  resolved "https://registry.yarnpkg.com/json-rpc-engine/-/json-rpc-engine-5.1.3.tgz#d7410b649e107ed3437db33797f44c51d507002c"
-  integrity sha512-/rQm6uts6JtjOVEaeSDCJgHDTlbfKDdoR1Uh3f+6za2SwhJyz+jL9iED2aapU9Yx7decLlI7wjVUIwxRg/R7WQ==
-  dependencies:
-    async "^2.0.1"
-    eth-json-rpc-errors "^1.0.1"
-    promise-to-callback "^1.0.0"
-    safe-event-emitter "^1.0.1"
-
-json-rpc-engine@^5.1.4:
-  version "5.1.4"
-  resolved "https://registry.yarnpkg.com/json-rpc-engine/-/json-rpc-engine-5.1.4.tgz#c18d1959eb175049fa7301d4866931ae2f879e47"
-  integrity sha512-nBFWYJ1mvlZL7gqq0M9230SxedL9CbSYO1WgrFi/C1Zo+ZrHUZWLRbr7fUdlLt9TC0G+sf/aEUeuJjR2lHsMvA==
-  dependencies:
-    async "^2.0.1"
-    eth-json-rpc-errors "^1.1.0"
-    promise-to-callback "^1.0.0"
-    safe-event-emitter "^1.0.1"
-
-json-rpc-engine@^5.1.5:
+json-rpc-engine@^5.1.3, json-rpc-engine@^5.1.5:
   version "5.1.5"
   resolved "https://registry.yarnpkg.com/json-rpc-engine/-/json-rpc-engine-5.1.5.tgz#a5f9915356ea916d5305716354080723c63dede7"
   integrity sha512-HTT9HixG4j8vHYrmJIckgbISW9Q8tCkySv7x7Q8zjMpcw10wSe/dZSQ0w08VkDm3y195K4074UlvD3hxaznvlw==
@@ -17982,11 +17970,11 @@ mersenne-twister@^1.0.1:
   resolved "https://registry.yarnpkg.com/mersenne-twister/-/mersenne-twister-1.1.0.tgz#f916618ee43d7179efcf641bec4531eb9670978a"
   integrity sha1-+RZhjuQ9cXnvz2Qb7EUx65Zwl4o=
 
-metamask-inpage-provider@MetaMask/metamask-inpage-provider#plugins:
-  version "4.0.0"
-  resolved "https://codeload.github.com/MetaMask/metamask-inpage-provider/tar.gz/2884eef783b1728ac34c52e3dda601a98885ee87"
+metamask-inpage-provider@MetaMask/metamask-inpage-provider#snaps:
+  version "5.0.0"
+  resolved "https://codeload.github.com/MetaMask/metamask-inpage-provider/tar.gz/38abec68d77364fd561a74ab7c60b54982d406d8"
   dependencies:
-    capnode "^4.0.1"
+    capnode "^4.0.2"
     eth-json-rpc-errors "^2.0.0"
     fast-deep-equal "^2.0.1"
     json-rpc-engine "^5.1.5"
