@@ -164,7 +164,7 @@ class AccountsController extends EventEmitter {
       const tx = ethTx.toJSON(true)
       tx.from = fromAddress
 
-      return handler(getOrigin(address), {
+      return handler(this.getOrigin(address), {
         method: 'eth_signTransaction',
         params: [tx],
       })
@@ -181,7 +181,7 @@ class AccountsController extends EventEmitter {
         throw new Error('No keyring or plugin found for the requested account.')
       }
       const handler = this.getHandlerForAccount(address)
-      return handler(getOrigin(address), {
+      return handler(this.getOrigin(address), {
         method: 'eth_sign',
         params: [msgParams.from, msgParams.data],
       })
@@ -198,7 +198,7 @@ class AccountsController extends EventEmitter {
         throw new Error('No keyring or plugin found for the requested account.')
       }
       const handler = this.getHandlerForAccount(address)
-      return handler(getOrigin(address), {
+      return handler(this.getOrigin(address), {
         method: 'personal_sign',
         params: [msgParams.from, msgParams.data],
       })
