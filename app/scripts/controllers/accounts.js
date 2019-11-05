@@ -141,7 +141,8 @@ class AccountsController extends EventEmitter {
 
   async signTransaction (ethTx, fromAddress, opts) {
     try {
-      return this.keyringController.signTransaction(ethTx, fromAddress, opts)
+      const signedTx = await this.keyringController.signTransaction(ethTx, fromAddress, opts)
+      return signedTx
     } catch (err) {
       const address = normalizeAddress(fromAddress)
       if (!this.pluginManagesAddress(address)) {
@@ -160,7 +161,8 @@ class AccountsController extends EventEmitter {
 
   async signMessage (msgParams) {
     try {
-      return this.keyringController.signMessage(msgParams)
+      const signedMessage = await this.keyringController.signMessage(msgParams)
+      return signedMessage
     } catch (err) {
       const address = normalizeAddress(msgParams.from)
       if (!this.pluginManagesAddress(address)) {
@@ -176,7 +178,8 @@ class AccountsController extends EventEmitter {
 
   async signPersonalMessage (msgParams) {
     try {
-      return this.keyringController.signPersonalMessage(msgParams)
+      const signedPersonalMessage = await this.keyringController.signPersonalMessage(msgParams)
+      return signedPersonalMessage
     } catch (err) {
       const address = normalizeAddress(msgParams.from)
       if (!this.pluginManagesAddress(address)) {
