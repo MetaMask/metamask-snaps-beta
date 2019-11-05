@@ -36,7 +36,7 @@ class PermissionsController {
     openPopup, closePopup, pluginAccountsController,
     pluginsController, assetsController, accountsController,
     setupProvider, pluginRestrictedMethods, getApi, metamaskEventMethods,
-    notifyDomain, notifyAllDomains,
+    notifyDomain, notifyAllDomains, addPrompt,
   } = {},
   restoredState = {}
   ) {
@@ -54,7 +54,7 @@ class PermissionsController {
     this.pluginAccountsController = pluginAccountsController
     this.assetsController = assetsController
     this.accountsController = accountsController
-    this.externalRestrictedMethods = getExternalRestrictedMethods(this)
+    this.externalRestrictedMethods = getExternalRestrictedMethods(this, addPrompt)
     this.pluginRestrictedMethods = pluginRestrictedMethods
     this.getApi = getApi
     this.metamaskEventMethods = metamaskEventMethods

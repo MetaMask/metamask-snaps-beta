@@ -65,7 +65,7 @@ const pluginRestrictedMethodDescriptions = {
   newUnapprovedTx: 'Be notified with details of your new transactions',
 }
 
-function getExternalRestrictedMethods (permissionsController) {
+function getExternalRestrictedMethods (permissionsController, addPrompt) {
   const { assetsController, pluginAccountsController } = permissionsController
 
   return {
@@ -117,12 +117,12 @@ function getExternalRestrictedMethods (permissionsController) {
       },
     },
 
-    'prompt': {
+    'customPrompt': {
       description: 'Prompt you for input via popup.',
-      method: (req, res, _next, end, engine) => {
+      method: async (req, res, _next, end, engine) => {
         const requestor = engine.domain
-        prompt(`MetaMask Notice:\n${requestor} Asks:\n${req.params[0]}`)
-        res.result = true // JsonRpcEngine throws if no result or error
+        const result = await addPrompt(`MetaMask Notice: ${requestor}`, req.params[0])
+        res.result = result || true // JsonRpcEngine throws if no result or error
         end()
       },
     },

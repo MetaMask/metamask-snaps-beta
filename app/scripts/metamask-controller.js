@@ -45,6 +45,7 @@ const DetectTokensController = require('./controllers/detect-tokens')
 const ABTestController = require('./controllers/ab-test')
 const { PermissionsController } = require('./controllers/permissions')
 const PluginsController = require('./controllers/plugins')
+const PromptsController = require('./controllers/prompts')
 const ResourceController = require('./controllers/resource')
 const AccountsController = require('./controllers/accounts')
 const AddressAuditController = require('./controllers/address-audit')
@@ -248,6 +249,8 @@ module.exports = class MetamaskController extends EventEmitter {
       version,
     })
 
+    this.promptsController = new PromptsController()
+
     this.permissionsController = new PermissionsController({
       restoredPermissions: initState.PermissionsController,
       setupProvider: this.setupProvider.bind(this),
@@ -260,6 +263,7 @@ module.exports = class MetamaskController extends EventEmitter {
       getApi: this.getPluginsApi.bind(this),
       notifyDomain: this.notifyConnections.bind(this),
       notifyAllDomains: this.notifyAllConnections.bind(this),
+      addPrompt: this.promptsController.addPrompt.bind(this.promptsController),
     })
 
     this.txController = new TransactionController({
@@ -403,6 +407,7 @@ module.exports = class MetamaskController extends EventEmitter {
       AssetsController: this.assetsController.store,
       PluginAccountsController: this.pluginAccountsController.store,
       AddressAuditController: this.addressAuditController.store,
+      PromptsController: this.promptsController.store,
     })
     this.memStore.subscribe(this.sendUpdate.bind(this))
   }
@@ -667,6 +672,10 @@ module.exports = class MetamaskController extends EventEmitter {
       removePlugin: this.pluginsController.removePlugin.bind(this.pluginsController),
       removePlugins: this.pluginsController.removePlugins.bind(this.pluginsController),
       clearPluginState: this.pluginsController.clearState.bind(this.pluginsController),
+
+      // prompts
+      resolvePrompt: this.promptsController.resolvePrompt.bind(this.promptsController),
+      rejectPrompt: this.promptsController.resolvePrompt.bind(this.promptsController),
 
       // address audit controller
       clearAddressAudits: this.addressAuditController.clearState.bind(this.addressAuditController),
