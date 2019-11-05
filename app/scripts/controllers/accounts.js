@@ -46,7 +46,43 @@ class AccountsController extends EventEmitter {
   }
 
   async removeAccount (address) {
-    return this.keyringController.removeAccount(address)
+    const resources = this.pluginAccounts.resources
+    const isResourceAccount = resources.find(resource => resource.address.toLowerCase() === address.toLowerCase())
+    if (isResourceAccount) {
+      resources.forEach(({ fromDomain, address: resourceAddres }) => {
+        if (resourceAddres === address) {
+          this.pluginAccounts.remove(fromDomain, address)
+        }
+      })
+    }
+
+    const currentState = this.store.getState()
+    const accountrings = currentState.accountrings
+    const isAccountRingsAccount = accountrings.find(accountring => accountring.accounts.includes(address))
+    if (isAccountRingsAccount) {
+      const newAccountRings = []
+      accountrings.forEach(accountring => {
+        const newAccountRingsAccounts = accountring.accounts.filter(account => account !== address)
+        if (newAccountRingsAccounts.length) {
+          newAccountRings.push({ ...accountring, accounts: newAccountRingsAccounts })
+        }
+      })
+      this.store.updateState({
+        ...currentState,
+        accountrings: newAccountRings,
+      })
+    }
+
+    try {
+      const removeAccountResult = await this.keyringController.removeAccount(address)
+      return removeAccountResult
+    } catch (e) {
+      if (e.message === 'No keyring found for the requested account.' && isAccountRingsAccount) {
+        return address
+      } else {
+        throw e
+      }
+    }
   }
 
   async fullUpdate () {
