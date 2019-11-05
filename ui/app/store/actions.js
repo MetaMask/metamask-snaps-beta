@@ -391,6 +391,9 @@ var actions = {
 
   deletePlugin,
   clearPluginState,
+
+  resolvePrompt,
+  rejectPrompt,
 }
 
 module.exports = actions
@@ -2981,6 +2984,14 @@ function clearPluginState () {
   return () => {
     background.clearPluginState()
   }
+}
+
+function resolvePrompt (id, result) {
+  background.resolvePrompt(id, result)
+}
+
+function rejectPrompt (id) {
+  return background.rejectPrompt(id)
 }
 
 window.deletePlugin = deletePlugin
