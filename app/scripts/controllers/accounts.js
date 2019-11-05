@@ -46,7 +46,43 @@ class AccountsController extends EventEmitter {
   }
 
   async removeAccount (address) {
-    return this.keyringController.removeAccount(address)
+    const resources = this.pluginAccounts.resources
+    const isResourceAccount = resources.find(resource => resource.address.toLowerCase() === address.toLowerCase())
+    if (isResourceAccount) {
+      resources.forEach(({ fromDomain, address: resourceAddres }) => {
+        if (resourceAddres === address) {
+          this.pluginAccounts.remove(fromDomain, address)
+        }
+      })
+    }
+
+    const currentState = this.store.getState()
+    const accountrings = currentState.accountrings
+    const isAccountRingsAccount = accountrings.find(accountring => accountring.accounts.includes(address))
+    if (isAccountRingsAccount) {
+      const newAccountRings = []
+      accountrings.forEach(accountring => {
+        const newAccountRingsAccounts = accountring.accounts.filter(account => account !== address)
+        if (newAccountRingsAccounts.length) {
+          newAccountRings.push({ ...accountring, accounts: newAccountRingsAccounts })
+        }
+      })
+      this.store.updateState({
+        ...currentState,
+        accountrings: newAccountRings,
+      })
+    }
+
+    try {
+      const removeAccountResult = await this.keyringController.removeAccount(address)
+      return removeAccountResult
+    } catch (e) {
+      if (e.message === 'No keyring found for the requested account.' && isAccountRingsAccount) {
+        return address
+      } else {
+        throw e
+      }
+    }
   }
 
   async fullUpdate () {
@@ -63,7 +99,7 @@ class AccountsController extends EventEmitter {
       const accounts = pluginAccounts.filter((account) => {
         return account.fromDomain === domain
       })
-      .map(account => account.address)
+        .map(account => normalizeAddress(account.address))
 
       return {
         type: domain,
@@ -76,13 +112,18 @@ class AccountsController extends EventEmitter {
     return update
   }
 
-  getHandlerForAccount (address) {
+  _getUniquePluginAccountDomains (address) {
     const pluginAccounts = this.pluginAccounts.resources
     const accounts = pluginAccounts.filter(acct => normalizeAddress(acct.address) === address)
     const domains = accounts.map(acct => acct.fromDomain)
-    const uniques = domains.filter(onlyUnique)
+    const uniquePluginAccountDomains = domains.filter(onlyUnique)
+    return uniquePluginAccountDomains
+  }
 
-    if (uniques.length > 1) {
+  getHandlerForAccount (address) {
+    const uniquePluginAccountDomains = this._getUniquePluginAccountDomains(address)
+
+    if (uniquePluginAccountDomains.length > 1) {
       throw new Error(`Multiple plugins claiming ownership of account ${address}, please request from plugin directly.`)
     }
 
@@ -90,17 +131,30 @@ class AccountsController extends EventEmitter {
       throw new Error('No handlers exist to manage account.')
     }
 
-    const handler = this.pluginsController.accountMessageHandlers.get(uniques[0])
-    if (uniques.length === 0 || !handler) {
+    const handler = this.pluginsController.accountMessageHandlers.get(uniquePluginAccountDomains[0])
+    if (uniquePluginAccountDomains.length === 0 || !handler) {
       throw new Error(`No handler plugin for account ${address} found.`)
     }
 
     return handler
   }
 
+  getOrigin (address) {
+    const uniquePluginAccountDomains = this._getUniquePluginAccountDomains(address)
+
+    if (uniquePluginAccountDomains.length > 1) {
+      throw new Error(`Multiple plugins claiming ownership of account ${address}, please request from plugin directly.`)
+    }
+
+    const origin = uniquePluginAccountDomains[0]
+
+    return origin
+  }
+
   async signTransaction (ethTx, fromAddress, opts) {
     try {
-      return this.keyringController.signTransaction(ethTx, fromAddress, opts)
+      const signedTx = await this.keyringController.signTransaction(ethTx, fromAddress, opts)
+      return signedTx
     } catch (err) {
       const address = normalizeAddress(fromAddress)
       if (!this.pluginManagesAddress(address)) {
@@ -110,7 +164,7 @@ class AccountsController extends EventEmitter {
       const tx = ethTx.toJSON(true)
       tx.from = fromAddress
 
-      return handler({
+      return handler(this.getOrigin(address), {
         method: 'eth_signTransaction',
         params: [tx],
       })
@@ -119,14 +173,15 @@ class AccountsController extends EventEmitter {
 
   async signMessage (msgParams) {
     try {
-      return this.keyringController.signMessage(msgParams)
+      const signedMessage = await this.keyringController.signMessage(msgParams)
+      return signedMessage
     } catch (err) {
       const address = normalizeAddress(msgParams.from)
       if (!this.pluginManagesAddress(address)) {
         throw new Error('No keyring or plugin found for the requested account.')
       }
       const handler = this.getHandlerForAccount(address)
-      return handler({
+      return handler(this.getOrigin(address), {
         method: 'eth_sign',
         params: [msgParams.from, msgParams.data],
       })
@@ -135,14 +190,15 @@ class AccountsController extends EventEmitter {
 
   async signPersonalMessage (msgParams) {
     try {
-      return this.keyringController.signPersonalMessage(msgParams)
+      const signedPersonalMessage = await this.keyringController.signPersonalMessage(msgParams)
+      return signedPersonalMessage
     } catch (err) {
       const address = normalizeAddress(msgParams.from)
       if (!this.pluginManagesAddress(address)) {
         throw new Error('No keyring or plugin found for the requested account.')
       }
       const handler = this.getHandlerForAccount(address)
-      return handler({
+      return handler(this.getOrigin(address), {
         method: 'personal_sign',
         params: [msgParams.from, msgParams.data],
       })
@@ -159,7 +215,7 @@ class AccountsController extends EventEmitter {
     try {
       return this.keyringController.exportAppKeyForAddress(account, origin)
     } catch (err) {
-      const address = normalizeAddress(msgParams.from)
+      const address = normalizeAddress(account)
       if (!this.pluginManagesAddress(address)) {
         throw new Error('No keyring or plugin found for the requested account.')
       }
