@@ -10,7 +10,7 @@ const log = require('loglevel')
 
 function mapStateToProps (state) {
   const ethTokens = state.metamask.tokens
-  const pluginTokens = state.metamask.resources
+  const pluginTokens = selectors.getResourceTokens(state)
 
   return {
     network: state.metamask.network,

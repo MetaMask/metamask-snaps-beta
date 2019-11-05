@@ -65,6 +65,8 @@ const selectors = {
   getAddressBookEntry,
   getAddressBookEntryName,
   getFeatureFlags,
+  getResourceTokens,
+  getResourceAccounts,
 }
 
 module.exports = selectors
@@ -407,4 +409,14 @@ function getKnownMethodData (state, data) {
 
 function getFeatureFlags (state) {
   return state.metamask.featureFlags
+}
+
+function getResourceTokens (state) {
+  const { resources } = state.metamask
+  return resources.filter(resource => resource.identifier)
+}
+
+function getResourceAccounts (state) {
+  const { resources } = state.metamask
+  return resources.filter(resource => resource.address)
 }
