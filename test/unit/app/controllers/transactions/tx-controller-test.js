@@ -44,7 +44,7 @@ describe('Transaction Controller', function () {
       blockTracker: blockTrackerStub,
       signTransaction: (ethTx) => new Promise((resolve) => {
         ethTx.sign(fromAccount.key)
-        resolve()
+        resolve(ethTx)
       }),
     })
     txController.nonceTracker.getNonceLock = () => Promise.resolve({ nextNonce: 0, releaseLock: noop })

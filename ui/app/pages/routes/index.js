@@ -98,6 +98,18 @@ class Routes extends Component {
     })
   }
 
+  componentDidUpdate ({ prompts: prevPrompts = [] }) {
+    const {
+      prompts = [],
+      showPromptsModal,
+    } = this.props
+
+    if (Object.keys(prompts).length > Object.keys(prevPrompts).length) {
+      const newKey = Object.keys(prompts).find(promptKey => !prevPrompts[promptKey])
+      showPromptsModal(prompts[newKey])
+    }
+  }
+
   renderRoutes () {
     const { autoLogoutTimeLimit, setLastActiveTime } = this.props
 
@@ -344,6 +356,8 @@ Routes.propTypes = {
   providerId: PropTypes.string,
   permissionsRequests: PropTypes.array,
   autoLogoutTimeLimit: PropTypes.number,
+  prompts: PropTypes.object,
+  showPromptsModal: PropTypes.func,
 }
 
 function mapStateToProps (state) {
@@ -360,6 +374,7 @@ function mapStateToProps (state) {
 
   const {
     permissionsRequests,
+    prompts,
   } = metamask
 
   return {
@@ -381,6 +396,7 @@ function mapStateToProps (state) {
     providerId: getNetworkIdentifier(state),
     autoLogoutTimeLimit,
     permissionsRequests,
+    prompts,
   }
 }
 
@@ -391,6 +407,7 @@ function mapDispatchToProps (dispatch) {
     setCurrentCurrencyToUSD: () => dispatch(actions.setCurrentCurrency('usd')),
     setMouseUserState: (isMouseUser) => dispatch(actions.setMouseUserState(isMouseUser)),
     setLastActiveTime: () => dispatch(actions.setLastActiveTime()),
+    showPromptsModal: (prompt) => dispatch(actions.showModal({ name: 'SHOW_PROMPT', prompt })),
   }
 }
 
