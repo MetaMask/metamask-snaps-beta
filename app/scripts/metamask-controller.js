@@ -200,7 +200,7 @@ module.exports = class MetamaskController extends EventEmitter {
       pluginAccountsController: this.pluginAccountsController,
     }, initState.AccountsController)
     this.accountsController.store.subscribe((s) => this._onAccountControllerUpdate(s))
-
+    this.keyringController.memStore.subscribe((s) => this._onKeyringControllerUpdate(s))
     // detect tokens controller
     this.detectTokensController = new DetectTokensController({
       preferences: this.preferencesController,
@@ -788,6 +788,7 @@ module.exports = class MetamaskController extends EventEmitter {
       this.preferencesController.setAddresses(accounts)
       this.selectFirstIdentity()
       releaseLock()
+      await this.accountsController.fullUpdate()
       return vault
     } catch (err) {
       releaseLock()
@@ -1716,6 +1717,30 @@ module.exports = class MetamaskController extends EventEmitter {
         await this.preferencesController.setSelectedAddress(address)
       }
     }
+  }
+
+  async _onKeyringControllerUpdate (state) {
+    const {isUnlocked, keyrings} = state
+    const addresses = keyrings.reduce((acc, {accounts}) => acc.concat(accounts), [])
+
+    if (!addresses.length) {
+      return
+    }
+
+    // Ensure preferences + identities controller know about all addresses
+    this.preferencesController.addAddresses(addresses)
+    this.accountTracker.syncWithAddresses(addresses)
+
+    const wasLocked = !isUnlocked
+    if (wasLocked) {
+      const oldSelectedAddress = this.preferencesController.getSelectedAddress()
+      if (!addresses.includes(oldSelectedAddress)) {
+        const address = addresses[0]
+        await this.preferencesController.setSelectedAddress(address)
+      }
+    }
+
+    this.accountsController.fullUpdate()
   }
 
   /**
