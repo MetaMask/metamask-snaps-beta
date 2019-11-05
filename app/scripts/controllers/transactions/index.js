@@ -413,10 +413,17 @@ class TransactionController extends EventEmitter {
     // sign tx
     const fromAddress = txParams.from
     const ethTx = new Transaction(txParams)
-    await this.signEthTx(ethTx, fromAddress)
+    const signedTx = await this.signEthTx(ethTx, fromAddress)
+    let rawTx
+    if (signedTx.serialize) {
+      rawTx = ethUtil.bufferToHex(signedTx.serialize())
+    } else if (signedTx === '0x' || (signedTx.slice(0, 2) === '0x' && signedTx.slice(2).match(/^[A-Fa-f0-9]+$/))) {
+      rawTx = signedTx
+    } else {
+      throw new Error('signedTx is not of correct type')
+    }
     // set state to signed
     this.txStateManager.setTxStatusSigned(txMeta.id)
-    const rawTx = ethUtil.bufferToHex(ethTx.serialize())
     return rawTx
   }
 
