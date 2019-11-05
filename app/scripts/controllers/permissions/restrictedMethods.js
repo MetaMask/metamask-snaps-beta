@@ -106,14 +106,14 @@ function getExternalRestrictedMethods (permissionsController) {
     'wallet_manageAssets': {
       description: 'Display custom assets in your wallet.',
       method: (req, res, _next, end, engine) => {
-        assetsController.handleRpcRequest(req, res, next, end, engine)
+        assetsController.handleRpcRequest(req, res, _next, end, engine)
       },
     },
 
     'wallet_manageIdentities': {
       description: 'Provide accounts to your wallet and be responsible for their security.',
-      method: (req, res, next, end, engine) => {
-        pluginAccountsController.handleRpcRequest(req, res, next, end, engine)
+      method: (req, res, _next, end, engine) => {
+        pluginAccountsController.handleRpcRequest(req, res, _next, end, engine)
       },
     },
 

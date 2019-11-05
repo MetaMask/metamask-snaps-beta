@@ -30,12 +30,12 @@ class AccountsController extends EventEmitter {
     }, opts.initState)
     this.store = new ObservableStore(initState)
 
-    this.pluginAccounts.store.subscribe((accounts) => {
+    this.pluginAccounts.store.subscribe(() => {
       this.fullUpdate()
     })
   }
 
-  async getAccounts() {
+  async getAccounts () {
     const keyAccounts = await this.keyringController.getAccounts()
     const pluginAccounts = this.pluginAccounts.resources.map(acct => acct.address)
     return [...keyAccounts, ...pluginAccounts]
@@ -56,7 +56,7 @@ class AccountsController extends EventEmitter {
     const pluginTypes = pluginAccounts.map((account) => {
       return account.fromDomain
     })
-    .filter(onlyUnique)
+      .filter(onlyUnique)
     update.keyringTypes = update.keyringTypes.concat(pluginTypes)
 
     const pluginKeyrings = pluginTypes.map((domain) => {
@@ -155,7 +155,7 @@ class AccountsController extends EventEmitter {
     return normalized.includes(address)
   }
 
-  async exportAppKeyForAddress(account, origin) {
+  async exportAppKeyForAddress (account, origin) {
     try {
       return this.keyringController.exportAppKeyForAddress(account, origin)
     } catch (err) {
@@ -171,7 +171,7 @@ class AccountsController extends EventEmitter {
    * TO IMPLEMENT:
    */
 
-  async signTypedData (msgParams) {
+  async signTypedData () {
     throw new Error('This method is not yet supported on this plugin branch.')
   }
 
@@ -182,7 +182,7 @@ class AccountsController extends EventEmitter {
 }
 
 // https://stackoverflow.com/a/14438954/272576
-function onlyUnique(value, index, self) {
+function onlyUnique (value, index, self) {
   return self.indexOf(value) === index
 }
 

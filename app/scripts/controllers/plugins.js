@@ -297,7 +297,7 @@ class PluginsController extends EventEmitter {
     this.rpcMessageHandlers.set(pluginName, handler)
   }
 
-  _registerAccountMessageHandler(pluginName, handler) {
+  _registerAccountMessageHandler (pluginName, handler) {
     this.accountMessageHandlers.set(pluginName, handler)
   }
 

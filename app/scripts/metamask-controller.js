@@ -302,7 +302,6 @@ module.exports = class MetamaskController extends EventEmitter {
       pluginAccountsController: this.pluginAccountsController,
       openPopup: opts.openPopup,
       closePopup: opts.closePopup,
-      pluginAccountsController: this.pluginAccountsController,
       provider: this.provider,
       pluginRestrictedMethods: {
         updatePluginState: this.pluginsController.updatePluginState.bind(this.pluginsController),
