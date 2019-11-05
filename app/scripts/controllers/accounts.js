@@ -99,7 +99,7 @@ class AccountsController extends EventEmitter {
       const accounts = pluginAccounts.filter((account) => {
         return account.fromDomain === domain
       })
-      .map(account => account.address)
+        .map(account => normalizeAddress(account.address))
 
       return {
         type: domain,
@@ -195,7 +195,7 @@ class AccountsController extends EventEmitter {
     try {
       return this.keyringController.exportAppKeyForAddress(account, origin)
     } catch (err) {
-      const address = normalizeAddress(msgParams.from)
+      const address = normalizeAddress(account)
       if (!this.pluginManagesAddress(address)) {
         throw new Error('No keyring or plugin found for the requested account.')
       }
