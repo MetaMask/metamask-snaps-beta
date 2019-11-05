@@ -106,7 +106,7 @@ class AccountsController extends EventEmitter {
       if (!this.pluginManagesAddress(address)) {
         throw new Error('No keyring or plugin found for the requested account.')
       }
-      const handler = getHandlerForAccount(address)
+      const handler = this.getHandlerForAccount(address)
       const tx = ethTx.toJSON(true)
       tx.from = fromAddress
 
@@ -125,7 +125,7 @@ class AccountsController extends EventEmitter {
       if (!this.pluginManagesAddress(address)) {
         throw new Error('No keyring or plugin found for the requested account.')
       }
-      const handler = getHandlerForAccount(address)
+      const handler = this.getHandlerForAccount(address)
       return handler({
         method: 'eth_sign',
         params: [msgParams.from, msgParams.data],
@@ -141,7 +141,7 @@ class AccountsController extends EventEmitter {
       if (!this.pluginManagesAddress(address)) {
         throw new Error('No keyring or plugin found for the requested account.')
       }
-      const handler = getHandlerForAccount(address)
+      const handler = this.getHandlerForAccount(address)
       return handler({
         method: 'personal_sign',
         params: [msgParams.from, msgParams.data],
