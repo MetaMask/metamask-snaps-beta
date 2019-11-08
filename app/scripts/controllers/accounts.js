@@ -20,7 +20,7 @@ class AccountsController extends EventEmitter {
     super()
 
     const {
-      keyringController, pluginAccountsController
+      keyringController, pluginAccountsController,
     } = opts
     this.keyringController = keyringController
     this.pluginAccounts = pluginAccountsController
