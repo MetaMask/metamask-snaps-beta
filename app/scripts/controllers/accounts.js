@@ -156,6 +156,8 @@ class AccountsController extends EventEmitter {
       const signedTx = await this.keyringController.signTransaction(ethTx, fromAddress, opts)
       return signedTx
     } catch (err) {
+      this.throwIfNotMissingAccount(err)
+
       const address = normalizeAddress(fromAddress)
       if (!this.pluginManagesAddress(address)) {
         throw new Error('No keyring or plugin found for the requested account.')
@@ -171,11 +173,21 @@ class AccountsController extends EventEmitter {
     }
   }
 
+  throwIfNotMissingAccount (error) {
+    // If no keyring, resume, but otherwise, throw the error.
+    if (error.message !== 'No keyring found for the requested account.') {
+      throw error
+    }
+  }
+
   async signMessage (msgParams) {
     try {
       const signedMessage = await this.keyringController.signMessage(msgParams)
       return signedMessage
     } catch (err) {
+
+      this.throwIfNotMissingAccount(err)
+
       const address = normalizeAddress(msgParams.from)
       if (!this.pluginManagesAddress(address)) {
         throw new Error('No keyring or plugin found for the requested account.')
@@ -193,6 +205,8 @@ class AccountsController extends EventEmitter {
       const signedPersonalMessage = await this.keyringController.signPersonalMessage(msgParams)
       return signedPersonalMessage
     } catch (err) {
+      this.throwIfNotMissingAccount(err)
+
       const address = normalizeAddress(msgParams.from)
       if (!this.pluginManagesAddress(address)) {
         throw new Error('No keyring or plugin found for the requested account.')
@@ -215,6 +229,8 @@ class AccountsController extends EventEmitter {
     try {
       return this.keyringController.exportAppKeyForAddress(account, origin)
     } catch (err) {
+      this.throwIfNotMissingAccount(err)
+
       const address = normalizeAddress(account)
       if (!this.pluginManagesAddress(address)) {
         throw new Error('No keyring or plugin found for the requested account.')
