@@ -48,7 +48,8 @@
     "rollback": "./development/rollback.sh"
   },
   "resolutions": {
-    "3box/ipfs/ipld-zcash/zcash-bitcore-lib/lodash": "^4.17.12"
+    "3box/ipfs/ipld-zcash/zcash-bitcore-lib/lodash": "^4.17.12",
+    "pubnub/superagent-proxy": "^2.0.0"
   },
   "dependencies": {
     "3box": "^1.10.2",
@@ -69,6 +70,7 @@
     "browserify-derequire": "^0.9.4",
     "browserify-unibabel": "^3.0.0",
     "c3": "^0.6.7",
+    "capnode": "^4.0.1",
     "classnames": "^2.2.5",
     "clone": "^2.1.2",
     "content-hash": "^2.4.3",
@@ -115,7 +117,6 @@
     "https-proxy-agent": "^3.0.1",
     "human-standard-token-abi": "^2.0.0",
     "jazzicon": "^1.2.0",
-    "json-rpc-capabilities-middleware": "^0.17.1",
     "json-rpc-engine": "^5.1.4",
     "json-rpc-middleware-stream": "^2.1.1",
     "jsonschema": "^1.2.4",
@@ -123,7 +124,7 @@
     "lodash.shuffle": "^4.2.0",
     "loglevel": "^1.4.1",
     "luxon": "^1.8.2",
-    "metamask-inpage-provider": "rekmarks/metamask-inpage-provider#permissions",
+    "metamask-inpage-provider": "MetaMask/metamask-inpage-provider#plugins",
     "metamask-logo": "^2.1.4",
     "mkdirp": "^0.5.1",
     "multihashes": "^0.4.12",
@@ -161,12 +162,14 @@
     "react-trigger-change": "^1.0.2",
     "reactify": "^1.1.1",
     "readable-stream": "^2.3.3",
+    "realms-shim": "^1.2.1",
     "recompose": "^0.25.0",
     "redux": "^3.0.5",
     "redux-logger": "^3.0.6",
     "redux-thunk": "^2.2.0",
     "request-promise": "^4.2.1",
     "reselect": "^3.0.1",
+    "rpc-cap": "^1.0.0",
     "safe-event-emitter": "^1.0.1",
     "safe-json-stringify": "^1.2.0",
     "ses": "^0.6.4",
@@ -287,7 +290,6 @@
     "stylelint-config-standard": "^18.2.0",
     "tape": "^4.5.1",
     "testem": "^2.16.0",
-    "through2": "^2.0.3",
     "vinyl-buffer": "^1.0.1",
     "vinyl-source-stream": "^2.0.0",
     "watchify": "^3.11.1"
