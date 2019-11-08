@@ -162,6 +162,7 @@ class AccountsController extends EventEmitter {
       if (!this.pluginManagesAddress(address)) {
         throw new Error('No keyring or plugin found for the requested account.')
       }
+
       const handler = this.getHandlerForAccount(address)
       const tx = ethTx.toJSON(true)
       tx.from = fromAddress
