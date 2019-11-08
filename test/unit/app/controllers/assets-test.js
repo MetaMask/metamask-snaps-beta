@@ -48,6 +48,34 @@ describe('ResourcesController as AssetsController', () => {
     })
   })
 
+  it('adding twice should result in just one', () => {
+    let assetCount = assets.resources.length
+    assets.add(domain, sampleAsset)
+    const result = assets.resources[assetCount]
+    result.balance = '200'
+    assetCount = assets.resources.length
+
+    const clone = {}
+    for (const key in result) {
+      clone[key] = result[key]
+    }
+
+    assets.add(domain, clone)
+    const laterAssetCount = assets.resources.length
+    assert.equal(laterAssetCount, assetCount, 'should not add up')
+
+    Object.keys(result).forEach((key) => {
+      if (key === 'fromDomain') return
+      if (key === 'balance') {
+        assert.notEqual(result[key], sampleAsset[key], `${key} should be updated`)
+      } else {
+        assert.equal(result[key], sampleAsset[key], `${key} should be same`)
+      }
+    })
+  })
+
+
+
   it('should allow deleting an asset', () => {
     const assetCount = assets.resources.length
     assets.add(domain, sampleAsset)
