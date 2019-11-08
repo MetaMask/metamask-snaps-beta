@@ -74,8 +74,6 @@ describe('ResourcesController as AssetsController', () => {
     })
   })
 
-
-
   it('should allow deleting an asset', () => {
     const assetCount = assets.resources.length
     assets.add(domain, sampleAsset)
