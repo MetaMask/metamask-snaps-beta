@@ -1,4 +1,5 @@
 const ObservableStore = require('obs-store')
+const extension = require('extensionizer')
 const EventEmitter = require('safe-event-emitter')
 const extend = require('xtend')
 const {
@@ -335,6 +336,7 @@ class PluginsController extends EventEmitter {
           fetch,
           XMLHttpRequest,
           WebSocket,
+          createNotification: extension.notifications.create,
         },
         crypto,
         SubtleCrypto,
@@ -343,6 +345,7 @@ class PluginsController extends EventEmitter {
         WebSocket,
         Buffer,
         Date,
+        createNotification: extension.notifications.create,
       })
       sessedPlugin()
     } catch (err) {
