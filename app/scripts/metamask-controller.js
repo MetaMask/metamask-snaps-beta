@@ -148,7 +148,7 @@ module.exports = class MetamaskController extends EventEmitter {
       preferencesController: this.preferencesController,
       initState: initState.IncomingTransactionsController,
     })
-
+    this.incomingTransactionsController.on('newIncomingTxs', () => {})
     // account tracker watches balances, nonces, and any code at their address.
     this.accountTracker = new AccountTracker({
       provider: this.provider,
@@ -273,6 +273,8 @@ module.exports = class MetamaskController extends EventEmitter {
       setupProvider: this.setupProvider.bind(this),
       _txController: this.txController,
       _networkController: this.networkController,
+      _incomingTransactionsController: this.incomingTransactionsController,
+      _incoming: this.networkController,
       _blockTracker: this.blockTracker,
       _getAccounts: this.keyringController.getAccounts.bind(this.keyringController),
       onUnlock: this._onUnlock.bind(this),

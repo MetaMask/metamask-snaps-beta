@@ -63,6 +63,7 @@ const pluginRestrictedMethodDescriptions = {
   latest: 'Be notified when the new blocks are added to the blockchain',
   networkDidChange: 'Be notified when your selected network changes',
   newUnapprovedTx: 'Be notified with details of your new transactions',
+  newIncomingTxs: 'Be notified when new incoming transactions arrive in MetaMask',
 }
 
 function getExternalRestrictedMethods (permissionsController) {

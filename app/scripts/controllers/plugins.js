@@ -46,6 +46,7 @@ class PluginsController extends EventEmitter {
     this.setupProvider = opts.setupProvider
     this._txController = opts._txController
     this._networkController = opts._networkController
+    this._incomingTransactionsController = opts._incomingTransactionsController
     this._blockTracker = opts._blockTracker
     this._getAccounts = opts._getAccounts
     this.getApi = opts.getApi
@@ -260,6 +261,7 @@ class PluginsController extends EventEmitter {
       ...this._eventEmitterToListenerMap(this._txController),
       ...this._eventEmitterToListenerMap(this._networkController),
       ...this._eventEmitterToListenerMap(this._blockTracker),
+      ...this._eventEmitterToListenerMap(this._incomingTransactionsController),
     ].reduce((acc, methodMap) => ({ ...acc, ...methodMap }))
   }
 

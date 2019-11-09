@@ -1,3 +1,4 @@
+const EventEmitter = require('safe-event-emitter')
 const ObservableStore = require('obs-store')
 const log = require('loglevel')
 const BN = require('bn.js')
@@ -27,9 +28,10 @@ const fetch = fetchWithTimeout({
   timeout: 30000,
 })
 
-class IncomingTransactionsController {
+class IncomingTransactionsController extends EventEmitter {
 
   constructor (opts = {}) {
+    super()
     const {
       blockTracker,
       networkController,
@@ -138,6 +140,10 @@ class IncomingTransactionsController {
     }
 
     const { latestIncomingTxBlockNumber, txs: newTxs } = await this._fetchAll(address, blockToFetchFrom, network)
+
+    if (newTxs.length) {
+      this.emit('newIncomingTxs', newTxs)
+    }
 
     return {
       latestIncomingTxBlockNumber,
