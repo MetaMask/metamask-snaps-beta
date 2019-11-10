@@ -281,7 +281,7 @@ module.exports = class MetamaskController extends EventEmitter {
       initState: initState.AddressAuditController,
     })
     this.assetsController = new ResourceController({
-      requiredFields: ['symbol', 'balance', 'identifier', 'decimals', 'customViewUrl'],
+      requiredFields: ['symbol', 'balance', 'identifier', 'decimals'],
     })
 
     this.combinedResourceController = new CombinedResourceController({
