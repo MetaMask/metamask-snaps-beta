@@ -52,7 +52,7 @@ class ResourceController extends EventEmitter {
 
   getPriorResources (fromDomain, resource) {
     return this.resources.filter((resource2) => {
-      return resource2.fromDomain === fromDomain && resource.identifier === resource2.identifier
+      return resource2.fromDomain === fromDomain && resource.identifier && resource.identifier === resource2.identifier
     })
   }
 
