@@ -96,7 +96,7 @@ class AccountsController extends EventEmitter {
       const accounts = pluginAccounts.filter((account) => {
         return account.fromDomain === domain
       })
-        .map(account => normalizeAddress(account.address))
+        .map(account => ({ ...account, address: normalizeAddress(account.address) }))
 
       return {
         type: domain,
