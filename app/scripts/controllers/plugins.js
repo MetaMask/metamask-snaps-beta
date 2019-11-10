@@ -1,3 +1,4 @@
+const ethers = require('ethers')
 const ObservableStore = require('obs-store')
 const EventEmitter = require('safe-event-emitter')
 const extend = require('xtend')
@@ -334,6 +335,7 @@ class PluginsController extends EventEmitter {
         console, // Adding console for now for logging purposes.
         BigInt,
         setTimeout,
+        ethers,
         window: {
           crypto,
           SubtleCrypto,
