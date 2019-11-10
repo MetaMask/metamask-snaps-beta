@@ -1744,8 +1744,12 @@ module.exports = class MetamaskController extends EventEmitter {
     const {isUnlocked, accountrings} = state
     const addresses = accountrings
       .reduce((acc, {accounts}) => acc.concat(accounts), [])
-      .map(addr => sigUtil.normalize(addr))
-
+      .map(account => {
+        if (typeof account === 'object') {
+          return sigUtil.normalize(account.address)
+        }
+        return account
+      })
     if (!addresses.length) {
       return
     }
