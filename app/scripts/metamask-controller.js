@@ -42,6 +42,7 @@ const { PermissionsController } = require('./controllers/permissions')
 const PluginsController = require('./controllers/plugins')
 const PromptsController = require('./controllers/prompts')
 const ResourceController = require('./controllers/resource')
+const CombinedResourceController = require('./controllers/combined-resources')
 const AccountsController = require('./controllers/accounts')
 const AddressAuditController = require('./controllers/address-audit')
 const nodeify = require('./lib/nodeify')
@@ -284,6 +285,11 @@ module.exports = class MetamaskController extends EventEmitter {
       requiredFields: ['symbol', 'balance', 'identifier', 'decimals', 'customViewUrl'],
     })
 
+    this.combinedResourceController = new CombinedResourceController({
+      assetsController: this.assetsController,
+      pluginAccountsController: this.pluginAccountsController,
+    })
+
     this.promptsController = new PromptsController()
 
     this.pluginsController = new PluginsController({
@@ -369,8 +375,9 @@ module.exports = class MetamaskController extends EventEmitter {
       // Disabling to avoid piping plugin source codes to UI with every update:
       // TODO: Optimize in a different way:
       // PluginsController: this.pluginsController.store,
-      AssetsController: this.assetsController.store,
-      PluginAccountsController: this.pluginAccountsController.store,
+      // AssetsController: this.assetsController.store,
+      // PluginAccountsController: this.pluginAccountsController.store,
+      CombinedResourceController: this.combinedResourceController.store,
       AddressAuditController: this.addressAuditController.store,
       ThreeBoxController: this.threeBoxController.store,
       PromptsController: this.promptsController.store,
