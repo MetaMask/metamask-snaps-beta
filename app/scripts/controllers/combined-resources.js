@@ -26,10 +26,10 @@ class CombinedResourcesController {
 
     let newResources
     if (type === 'assets') {
-      newResources = [ pluginAccountsResources, ...state.resources ]
+      newResources = [ ...pluginAccountsResources, ...state.resources ]
       assetsResources = state.resources
     } else if (type === 'pluginAccounts') {
-      newResources = [ assetsResources, ...state.resources ]
+      newResources = [ ...assetsResources, ...state.resources ]
       pluginAccountsResources = state.resources
     }
 
