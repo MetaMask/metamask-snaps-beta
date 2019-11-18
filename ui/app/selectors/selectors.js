@@ -53,6 +53,7 @@ const selectors = {
   getNumberOfTokens,
   isEthereumNetwork,
   getAllPermissions,
+  getAllPlugins,
   getPermissionsRequests,
   getPermissionsDescriptions,
   getPermissionsHistory,
@@ -349,6 +350,10 @@ function getAdvancedInlineGasShown (state) {
 
 function getAllPermissions (state) {
   return state.metamask.domains || {}
+}
+
+function getAllPlugins (state) {
+  return state.metamask.plugins || {}
 }
 
 function getPermissionsDescriptions (state) {
