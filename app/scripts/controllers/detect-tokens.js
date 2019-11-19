@@ -39,8 +39,8 @@ class DetectTokensController {
       }
     }
 
-    const ethContract = this.web3.eth.contract(SINGLE_CALL_BALANCES_ABI).at(SINGLE_CALL_BALANCES_ADDRESS)
-    ethContract.balances([this.selectedAddress], tokensToDetect, (error, result) => {
+    const ethContract = new this.web3.eth.Contract(SINGLE_CALL_BALANCES_ABI, SINGLE_CALL_BALANCES_ADDRESS)
+    ethContract.methods.balances([this.selectedAddress], tokensToDetect).call(null, (error, result) => {
       if (error) {
         warn(`MetaMask - DetectTokensController single call balance fetch failed`, error)
         return
@@ -62,8 +62,8 @@ class DetectTokensController {
    *
    */
   async detectTokenBalance (contractAddress) {
-    const ethContract = this.web3.eth.contract(ERC20_ABI).at(contractAddress)
-    ethContract.balanceOf(this.selectedAddress, (error, result) => {
+    const ethContract = new this.web3.eth.Contract(ERC20_ABI, contractAddress)
+    ethContract.methods.balanceOf(this.selectedAddress).call(null, (error, result) => {
       if (!error) {
         if (!result.isZero()) {
           this._preferences.addToken(contractAddress, contracts[contractAddress].symbol, contracts[contractAddress].decimals)

@@ -231,10 +231,10 @@ class AccountTracker {
   async _updateAccountsViaBalanceChecker (addresses, deployedContractAddress) {
     const accounts = this.store.getState().accounts
     this.web3.setProvider(this._provider)
-    const ethContract = this.web3.eth.contract(SINGLE_CALL_BALANCES_ABI).at(deployedContractAddress)
+    const ethContract = new this.web3.eth.Contract(SINGLE_CALL_BALANCES_ABI, deployedContractAddress)
     const ethBalance = ['0x0']
 
-    ethContract.balances(addresses, ethBalance, (error, result) => {
+    ethContract.methods.balances(addresses, ethBalance).call(null, (error, result) => {
       if (error) {
         log.warn(`MetaMask - Account Tracker single call balance fetch failed`, error)
         return Promise.all(addresses.map(this._updateAccount.bind(this)))
