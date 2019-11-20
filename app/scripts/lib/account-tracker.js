@@ -14,7 +14,6 @@ const pify = require('pify')
 const SINGLE_CALL_BALANCES_ABI = require('single-call-balance-checker-abi')
 const ethers = require('ethers')
 
-const { bnToHex } = require('./util')
 const { MAINNET_CODE, RINKEBY_CODE, ROPSTEN_CODE, KOVAN_CODE } = require('../controllers/network/enums')
 const { SINGLE_CALL_BALANCES_ADDRESS, SINGLE_CALL_BALANCES_ADDRESS_RINKEBY, SINGLE_CALL_BALANCES_ADDRESS_ROPSTEN, SINGLE_CALL_BALANCES_ADDRESS_KOVAN } = require('../controllers/network/contract-addresses')
 
@@ -231,13 +230,12 @@ class AccountTracker {
   async _updateAccountsViaBalanceChecker (addresses, deployedContractAddress) {
     const accounts = this.store.getState().accounts
     const ethContract = new ethers.Contract(deployedContractAddress, SINGLE_CALL_BALANCES_ABI, this.ethersProvider)
-    const ethBalance = ['0x0']
+    const ethBalance = [ethers.constants.AddressZero]
 
     try {
-      await ethContract.balances(addresses, ethBalance)
+      const result = await ethContract.balances(addresses, ethBalance)
       addresses.forEach((address, index) => {
-        const balance = bnToHex(result[index])
-        accounts[address] = { address, balance }
+        accounts[address] = { address, balance: result[index].toHexString() }
       })
     } catch (error) {
       log.warn(`MetaMask - Account Tracker single call balance fetch failed`, error)
