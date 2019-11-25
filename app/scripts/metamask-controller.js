@@ -20,8 +20,8 @@ const createSubscriptionManager = require('eth-json-rpc-filters/subscriptionMana
 const createLoggerMiddleware = require('./lib/createLoggerMiddleware')
 const createOriginMiddleware = require('./lib/createOriginMiddleware')
 const providerAsMiddleware = require('eth-json-rpc-middleware/providerAsMiddleware')
-const providerFromEngine = require('eth-json-rpc-middleware/providerFromEngine')
-const {setupMultiplex} = require('./lib/stream-utils.js')
+const MetamaskInpageProvider = require('metamask-inpage-provider')
+const {setupMultiplex, makeDuplexPair} = require('./lib/stream-utils.js')
 const KeyringController = require('eth-keyring-controller')
 const NetworkController = require('./controllers/network')
 const PreferencesController = require('./controllers/preferences')
@@ -425,6 +425,8 @@ module.exports = class MetamaskController extends EventEmitter {
       this.removeEventListener && this.removeEventListener('update', updatePublicConfigStore)
     }
 
+    return publicConfigStore
+
     function updatePublicConfigStore (memState) {
       publicConfigStore.putState(selectPublicState(memState))
     }
@@ -438,7 +440,6 @@ module.exports = class MetamaskController extends EventEmitter {
       }
       return result
     }
-    return publicConfigStore
   }
 
   //=============================================================================
@@ -453,10 +454,11 @@ module.exports = class MetamaskController extends EventEmitter {
   getState () {
     const vault = this.keyringController.store.getState().vault
     const isInitialized = !!vault
+    const flatState = this.memStore ? this.memStore.getFlatState() : {}
 
     return {
       ...{ isInitialized },
-      ...this.memStore.getFlatState(),
+      ...flatState,
     }
   }
 
@@ -531,6 +533,9 @@ module.exports = class MetamaskController extends EventEmitter {
       setPreference: nodeify(preferencesController.setPreference, preferencesController),
       completeOnboarding: nodeify(preferencesController.completeOnboarding, preferencesController),
       addKnownMethodData: nodeify(preferencesController.addKnownMethodData, preferencesController),
+
+      // AssetsController
+      removeAsset: nodeify(this.assetsController.removeAsset, this.assetsController),
 
       // BlacklistController
       whitelistPhishingDomain: this.whitelistPhishingDomain.bind(this),
@@ -1509,7 +1514,7 @@ module.exports = class MetamaskController extends EventEmitter {
    * @param {string} originDomain - The domain requesting the stream, which
    * may trigger a blacklist reload.
    */
-  setupUntrustedCommunication (connectionStream, originDomain) {
+  setupUntrustedCommunication (connectionStream, originDomain, getSiteMetadata, isPlugin = false) {
     // Check if new connection is blacklisted
     if (this.phishingController.test(originDomain)) {
       log.debug('MetaMask - sending phishing warning for', originDomain)
@@ -1521,7 +1526,7 @@ module.exports = class MetamaskController extends EventEmitter {
     const mux = setupMultiplex(connectionStream)
 
     // messages between inpage and background
-    this.setupProviderConnection(mux.createStream('provider'), originDomain)
+    this.setupProviderConnection(mux.createStream('provider'), originDomain, getSiteMetadata, isPlugin)
     this.setupCapnodeConnection(mux.createStream('cap'), originDomain)
     this.setupPublicConfig(mux.createStream('publicConfig'))
   }
@@ -1597,8 +1602,8 @@ module.exports = class MetamaskController extends EventEmitter {
    * @param {*} outStream - The stream to provide over.
    * @param {string} origin - The URI of the requesting resource.
    */
-  setupProviderConnection (outStream, origin) {
-    const engine = this.setupProviderEngine(origin)
+  setupProviderConnection (outStream, origin, getSiteMetadata, isPlugin = false) {
+    const engine = this.setupProviderEngine(origin, getSiteMetadata, isPlugin)
 
     // setup connection
     const providerStream = createEngineStream({ engine })
@@ -1644,18 +1649,9 @@ module.exports = class MetamaskController extends EventEmitter {
   }
 
   setupProvider (origin, getSiteMetadata, isPlugin) {
-    const engine = this.setupProviderEngine(origin, getSiteMetadata, isPlugin)
-    const provider = providerFromEngine(engine)
-    provider.send = async (payload) => {
-      return new Promise((res, rej) => {
-        provider.sendAsync(payload, (err, response) => {
-          if (err) {
-            return rej(err)
-          }
-          res(response)
-        })
-      })
-    }
+    const { clientSide, serverSide } = makeDuplexPair()
+    this.setupUntrustedCommunication(serverSide, origin, getSiteMetadata, isPlugin)
+    const provider = new MetamaskInpageProvider(clientSide)
     return provider
   }
 
