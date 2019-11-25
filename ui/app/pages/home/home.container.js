@@ -45,8 +45,8 @@ const mapStateToProps = state => {
     Object.keys(getAllPermissions(state)).length > 0 ||
     Object.keys(getPermissionsHistory(state)).length > 0 ||
     Object.keys(getPermissionsLog(state)).length > 0
-  ) 
-  const hasPlugins = Object.keys(getAllPlugins(state)).length > 0 
+  )
+  const hasPlugins = Object.keys(getAllPlugins(state)).length > 0
 
   return {
     forgottenPassword,
@@ -63,7 +63,7 @@ const mapStateToProps = state => {
     permissionsRequests,
     // TODO:plugins:prod remove
     hasPermissionsData,
-    hasPlugins
+    hasPlugins,
   }
 }
 

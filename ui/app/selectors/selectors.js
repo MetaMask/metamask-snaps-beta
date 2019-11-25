@@ -357,23 +357,23 @@ function getAllPlugins (state) {
 }
 
 function getPermissionsDescriptions (state) {
-  return state.metamask.permissionsDescriptions
+  return state.metamask.permissionsDescriptions || {} 
 }
 
 function getPermissionsRequests (state) {
-  return state.metamask.permissionsRequests
+  return state.metamask.permissionsRequests || []
 }
 
 function getPermissionsHistory (state) {
-  return state.metamask.permissionsHistory
+  return state.metamask.permissionsHistory || {}
 }
 
 function getPermissionsLog (state) {
-  return state.metamask.permissionsLog
+  return state.metamask.permissionsLog || {}
 }
 
 function getSiteMetadata (state) {
-  return state.metamask.siteMetadata
+  return state.metamask.siteMetadata || {}
 }
 
 function getActiveTab (state) {

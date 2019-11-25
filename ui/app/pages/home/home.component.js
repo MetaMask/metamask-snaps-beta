@@ -111,7 +111,7 @@ export default class Home extends PureComponent {
       threeBoxFeatureFlagIsTrue,
       permissionsRequests,
       hasPermissionsData,
-      hasPlugins
+      hasPlugins,
     } = this.props
 
     if (forgottenPassword) {
