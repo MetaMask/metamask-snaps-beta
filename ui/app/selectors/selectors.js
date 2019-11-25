@@ -357,7 +357,7 @@ function getAllPlugins (state) {
 }
 
 function getPermissionsDescriptions (state) {
-  return state.metamask.permissionsDescriptions || {} 
+  return state.metamask.permissionsDescriptions || {}
 }
 
 function getPermissionsRequests (state) {
