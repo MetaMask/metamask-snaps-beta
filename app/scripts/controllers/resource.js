@@ -1,13 +1,12 @@
 const ObservableStore = require('obs-store')
 const EventEmitter = require('safe-event-emitter')
-const extend = require('xtend')
 const { errors: rpcErrors } = require('eth-json-rpc-errors')
 
 /**
  * Resource Controller
  *
  * An abstract class intended to describe a particular resource that is managed by plugins.
- * Example resources are resources and assets.
+ * Example resources are accounts and assets.
  *
  * These are things that MetaMask treats as first-class objects with distinct properties within its own UI.
  */
@@ -19,9 +18,7 @@ class ResourceController extends EventEmitter {
     const { requiredFields } = opts
     this.requiredFields = requiredFields
 
-    const initState = extend({
-      resources: [],
-    }, opts.initState)
+    const initState = { resources: [], ...opts.initState }
     this.store = new ObservableStore(initState)
   }
 

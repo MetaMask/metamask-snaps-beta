@@ -1,6 +1,5 @@
 const ObservableStore = require('obs-store')
 const EventEmitter = require('safe-event-emitter')
-const extend = require('xtend')
 const sigUtil = require('eth-sig-util')
 const normalizeAddress = sigUtil.normalize
 
@@ -25,9 +24,7 @@ class AccountsController extends EventEmitter {
     this.keyringController = keyringController
     this.pluginAccounts = pluginAccountsController
 
-    const initState = extend({
-      accountrings: [],
-    }, opts.initState)
+    const initState = { accountrings: [], ...opts.initState }
     this.store = new ObservableStore(initState)
 
     this.pluginAccounts.store.subscribe(() => {
@@ -49,8 +46,8 @@ class AccountsController extends EventEmitter {
     const resources = this.pluginAccounts.resources
     const isResourceAccount = resources.find(resource => resource.address.toLowerCase() === address.toLowerCase())
     if (isResourceAccount) {
-      resources.forEach(({ fromDomain, address: resourceAddres }) => {
-        if (resourceAddres === address) {
+      resources.forEach(({ fromDomain, address: resourceAddress }) => {
+        if (resourceAddress === address) {
           this.pluginAccounts.remove(fromDomain, address)
         }
       })
@@ -63,7 +60,7 @@ class AccountsController extends EventEmitter {
       const newAccountRings = []
       accountrings.forEach(accountring => {
         const newAccountRingsAccounts = accountring.accounts.filter(account => account !== address)
-        if (newAccountRingsAccounts.length) {
+        if (newAccountRingsAccounts.length && newAccountRingsAccounts.length !== accountring.accounts.length) {
           newAccountRings.push({ ...accountring, accounts: newAccountRingsAccounts })
         }
       })
