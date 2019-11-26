@@ -4,7 +4,7 @@ const extend = require('xtend')
 const {
   pluginRestrictedMethodDescriptions,
 } = require('./permissions/restrictedMethods')
-const { errors: rpcErrors } = require('eth-json-rpc-errors')
+const { ethErrors } = require('eth-json-rpc-errors')
 
 const isTest = process.env.IN_TEST === 'true' || process.env.METAMASK_ENV === 'test'
 const SES = (
@@ -64,7 +64,9 @@ class PluginsController extends EventEmitter {
 
     Object.values(plugins).forEach(({ pluginName, approvedPermissions, sourceCode }) => {
       console.log(`running: ${pluginName}`)
-      const ethereumProvider = this.setupProvider(pluginName, async () => { return {name: pluginName } }, true)
+      const ethereumProvider = this.setupProvider({ hostname: pluginName }, async () => {
+        return { name: pluginName }
+      }, true)
       try {
         this._startPlugin(pluginName, approvedPermissions, sourceCode, ethereumProvider)
       } catch (err) {
@@ -152,7 +154,9 @@ class PluginsController extends EventEmitter {
         const plugin = await this.authorize(pluginName)
         const { sourceCode, approvedPermissions } = plugin
         const ethereumProvider = this.setupProvider(
-          pluginName, async () => { return {name: pluginName } }, true
+          { hostname: pluginName }, async () => {
+            return {name: pluginName }
+          }, true
         )
         await this.run(
           pluginName, approvedPermissions, sourceCode, ethereumProvider
@@ -249,7 +253,9 @@ class PluginsController extends EventEmitter {
     const pluginState = this.store.getState().plugins
     const plugin = pluginState[pluginName]
     const { sourceCode, initialPermissions } = plugin
-    const ethereumProvider = this.setupProvider(pluginName, async () => { return {name: pluginName } }, true)
+    const ethereumProvider = this.setupProvider({ hostname: pluginName }, async () => {
+      return {name: pluginName }
+    }, true)
 
     return new Promise((resolve, reject) => {
 
@@ -264,7 +270,9 @@ class PluginsController extends EventEmitter {
         jsonrpc: '2.0',
         params: [ initialPermissions, { sourceCode, ethereumProvider }],
       }, (err1, res1) => {
-        if (err1) reject(err1)
+        if (err1) {
+          reject(err1)
+        }
 
         const approvedPermissions = res1.result.map(perm => perm.parentCapability)
 
@@ -294,7 +302,9 @@ class PluginsController extends EventEmitter {
   async apiRequest (plugin, origin) {
     const handler = this.apiRequestHandlers.get(plugin)
     if (!handler) {
-      throw rpcErrors.methodNotFound('apiRequest: ' + plugin)
+      throw ethErrors.rpc.methodNotFound({
+        message: 'Method Not Found: Plugin apiRequest: ' + plugin,
+      })
     }
 
     return handler(origin)
