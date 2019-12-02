@@ -235,7 +235,7 @@ module.exports = class MetamaskController extends EventEmitter {
       getApi: this.getPluginsApi.bind(this),
       notifyDomain: this.notifyConnections.bind(this),
       notifyAllDomains: this.notifyAllConnections.bind(this),
-    }, initState.PermissionsController, initState.PermissionsMetadata)
+    }, initState.PermissionsMetadata)
 
     this.txController = new TransactionController({
       initState: initState.TransactionController || initState.TransactionManager,

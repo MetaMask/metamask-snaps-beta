@@ -32,6 +32,9 @@
   "clearPlugins": {
     "message": "Clear Snaps"
   },
+  "clearPluginsDescription": {
+    "message": "Remove all Snaps and their associated permissions."
+  },
   "confirmClearPlugins": {
     "message": "Are you sure you want to remove all Snaps and their associated permissions?"
   },
@@ -56,6 +59,9 @@
   "clearPermissions": {
     "message": "Clear Permissions"
   },
+  "clearPermissionsDescription": {
+    "message": "Clear permissions so that all dapps/websites must request access again."
+  },
   "confirmClearPermissions": {
     "message": "Are you sure you want to remove all dapp/website permissions?"
   },
@@ -74,6 +80,9 @@
   "clearPermissionsActivity": {
     "message": "Clear Permissions Activity"
   },
+  "clearPermissionsActivityDescription": {
+    "message": "Clear the permissions activity log."
+  },
   "confirmClearPermissionsActivity": {
     "message": "Are you sure you want to clear the permissions activity log?"
   },
@@ -88,6 +97,9 @@
   },
   "clearPermissionsHistory": {
     "message": "Clear Permissions History"
+  },
+  "clearPermissionsHistoryDescription": {
+    "message": "Clear the permissions history."
   },
   "confirmClearPermissionsHistory": {
     "message": "Are you sure you want to clear the permissions history?"
@@ -1011,7 +1023,7 @@
     "message": "Permissions"
   },
   "permissionsSettingsDescription": {
-    "message": "Manage dapp/website permissions."
+    "message": "Manage dapp/website permissions"
   },
   "personalAddressDetected": {
     "message": "Personal address detected. Input the token contract address."

@@ -142,37 +142,32 @@ class PluginsController extends EventEmitter {
   /**
    * Adds, authorizes, and runs plugins with a plugin provider.
    */
-  async processRequestedPlugins (requestedPlugins) {
+  async processRequestedPlugin (pluginName) {
 
-    const pluginNames = requestedPlugins.map(
-      perm => perm.replace(/^wallet_plugin_/, '')
-    )
+    const result = {}
 
-    const added = await Promise.all(pluginNames.map(async (pluginName) => {
-      try {
-        await this.add(pluginName)
-        const plugin = await this.authorize(pluginName)
-        const { sourceCode, approvedPermissions } = plugin
-        const ethereumProvider = this.setupProvider(
-          { hostname: pluginName }, async () => {
-            return {name: pluginName }
-          }, true
-        )
-        await this.run(
-          pluginName, approvedPermissions, sourceCode, ethereumProvider
-        )
-        return pluginName
-      } catch (err) {
-        // TODO: figure out what to do with this error
-        console.error(`Error when adding plugin:`, err)
-      }
-    }))
-      .catch((err) => {
-        // TODO: will this ever happen?
-        console.error(`Unexpected error when adding plugins:`, err)
-      })
+    try {
 
-    return added ? added.filter(plugin => !!plugin) : []
+      await this.add(pluginName)
+      const plugin = await this.authorize(pluginName)
+      const { sourceCode, approvedPermissions } = plugin
+
+      const ethereumProvider = this.setupProvider(
+        { hostname: pluginName }, async () => {
+          return {name: pluginName }
+        }, true
+      )
+
+      await this.run(
+        pluginName, approvedPermissions, sourceCode, ethereumProvider
+      )
+    } catch (err) {
+
+      console.warn(`Error when adding plugin:`, err)
+      result.error = err
+    }
+
+    return result
   }
 
   /**
@@ -380,15 +375,28 @@ class PluginsController extends EventEmitter {
   }
 
   _startPlugin (pluginName, approvedPermissions, sourceCode, ethereumProvider) {
-    console.log(`starting plugin ${pluginName}`)
+
+    console.log(`starting plugin '${pluginName}'`)
+
     const apisToProvide = this._generateApisToProvide(approvedPermissions, pluginName)
     Object.assign(ethereumProvider, apisToProvide)
+
     try {
+
       const sessedPlugin = this.rootRealm.evaluate(sourceCode, {
+
         wallet: ethereumProvider,
         console, // Adding console for now for logging purposes.
         BigInt,
         setTimeout,
+        crypto,
+        SubtleCrypto,
+        fetch,
+        XMLHttpRequest,
+        WebSocket,
+        Buffer,
+        Date,
+
         window: {
           crypto,
           SubtleCrypto,
@@ -397,19 +405,15 @@ class PluginsController extends EventEmitter {
           XMLHttpRequest,
           WebSocket,
         },
-        crypto,
-        SubtleCrypto,
-        fetch,
-        XMLHttpRequest,
-        WebSocket,
-        Buffer,
-        Date,
       })
       sessedPlugin()
     } catch (err) {
+
+      console.log(`error encountered trying to run plugin '${pluginName}', removing it`)
       this.removePlugin(pluginName)
       throw err
     }
+
     this._setPluginToActive(pluginName)
     return true
   }

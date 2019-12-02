@@ -12,20 +12,19 @@ const {
 const createMethodMiddleware = require('./methodMiddleware')
 const createLoggerMiddleware = require('./loggerMiddleware')
 
-// Methods that do not require any permissions to use:
-const SAFE_METHODS = require('./permissions-safe-methods.json')
-
-const METADATA_STORE_KEY = 'domainMetadata'
-const LOG_STORE_KEY = 'permissionsLog'
-const HISTORY_STORE_KEY = 'permissionsHistory'
-const WALLET_METHOD_PREFIX = 'wallet_'
-const CAVEAT_NAMES = {
-  exposedAccounts: 'exposedAccounts',
-}
-const ACCOUNTS_CHANGED_NOTIFICATION = 'wallet_accountsChanged'
+const {
+  SAFE_METHODS, // methods that do not require any permissions to use
+  WALLET_PREFIX,
+  PLUGIN_PREFIX,
+  METADATA_STORE_KEY,
+  LOG_STORE_KEY,
+  HISTORY_STORE_KEY,
+  CAVEAT_NAMES,
+  NOTIFICATION_NAMES,
+} = require('./enums')
 
 function prefix (method) {
-  return WALLET_METHOD_PREFIX + method
+  return WALLET_PREFIX + method
 }
 
 class PermissionsController {
@@ -34,8 +33,7 @@ class PermissionsController {
     openPopup, closePopup, keyringController, assetsController,
     setupProvider, pluginRestrictedMethods, getApi, notifyDomain,
     notifyAllDomains,
-  } = {},
-  restoredState = {}
+  } = {}, restoredState = {}
   ) {
     this.store = new ObservableStore({
       [METADATA_STORE_KEY]: restoredState[METADATA_STORE_KEY] || {},
@@ -71,13 +69,11 @@ class PermissionsController {
       store: this.store,
       storeKey: METADATA_STORE_KEY,
       getAccounts: this.getAccounts.bind(this, origin),
-      requestAccountsPermission: this._requestPermissions.bind(
-        this, origin, { eth_accounts: {} }
-      ),
-      handleInstallPlugins: this.handleInstallPlugins.bind(this),
+      requestPermissions: this._requestPermissions.bind(this, origin),
+      installPlugins: this.installPlugins.bind(this),
     }))
     engine.push(createLoggerMiddleware({
-      walletPrefix: WALLET_METHOD_PREFIX,
+      walletPrefix: WALLET_PREFIX,
       restrictedMethods: (
         Object.keys(this.externalRestrictedMethods)
           .concat(Object.keys(this.pluginRestrictedMethods))
@@ -113,9 +109,9 @@ class PermissionsController {
 
   /**
    * @param {string} origin - The external domain id.
-   * @param {Array<string>} requestedPlugins - The names of the requested plugin permissions.
+   * @param {Object} requestedPlugins - The names of the requested plugin permissions.
    */
-  async handleInstallPlugins (origin, requestedPlugins) {
+  async installPlugins (origin, requestedPlugins) {
 
     const existingPerms = this.permissions.getPermissionsForDomain(origin).reduce(
       (acc, p) => {
@@ -124,24 +120,34 @@ class PermissionsController {
       }, {}
     )
 
-    requestedPlugins.forEach(p => {
-      if (!existingPerms[p]) {
-        throw ethErrors.provider.unauthorized(`Not authorized to install plugin '${p}'.`)
+    const result = {}
+
+    // use a for-loop so that we can return an object and await the resolution
+    // of each call to processRequestedPlugin
+    for (const pluginName of Object.keys(requestedPlugins)) {
+
+      const permissionName = PLUGIN_PREFIX + pluginName
+      result[pluginName] = {
+        permission: permissionName,
       }
-    })
 
-    const installedPlugins = await this.pluginsController.processRequestedPlugins(requestedPlugins)
+      // only allow the installation of permitted plugins
+      if (!existingPerms[permissionName]) {
 
-    if (installedPlugins.length === 0) {
-      // TODO:plugins reserve error in Ethereum error space?
-      throw ethErrors.provider.custom({
-        code: 4301,
-        message: 'Failed to install all plugins.',
-        data: requestedPlugins,
-      })
+        result[pluginName].error = ethErrors.provider.unauthorized(
+          `Not authorized to install plugin '${pluginName}'. Please request the permission for the plugin before attempting to install it.`
+        )
+      } else {
+
+        // attempt to install and run the plugin, storing any errors that
+        // occur during the process
+        result[pluginName] = {
+          ...result[pluginName],
+          ...(await this.pluginsController.processRequestedPlugin(pluginName)),
+        }
+      }
     }
-
-    return installedPlugins
+    return result
   }
 
   /**
@@ -298,7 +304,7 @@ class PermissionsController {
     )
 
     this.notifyDomain(origin, {
-      method: ACCOUNTS_CHANGED_NOTIFICATION,
+      method: NOTIFICATION_NAMES.accountsChanged,
       result: accounts,
     })
   }
@@ -373,7 +379,7 @@ class PermissionsController {
           if (methodName === 'eth_accounts') {
             this.notifyDomain(
               origin,
-              { method: ACCOUNTS_CHANGED_NOTIFICATION, result: [] }
+              { method: NOTIFICATION_NAMES.accountsChanged, result: [] }
             )
           }
 
@@ -392,7 +398,7 @@ class PermissionsController {
     domainsToDelete.forEach(d => {
       delete domains[d]
       this.notifyDomain(d, {
-        method: ACCOUNTS_CHANGED_NOTIFICATION,
+        method: NOTIFICATION_NAMES.accountsChanged,
         result: [],
       })
     })
@@ -428,7 +434,7 @@ class PermissionsController {
   clearPermissions () {
     this.permissions.clearDomains()
     this.notifyAllDomains({
-      method: ACCOUNTS_CHANGED_NOTIFICATION,
+      method: NOTIFICATION_NAMES.accountsChanged,
       result: [],
     })
   }
@@ -459,20 +465,20 @@ class PermissionsController {
    * @param {Object} opts - The CapabilitiesController options.
    * @param {Object} opts.metamaskEventMethods - Plugin-related internal event methods.
    * @param {Object} opts.pluginRestrictedMethods - Restricted methods for plugins, if any.
-   * @param {Object} opts.restoredState - The restored state, if any.
+   * @param {Object} opts.restoredPermissions - The restored permissions state, if any.
    */
   initializePermissions ({
     pluginsController,
     metamaskEventMethods = {},
     pluginRestrictedMethods = {},
-    restoredState = {},
+    restoredPermissions = {},
   } = {}) {
 
     this.pluginsController = pluginsController
     this.metamaskEventMethods = metamaskEventMethods
     this.pluginRestrictedMethods = pluginRestrictedMethods
 
-    const initState = Object.keys(restoredState)
+    const initState = Object.keys(restoredPermissions)
       .filter(k => {
         return ![
           'permissionsDescriptions',
@@ -480,7 +486,7 @@ class PermissionsController {
         ].includes(k)
       })
       .reduce((acc, k) => {
-        acc[k] = restoredState[k]
+        acc[k] = restoredPermissions[k]
         return acc
       }, {})
 
@@ -518,7 +524,7 @@ class PermissionsController {
       safeMethods: SAFE_METHODS,
 
       // optional prefix for internal methods
-      methodPrefix: WALLET_METHOD_PREFIX,
+      methodPrefix: WALLET_PREFIX,
 
       restrictedMethods: {
         ...this.externalRestrictedMethods, ...namespacedPluginRestrictedMethods,

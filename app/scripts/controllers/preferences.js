@@ -3,6 +3,7 @@ const { addInternalMethodPrefix } = require('./permissions')
 const normalizeAddress = require('eth-sig-util').normalize
 const { isValidAddress, sha3, bufferToHex } = require('ethereumjs-util')
 const extend = require('xtend')
+const { ethErrors } = require('eth-json-rpc-errors')
 
 
 class PreferencesController {
@@ -203,7 +204,11 @@ class PreferencesController {
           }
           break
         default:
-          end(new Error(`Asset of type ${type} not supported`))
+          end(ethErrors.rpc.invalidParams({
+            message: `Asset of type '${type}' not supported.`,
+            data: req,
+          }))
+          break
       }
     } else {
       next()
