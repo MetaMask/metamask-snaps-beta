@@ -124,7 +124,7 @@ class PermissionsController {
 
     // use a for-loop so that we can return an object and await the resolution
     // of each call to processRequestedPlugin
-    for (const pluginName of Object.keys(requestedPlugins)) {
+    await Promise.all(Object.keys(requestedPlugins).map(async pluginName => {
 
       const permissionName = PLUGIN_PREFIX + pluginName
       result[pluginName] = {
@@ -146,7 +146,7 @@ class PermissionsController {
           ...(await this.pluginsController.processRequestedPlugin(pluginName)),
         }
       }
-    }
+    }))
     return result
   }
 
@@ -206,34 +206,28 @@ class PermissionsController {
    * User approval callback.
    * @param {object} approved the approved request object
    */
-  async approvePermissionsRequest (approved) {
+  async approvePermissionsRequest (approved, accounts) {
     const { id } = approved.metadata
     const approval = this.pendingApprovals[id]
-    this._closePopup && this._closePopup()
+
+    delete this.pendingApprovals[id]
+    if (Object.keys(this.pendingApprovals).length === 0) {
+      this._closePopup && this._closePopup()
+    }
 
     try {
 
-      // TODO:plugins: perform plugin preflight check?
-      // e.g., is the plugin valid? can its manifest be fetched? is the manifest valid?
-      // not strictly necessary, but probably good UX.
-      // const pluginNames = this.pluginsFromPerms(approved.permissions)
+      // attempt to finalize the request and resolve it
+      await this.finalizePermissionsRequest(approved.permissions, accounts)
+      approval.resolve(approved.permissions)
 
-      const resolve = approval.resolve
-      resolve(approved.permissions)
-      delete this.pendingApprovals[id]
+    } catch (err) {
 
-    } catch (reason) {
-      const { reject } = approval
-      reject(reason)
+      // if finalization fails, reject the request
+      approval.reject(ethErrors.rpc.invalidRequest({
+        message: err.message, data: err,
+      }))
     }
-  }
-
-  pluginsFromPerms (permissions) {
-    const permStrings = Object.keys(permissions)
-    return permStrings.filter((perm) => {
-      return perm.indexOf('wallet_plugin_') === 0
-    })
-      .map(perm => perm.substr(14))
   }
 
   /**
@@ -243,9 +237,12 @@ class PermissionsController {
   async rejectPermissionsRequest (id) {
     const approval = this.pendingApprovals[id]
     const reject = approval.reject
-    reject(false) // TODO:lps:review should this be an error instead?
-    this._closePopup && this._closePopup()
+    reject(false)
+
     delete this.pendingApprovals[id]
+    if (Object.keys(this.pendingApprovals).length === 0) {
+      this._closePopup && this._closePopup()
+    }
   }
 
   /**

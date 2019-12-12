@@ -114,6 +114,11 @@ module.exports = function createRequestMiddleware ({
         // TODO
         return
 
+      case 'wallet_invokePlugin':
+
+        // TODO
+        return
+
       // a convenience method combining:
       // - wallet_requestPermissions
       // - wallet_installPlugins
