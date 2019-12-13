@@ -1,10 +1,18 @@
 const ObservableStore = require('obs-store')
 const EventEmitter = require('safe-event-emitter')
 const extend = require('xtend')
+const { ethErrors, serializeError } = require('eth-json-rpc-errors')
+
 const {
   pluginRestrictedMethodDescriptions,
 } = require('./permissions/restrictedMethods')
-const { ethErrors } = require('eth-json-rpc-errors')
+const { PLUGIN_PREFIX } = require('./permissions/enums')
+
+const ENUMS = {
+  excludeFromSerialization: [
+    'sourceCode',
+  ],
+}
 
 const isTest = process.env.IN_TEST === 'true' || process.env.METAMASK_ENV === 'test'
 const SES = (
@@ -49,6 +57,7 @@ class PluginsController extends EventEmitter {
     this._blockTracker = opts._blockTracker
     this._getAccounts = opts._getAccounts
     this._removeAllPermissionsFor = opts._removeAllPermissionsFor
+    this._getPermissionsFor = opts._getPermissionsFor
     this.getApi = opts.getApi
     this.getAppKeyForDomain = opts.getAppKeyForDomain
     this.onUnlock = opts.onUnlock
@@ -59,7 +68,9 @@ class PluginsController extends EventEmitter {
   }
 
   runExistingPlugins () {
+
     const plugins = this.store.getState().plugins
+
     if (Object.keys(plugins).length > 0) {
       console.log('running existing plugins', plugins)
     } else {
@@ -67,14 +78,22 @@ class PluginsController extends EventEmitter {
       return
     }
 
-    Object.values(plugins).forEach(({ pluginName, approvedPermissions, sourceCode }) => {
+    Object.values(plugins).forEach(({ name: pluginName, sourceCode }) => {
+
       console.log(`running: ${pluginName}`)
+      const approvedPermissions = this._getPermissionsFor(pluginName).map(
+        perm => perm.parentCapability
+      )
+
       const ethereumProvider = this.setupProvider({ hostname: pluginName }, async () => {
         return { name: pluginName }
       }, true)
+
       try {
+
         this._startPlugin(pluginName, approvedPermissions, sourceCode, ethereumProvider)
       } catch (err) {
+
         console.warn(`failed to start '${pluginName}', deleting it`)
         // Clean up failed plugins:
         this.removePlugin(pluginName)
@@ -82,8 +101,30 @@ class PluginsController extends EventEmitter {
     })
   }
 
+  /**
+   * Gets the plugin with the given name if it exists, including all data.
+   * This should not be used if the plugin is to be serializable, as e.g.
+   * the plugin sourceCode may be quite large.
+   */
   get (pluginName) {
     return this.store.getState().plugins[pluginName]
+  }
+
+  /**
+   * Gets the plugin with the given name if it exists, excluding any
+   * non-serializable or expensive-to-serialize data.
+   */
+  getSerializable (pluginName) {
+
+    const plugin = this.store.getState().plugins[pluginName]
+
+    return plugin && Object.keys(plugin).reduce((acc, key) => {
+
+      if (!ENUMS.excludeFromSerialization.includes(key)) {
+        acc[key] = plugin[key]
+      }
+      return acc
+    }, {})
   }
 
   // TODO:plugins When a plugin is first created, where should it be executed?
@@ -126,9 +167,9 @@ class PluginsController extends EventEmitter {
     }
 
     const state = this.store.getState()
-
     const newPlugins = { ...state.plugins }
     const newPluginStates = { ...state.pluginStates }
+
     pluginNames.forEach(name => {
       delete newPlugins[name]
       delete newPluginStates[name]
@@ -146,16 +187,19 @@ class PluginsController extends EventEmitter {
 
   /**
    * Adds, authorizes, and runs plugins with a plugin provider.
+   * Results from this method should be efficiently serializable.
    */
   async processRequestedPlugin (pluginName) {
 
-    const result = {}
+    let result = {}
 
     try {
 
       await this.add(pluginName)
-      const plugin = await this.authorize(pluginName)
-      const { sourceCode, approvedPermissions } = plugin
+      const {
+        plugin: { sourceCode },
+        approvedPermissions,
+      } = await this.authorize(pluginName)
 
       const ethereumProvider = this.setupProvider(
         { hostname: pluginName }, async () => {
@@ -166,10 +210,12 @@ class PluginsController extends EventEmitter {
       await this.run(
         pluginName, approvedPermissions, sourceCode, ethereumProvider
       )
+
+      result = this.getSerializable(pluginName)
     } catch (err) {
 
       console.warn(`Error when adding plugin:`, err)
-      result.error = err
+      result.error = serializeError(err)
     }
 
     return result
@@ -205,11 +251,14 @@ class PluginsController extends EventEmitter {
 
     let plugin
     try {
+
       console.log(`Fetching ${sourceUrl}`)
       const pluginSource = await fetch(sourceUrl)
       const pluginJson = await pluginSource.json()
+
       console.log(`Destructuring`, pluginJson)
       const { web3Wallet: { bundle, initialPermissions } } = pluginJson
+
       console.log(`Fetching bundle ${bundle.url}`)
       const pluginBundle = await fetch(bundle.url)
       const sourceCode = await pluginBundle.text()
@@ -226,8 +275,11 @@ class PluginsController extends EventEmitter {
 
       console.log(`Constructing plugin`)
       plugin = {
-        sourceCode,
+        // manifest: {}, // relevant manifest metadata
+        name: pluginName,
         initialPermissions: namespacedInitialPermissions,
+        permissionName: PLUGIN_PREFIX + pluginName, // so we can easily correlate them
+        sourceCode,
       }
     } catch (err) {
       throw new Error(`Problem loading plugin ${pluginName}: ${err.message}`)
@@ -237,7 +289,6 @@ class PluginsController extends EventEmitter {
     if (pluginState[pluginName]) {
       plugin = { ...pluginState[pluginName], ...plugin }
     }
-    plugin.pluginName = pluginName
 
     // store the plugin back in state
     this.store.updateState({
@@ -249,10 +300,12 @@ class PluginsController extends EventEmitter {
   }
 
   async authorize (pluginName) {
+
     console.log(`authorizing ${pluginName}`)
     const pluginState = this.store.getState().plugins
     const plugin = pluginState[pluginName]
     const { sourceCode, initialPermissions } = plugin
+
     const ethereumProvider = this.setupProvider({ hostname: pluginName }, async () => {
       return {name: pluginName }
     }, true)
@@ -261,7 +314,6 @@ class PluginsController extends EventEmitter {
 
       // Don't prompt if there are no permissions requested:
       if (Object.keys(initialPermissions).length === 0) {
-        plugin.approvedPermissions = []
         return resolve(plugin)
       }
 
@@ -276,10 +328,6 @@ class PluginsController extends EventEmitter {
 
         const approvedPermissions = res1.result.map(perm => perm.parentCapability)
 
-        // the stored initial permissions are the permissions approved
-        // by the user
-        plugin.approvedPermissions = approvedPermissions
-
         this.store.updateState({
           plugins: {
             ...pluginState,
@@ -287,7 +335,7 @@ class PluginsController extends EventEmitter {
           },
         })
 
-        resolve(plugin)
+        resolve({ plugin, approvedPermissions })
       })
     })
       .finally(() => {
@@ -356,8 +404,10 @@ class PluginsController extends EventEmitter {
       onNewTx: () => {},
       ...this.getApi(),
     }
+
     const registerRpcMessageHandler = this._registerRpcMessageHandler.bind(this, pluginName)
     const registerApiRequestHandler = this._registerApiRequestHandler.bind(this, pluginName)
+
     const apisToProvide = {
       onMetaMaskEvent,
       registerRpcMessageHandler,
@@ -368,6 +418,7 @@ class PluginsController extends EventEmitter {
     apiList.forEach(apiKey => {
       apisToProvide[apiKey] = possibleApis[apiKey]
     })
+
     return apisToProvide
   }
 

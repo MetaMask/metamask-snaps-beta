@@ -306,6 +306,7 @@ module.exports = class MetamaskController extends EventEmitter {
       _blockTracker: this.blockTracker,
       _getAccounts: this.keyringController.getAccounts.bind(this.keyringController),
       _removeAllPermissionsFor: this.permissionsController.removeAllPermissionsFor.bind(this.permissionsController),
+      _getPermissionsFor: this.permissionsController.getPermissionsFor.bind(this.permissionsController),
       getApi: this.getPluginsApi.bind(this),
       initState: initState.PluginsController,
       getAppKeyForDomain: this.getAppKeyForDomain.bind(this),
@@ -1658,9 +1659,9 @@ module.exports = class MetamaskController extends EventEmitter {
     )
   }
 
-  setupProvider (senderUrl, getSiteMetadata, isPlugin) {
+  setupProvider (senderUrl, getDomainMetadata, isPlugin) {
     const { clientSide, serverSide } = makeDuplexPair()
-    this.setupUntrustedCommunication(serverSide, senderUrl, getSiteMetadata, isPlugin)
+    this.setupUntrustedCommunication(serverSide, senderUrl, getDomainMetadata, isPlugin)
     const provider = new MetamaskInpageProvider(clientSide)
     return provider
   }

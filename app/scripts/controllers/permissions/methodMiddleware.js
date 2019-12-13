@@ -12,7 +12,7 @@ const { PLUGIN_PREFIX } = require('./enums')
  * return handlers will still process it.
  */
 module.exports = function createRequestMiddleware ({
-  store, storeKey, getAccounts, requestPermissions, installPlugins,
+  store, storeKey, getAccounts, requestPermissions, installPlugins, getPlugins
 }) {
   return createAsyncMiddleware(async (req, res, next) => {
 
@@ -91,6 +91,12 @@ module.exports = function createRequestMiddleware ({
         }
         return
 
+      // returns permitted and installed plugins to the caller
+      case 'wallet_getPlugins':
+
+        res.result = getPlugins(req.origin)       
+        return
+
       // basically syntactic sugar for calling a plugin RPC method
       // we preprocess and forward the request for completion elsewhere
       case 'wallet_invokePlugin':
@@ -108,11 +114,6 @@ module.exports = function createRequestMiddleware ({
         req.method = PLUGIN_PREFIX + req.params[0]
         req.params = [ req.params[1] ]
         break
-
-      case 'wallet_getPlugins':
-
-        // TODO
-        return
 
       // a convenience method combining:
       // - wallet_requestPermissions
@@ -140,6 +141,9 @@ module.exports = function createRequestMiddleware ({
             req.params[0]
           )
           result.permissions = await requestPermissions(requestedPermissions)
+          if (!result.permissions || !result.permissions.length) {
+            throw ethErrors.provider.userRejectedRequest({ data: req })
+          }
         } catch (err) {
           // if this fails, reject the entire request
           res.error = err
@@ -152,7 +156,7 @@ module.exports = function createRequestMiddleware ({
         const pluginPrefixRegex = new RegExp(`^${PLUGIN_PREFIX}`)
         const requestedPlugins = result.permissions
           // requestPermissions returns all permissions for the domain,
-          // so we're filtering out non-plugin and existing permissions
+          // so we're filtering out non-plugin and preexisting permissions
           .filter(p => (
             p.parentCapability.startsWith(PLUGIN_PREFIX) &&
             p.parentCapability in requestedPermissions
@@ -213,7 +217,7 @@ module.exports = function createRequestMiddleware ({
       )
     ) {
       // plugin metadata is handled here for now
-      // TODO:plugin handle this better, rename domainMetadata everywhere
+      // TODO:plugins handle this better
       let name = 'Unknown Domain'
       try {
         name = new URL(req.origin).hostname
