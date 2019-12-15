@@ -109,7 +109,7 @@
     "ethereumjs-tx": "1.3.7",
     "ethereumjs-util": "5.1.0",
     "ethereumjs-wallet": "^0.6.0",
-    "ethers": "^4.0.39",
+    "ethers": "^4.0.40",
     "etherscan-link": "^1.0.2",
     "ethjs": "^0.4.0",
     "ethjs-contract": "^0.2.3",

@@ -1,6 +1,8 @@
 const ObservableStore = require('obs-store')
 const EventEmitter = require('safe-event-emitter')
 const extend = require('xtend')
+const ethers = require('ethers')
+
 const {
   pluginRestrictedMethodDescriptions,
 } = require('./permissions/restrictedMethods')
@@ -407,6 +409,9 @@ class PluginsController extends EventEmitter {
         setTimeout,
         setInterval,
 
+        // Todo: Remove ethers.js, just for convenience:
+        ethers
+
         // Typed Arrays:
         Int8Array,
         Uint8Array,
@@ -431,6 +436,9 @@ class PluginsController extends EventEmitter {
           // Timers. TODO: Must constrain or remove for production.
           setTimeout,
           setInterval,
+
+          // Todo: Remove ethers.js, just for convenience:
+          ethers
 
           // Typed Arrays:
           Int8Array,
