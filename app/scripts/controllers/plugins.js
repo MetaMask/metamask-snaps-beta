@@ -69,13 +69,14 @@ class PluginsController extends EventEmitter {
 
     Object.values(plugins).forEach(({ pluginName, approvedPermissions, sourceCode }) => {
       console.log(`running: ${pluginName}`)
+      const permissions = approvedPermissions || []
       const ethereumProvider = this.setupProvider({ hostname: pluginName }, async () => {
         return { name: pluginName }
       }, true)
       try {
-        this._startPlugin(pluginName, approvedPermissions, sourceCode, ethereumProvider)
+        this._startPlugin(pluginName, permissions, sourceCode, ethereumProvider)
       } catch (err) {
-        console.warn(`failed to start '${pluginName}', deleting it`)
+        console.warn(`failed to start '${pluginName}', deleting it`, err)
         // Clean up failed plugins:
         this.removePlugin(pluginName)
       }
@@ -402,6 +403,10 @@ class PluginsController extends EventEmitter {
         Buffer,
         Date,
 
+        // Timers. TODO: Must constrain or remove for production.
+        setTimeout,
+        setInterval,
+
         // Typed Arrays:
         Int8Array,
         Uint8Array,
@@ -422,6 +427,10 @@ class PluginsController extends EventEmitter {
           fetch,
           XMLHttpRequest,
           WebSocket,
+
+          // Timers. TODO: Must constrain or remove for production.
+          setTimeout,
+          setInterval,
 
           // Typed Arrays:
           Int8Array,
