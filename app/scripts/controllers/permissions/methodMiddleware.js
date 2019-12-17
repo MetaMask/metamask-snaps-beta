@@ -1,7 +1,7 @@
 
 const createAsyncMiddleware = require('json-rpc-engine/src/createAsyncMiddleware')
-const { ethErrors } = require('eth-json-rpc-errors')
-const { PLUGIN_PREFIX } = require('./enums')
+const { ethErrors, serializeError} = require('eth-json-rpc-errors')
+const { PLUGIN_PREFIX, PLUGIN_PREFIX_REGEX } = require('./enums')
 
 /**
  * Middleware for preprocessing permission requests and outright handling
@@ -12,7 +12,7 @@ const { PLUGIN_PREFIX } = require('./enums')
  * return handlers will still process it.
  */
 module.exports = function createRequestMiddleware ({
-  store, storeKey, getAccounts, requestPermissions, installPlugins, getPlugins
+  store, storeKey, getAccounts, requestPermissions, installPlugins, getPlugins,
 }) {
   return createAsyncMiddleware(async (req, res, next) => {
 
@@ -94,7 +94,7 @@ module.exports = function createRequestMiddleware ({
       // returns permitted and installed plugins to the caller
       case 'wallet_getPlugins':
 
-        res.result = getPlugins(req.origin)       
+        res.result = getPlugins(req.origin)
         return
 
       // basically syntactic sugar for calling a plugin RPC method
@@ -153,7 +153,6 @@ module.exports = function createRequestMiddleware ({
         // install plugins, if any
 
         // get the names of the approved plugins
-        const pluginPrefixRegex = new RegExp(`^${PLUGIN_PREFIX}`)
         const requestedPlugins = result.permissions
           // requestPermissions returns all permissions for the domain,
           // so we're filtering out non-plugin and preexisting permissions
@@ -161,7 +160,8 @@ module.exports = function createRequestMiddleware ({
             p.parentCapability.startsWith(PLUGIN_PREFIX) &&
             p.parentCapability in requestedPermissions
           ))
-          .map(p => p.parentCapability.replace(pluginPrefixRegex, ''))
+          // convert from namespaced permissions to plugin names
+          .map(p => p.parentCapability.replace(PLUGIN_PREFIX_REGEX, ''))
           .reduce((acc, pluginName) => {
             acc[pluginName] = {}
             return acc
@@ -180,7 +180,7 @@ module.exports = function createRequestMiddleware ({
           if (!result.errors) {
             result.errors = []
           }
-          result.errors.push(err)
+          result.errors.push(serializeError(err))
         }
 
         // get whatever accounts we have
@@ -294,6 +294,7 @@ module.exports = function createRequestMiddleware ({
   // controller for installation
   async function handleInstallPlugins (origin, requestedPlugins) {
 
+    // input validation
     // we expect requestedPlugins to be an object of the form:
     // { pluginName1: {}, pluginName2: {}, ... }
     // the object values are placeholders

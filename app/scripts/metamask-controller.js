@@ -307,6 +307,7 @@ module.exports = class MetamaskController extends EventEmitter {
       _getAccounts: this.keyringController.getAccounts.bind(this.keyringController),
       _removeAllPermissionsFor: this.permissionsController.removeAllPermissionsFor.bind(this.permissionsController),
       _getPermissionsFor: this.permissionsController.getPermissionsFor.bind(this.permissionsController),
+      closeAllConnections: this.closeAllConnections.bind(this),
       getApi: this.getPluginsApi.bind(this),
       initState: initState.PluginsController,
       getAppKeyForDomain: this.getAppKeyForDomain.bind(this),
@@ -1612,7 +1613,7 @@ module.exports = class MetamaskController extends EventEmitter {
     // setup connection
     const providerStream = createEngineStream({ engine })
 
-    const connectionId = this.addConnection(origin, { engine })
+    const connectionId = this.addConnection(origin, { engine, providerStream })
 
     pump(
       outStream,
@@ -1621,10 +1622,11 @@ module.exports = class MetamaskController extends EventEmitter {
       (err) => {
         // handle any middleware cleanup
         engine._middleware.forEach((mid) => {
-          if (mid.destroy && typeof mid.destroy === 'function') {
+          if (typeof mid.destroy === 'function') {
             mid.destroy()
           }
         })
+        // in some cases, the stream is destroyed to a call to closeConnection
         connectionId && this.removeConnection(origin, connectionId)
         if (err) {
           log.error(err)
@@ -1797,8 +1799,8 @@ module.exports = class MetamaskController extends EventEmitter {
   }
 
   /**
-   * Deletes a reference to a connection, by origin and id.
-   * Ignores unknown origins.
+   * Deletes the reference to the connection with the given origin and id.
+   * Ignores unknown origins and ids.
    *
    * @param {string} origin - The connection's origin string.
    * @param {string} id - The connection's id, as returned from addConnection.
@@ -1815,6 +1817,55 @@ module.exports = class MetamaskController extends EventEmitter {
     if (Object.keys(connections.length === 0)) {
       delete this.connections[origin]
     }
+  }
+
+  /**
+   * Closes the connection with the given origin and id, and removes the
+   * reference to it.
+   * Ignores unknown origins and ids.
+   *
+   * @param {string} origin - The connection's origin string.
+   * @param {string} id - The connection's id, as returned from addConnection.
+   */
+  closeConnection (origin, id) {
+
+    const connections = this.connections[origin]
+    if (!connections) {
+      return
+    }
+
+    const { providerStream } = connections[id]
+    if (
+      providerStream && !providerStream.destroyed &&
+      typeof providerStream.destroy === 'function'
+    ) {
+      try {
+        // removeConnection will be called during stream teardown after the
+        // providerStream is destroyed
+        providerStream.destroy()
+      } catch (err) {
+        log.error('Error when destroying stream: ', err)
+      }
+    }
+  }
+
+  /**
+   * Closes all connections for the given origin, and removes the references
+   * to them.
+   * Ignores unknown origins.
+   *
+   * @param {string} origin - The origin string.
+   */
+  closeAllConnections (origin) {
+
+    const connections = this.connections[origin]
+    if (!connections) {
+      return
+    }
+
+    Object.keys(connections).forEach(id => {
+      this.closeConnection(origin, id)
+    })
   }
 
   /**

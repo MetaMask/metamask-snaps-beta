@@ -11,6 +11,7 @@ const { PLUGIN_PREFIX } = require('./permissions/enums')
 const ENUMS = {
   excludeFromSerialization: [
     'sourceCode',
+    'isActive',
   ],
 }
 
@@ -28,6 +29,12 @@ const SES = (
     }
     : require('ses')
 )
+
+const getGetDomainMetadataFunction = (pluginName) => {
+  return async () => {
+    return { name: pluginName }
+  }
+}
 
 /*
  * A plugin is initialized in three phases:
@@ -61,6 +68,7 @@ class PluginsController extends EventEmitter {
     this.getApi = opts.getApi
     this.getAppKeyForDomain = opts.getAppKeyForDomain
     this.onUnlock = opts.onUnlock
+    this.closeAllConnections = opts.closeAllConnections
 
     this.rpcMessageHandlers = new Map()
     this.apiRequestHandlers = new Map()
@@ -85,9 +93,11 @@ class PluginsController extends EventEmitter {
         perm => perm.parentCapability
       )
 
-      const ethereumProvider = this.setupProvider({ hostname: pluginName }, async () => {
-        return { name: pluginName }
-      }, true)
+      const ethereumProvider = this.setupProvider(
+        { hostname: pluginName },
+        getGetDomainMetadataFunction(pluginName),
+        true
+      )
 
       try {
 
@@ -116,7 +126,7 @@ class PluginsController extends EventEmitter {
    */
   getSerializable (pluginName) {
 
-    const plugin = this.store.getState().plugins[pluginName]
+    const plugin = this.get(pluginName)
 
     return plugin && Object.keys(plugin).reduce((acc, key) => {
 
@@ -136,7 +146,6 @@ class PluginsController extends EventEmitter {
     const newPluginStates = { ...state.pluginStates, [pluginName]: newPluginState }
 
     this.store.updateState({
-      ...state,
       pluginStates: newPluginStates,
     })
   }
@@ -148,12 +157,15 @@ class PluginsController extends EventEmitter {
   clearPluginState () {
     this.rpcMessageHandlers.clear()
     this.apiRequestHandlers.clear()
-    const pluginDomains = Object.keys(this.store.getState().plugins)
+    const pluginNames = Object.keys(this.store.getState().plugins)
     this.store.updateState({
       plugins: {},
       pluginStates: {},
     })
-    this._removeAllPermissionsFor(pluginDomains)
+    pluginNames.forEach(name => {
+      this.closeAllConnections(name)
+    })
+    this._removeAllPermissionsFor(pluginNames)
   }
 
   removePlugin (pluginName) {
@@ -175,11 +187,11 @@ class PluginsController extends EventEmitter {
       delete newPluginStates[name]
       this.rpcMessageHandlers.delete(name)
       this.apiRequestHandlers.delete(name)
+      this.closeAllConnections(name)
     })
     this._removeAllPermissionsFor(pluginNames)
 
     this.store.updateState({
-      ...state,
       plugins: newPlugins,
       pluginStates: newPluginStates,
     })
@@ -195,16 +207,15 @@ class PluginsController extends EventEmitter {
 
     try {
 
-      await this.add(pluginName)
-      const {
-        plugin: { sourceCode },
-        approvedPermissions,
-      } = await this.authorize(pluginName)
-
       const ethereumProvider = this.setupProvider(
-        { hostname: pluginName }, async () => {
-          return {name: pluginName }
-        }, true
+        { hostname: pluginName },
+        getGetDomainMetadataFunction(pluginName),
+        true
+      )
+
+      const { sourceCode } = await this.add(pluginName)
+      const { approvedPermissions } = await this.authorize(
+        pluginName, ethereumProvider
       )
 
       await this.run(
@@ -240,10 +251,10 @@ class PluginsController extends EventEmitter {
   }
 
   async _add (pluginName, sourceUrl) {
+
     if (!sourceUrl) {
       sourceUrl = pluginName
     }
-    const pluginState = this.store.getState().plugins
 
     if (!pluginName || typeof pluginName !== 'string') {
       throw new Error(`Invalid plugin name: ${pluginName}`)
@@ -285,32 +296,32 @@ class PluginsController extends EventEmitter {
       throw new Error(`Problem loading plugin ${pluginName}: ${err.message}`)
     }
 
+    // always retrieve state close to the call to updateState
+    const pluginsState = this.store.getState().plugins
+
     // restore relevant plugin state if it exists
-    if (pluginState[pluginName]) {
-      plugin = { ...pluginState[pluginName], ...plugin }
+    if (pluginsState[pluginName]) {
+      plugin = { ...pluginsState[pluginName], ...plugin }
     }
 
     // store the plugin back in state
     this.store.updateState({
       plugins: {
-        ...pluginState,
+        ...pluginsState,
         [pluginName]: plugin,
       },
     })
+
+    return plugin
   }
 
-  async authorize (pluginName) {
-
-    console.log(`authorizing ${pluginName}`)
-    const pluginState = this.store.getState().plugins
-    const plugin = pluginState[pluginName]
-    const { sourceCode, initialPermissions } = plugin
-
-    const ethereumProvider = this.setupProvider({ hostname: pluginName }, async () => {
-      return {name: pluginName }
-    }, true)
-
+  authorize (pluginName, ethereumProvider) {
     return new Promise((resolve, reject) => {
+
+      console.log(`authorizing ${pluginName}`)
+      const pluginsState = this.store.getState().plugins
+      const plugin = pluginsState[pluginName]
+      const { initialPermissions } = plugin
 
       // Don't prompt if there are no permissions requested:
       if (Object.keys(initialPermissions).length === 0) {
@@ -320,22 +331,16 @@ class PluginsController extends EventEmitter {
       ethereumProvider.sendAsync({
         method: 'wallet_requestPermissions',
         jsonrpc: '2.0',
-        params: [ initialPermissions, { sourceCode, ethereumProvider }],
-      }, (err1, res1) => {
-        if (err1) {
-          reject(err1)
+        params: [ initialPermissions ],
+      }, (err, res) => {
+
+        if (err) {
+          reject(err)
         }
 
-        const approvedPermissions = res1.result.map(perm => perm.parentCapability)
+        const approvedPermissions = res.result.map(perm => perm.parentCapability)
 
-        this.store.updateState({
-          plugins: {
-            ...pluginState,
-            [pluginName]: plugin,
-          },
-        })
-
-        resolve({ plugin, approvedPermissions })
+        resolve({ approvedPermissions, ethereumProvider })
       })
     })
       .finally(() => {

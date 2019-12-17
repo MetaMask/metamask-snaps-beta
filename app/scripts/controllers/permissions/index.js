@@ -3,7 +3,7 @@ const asMiddleware = require('json-rpc-engine/src/asMiddleware')
 const createAsyncMiddleware = require('json-rpc-engine/src/createAsyncMiddleware')
 const ObservableStore = require('obs-store')
 const RpcCap = require('rpc-cap').CapabilitiesController
-const { ethErrors } = require('eth-json-rpc-errors')
+const { ethErrors, serializeError } = require('eth-json-rpc-errors')
 
 const {
   getExternalRestrictedMethods,
@@ -16,6 +16,7 @@ const {
   SAFE_METHODS, // methods that do not require any permissions to use
   WALLET_PREFIX,
   PLUGIN_PREFIX,
+  PLUGIN_PREFIX_REGEX,
   METADATA_STORE_KEY,
   LOG_STORE_KEY,
   HISTORY_STORE_KEY,
@@ -26,6 +27,11 @@ const {
 function prefix (method) {
   return WALLET_PREFIX + method
 }
+
+// TODO:plugins standardize errors
+const pluginNotInstalledError = serializeError(
+  new Error('Plugin permitted but not installed.')
+)
 
 class PermissionsController {
 
@@ -441,21 +447,19 @@ class PermissionsController {
     return result
   }
 
-  async getPermittedPlugins (origin) {
-
-    const pluginPrefixRegex = new RegExp(`^${PLUGIN_PREFIX}`)
+  getPermittedPlugins (origin) {
 
     return this.getPermissionsFor(origin).reduce(
       (acc, p) => {
 
-        if (p.parentCapability.startsWith(pluginPrefix)) {
+        if (p.parentCapability.startsWith(PLUGIN_PREFIX)) {
 
-          const pluginName = p.parentCapability.replace(pluginPrefixRegex, '')
+          const pluginName = p.parentCapability.replace(PLUGIN_PREFIX_REGEX, '')
           const plugin = this.pluginsController.getSerializable(pluginName)
 
-          acc[pluginName] = plugin
-            ? plugin
-            : { error: new Error('Plugin permitted but not installed.')}
+          acc[pluginName] = plugin || {
+            error: pluginNotInstalledError,
+          }
         }
         return acc
       }, {}
