@@ -1,6 +1,8 @@
 const ObservableStore = require('obs-store')
 const EventEmitter = require('safe-event-emitter')
 const extend = require('xtend')
+const ethers = require('ethers')
+
 const {
   pluginRestrictedMethodDescriptions,
 } = require('./permissions/restrictedMethods')
@@ -69,13 +71,14 @@ class PluginsController extends EventEmitter {
 
     Object.values(plugins).forEach(({ pluginName, approvedPermissions, sourceCode }) => {
       console.log(`running: ${pluginName}`)
+      const permissions = approvedPermissions || []
       const ethereumProvider = this.setupProvider({ hostname: pluginName }, async () => {
         return { name: pluginName }
       }, true)
       try {
-        this._startPlugin(pluginName, approvedPermissions, sourceCode, ethereumProvider)
+        this._startPlugin(pluginName, permissions, sourceCode, ethereumProvider)
       } catch (err) {
-        console.warn(`failed to start '${pluginName}', deleting it`)
+        console.warn(`failed to start '${pluginName}', deleting it`, err)
         // Clean up failed plugins:
         this.removePlugin(pluginName)
       }
@@ -402,6 +405,26 @@ class PluginsController extends EventEmitter {
         Buffer,
         Date,
 
+        // Timers. TODO: Must constrain or remove for production.
+        setTimeout,
+        setInterval,
+
+        // Todo: Remove ethers.js, just for convenience:
+        ethers,
+
+        // Typed Arrays:
+        Int8Array,
+        Uint8Array,
+        Uint8ClampedArray,
+        Int16Array,
+        Uint16Array,
+        Int32Array,
+        Uint32Array,
+        Float32Array,
+        Float64Array,
+        BigInt64Array,
+        BigUint64Array,
+
         window: {
           crypto,
           SubtleCrypto,
@@ -409,6 +432,26 @@ class PluginsController extends EventEmitter {
           fetch,
           XMLHttpRequest,
           WebSocket,
+
+          // Timers. TODO: Must constrain or remove for production.
+          setTimeout,
+          setInterval,
+
+          // Todo: Remove ethers.js, just for convenience:
+          ethers,
+
+          // Typed Arrays:
+          Int8Array,
+          Uint8Array,
+          Uint8ClampedArray,
+          Int16Array,
+          Uint16Array,
+          Int32Array,
+          Uint32Array,
+          Float32Array,
+          Float64Array,
+          BigInt64Array,
+          BigUint64Array,
         },
       })
       sessedPlugin()

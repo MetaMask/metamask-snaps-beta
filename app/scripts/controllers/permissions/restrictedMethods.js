@@ -146,7 +146,7 @@ function getExternalRestrictedMethods (permissionsController) {
           // Here is where we would invoke the message on that plugin iff possible.
           const handler = permissionsController.pluginsController.rpcMessageHandlers.get(origin)
           if (!handler) {
-            res.error = ethErrors.methodNotFound({
+            res.error = ethErrors.rpc.methodNotFound({
               message: `Plugin RPC message handler not found.`, data: req.method,
             })
             return end(res.error)
