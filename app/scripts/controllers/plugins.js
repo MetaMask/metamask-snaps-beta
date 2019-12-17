@@ -438,7 +438,7 @@ class PluginsController extends EventEmitter {
           setInterval,
 
           // Todo: Remove ethers.js, just for convenience:
-          ethers
+          ethers,
 
           // Typed Arrays:
           Int8Array,
