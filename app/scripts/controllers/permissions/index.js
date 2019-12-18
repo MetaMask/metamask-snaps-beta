@@ -58,7 +58,9 @@ class PermissionsController {
     this.getApi = getApi
   }
 
+  //=============================================================================
   // Middleware-related methods
+  //=============================================================================
 
   createMiddleware ({ origin, extensionId, isPlugin }) {
 
@@ -142,7 +144,9 @@ class PermissionsController {
     })
   }
 
+  //=============================================================================
   // Permission-related methods
+  //=============================================================================
 
   /**
    * User approval callback.
@@ -270,7 +274,9 @@ class PermissionsController {
     this.permissions.setDomains(domains)
   }
 
+  //=============================================================================
   // Caveat-related methods
+  //=============================================================================
 
   /**
    * Gets all caveats for the given origin and permission, or returns null
@@ -295,7 +301,9 @@ class PermissionsController {
     return this.permissions.getCaveat(origin, permission, caveatName)
   }
 
+  //=============================================================================
   // Account-related methods
+  //=============================================================================
 
   /**
    * Returns the accounts that should be exposed for the given origin domain,
@@ -406,7 +414,9 @@ class PermissionsController {
     })
   }
 
+  //=============================================================================
   // Plugin-related methods
+  //=============================================================================
 
   /**
    * @param {string} origin - The external domain id.
@@ -466,7 +476,9 @@ class PermissionsController {
     )
   }
 
+  //=============================================================================
   // State-related methods
+  //=============================================================================
 
   /**
    * Removes all known domains and their related permissions.
@@ -497,7 +509,9 @@ class PermissionsController {
     })
   }
 
+  //=============================================================================
   // rpc-cap-related methods
+  //=============================================================================
 
   /**
    * Initializes the underlying CapabilitiesController.
