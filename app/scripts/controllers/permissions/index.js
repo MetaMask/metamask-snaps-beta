@@ -24,10 +24,6 @@ const {
   NOTIFICATION_NAMES,
 } = require('./enums')
 
-function prefix (method) {
-  return WALLET_PREFIX + method
-}
-
 // TODO:plugins standardize errors
 const pluginNotInstalledError = serializeError(
   new Error('Plugin permitted but not installed.')
@@ -62,6 +58,15 @@ class PermissionsController {
   // Middleware-related methods
   //=============================================================================
 
+  /**
+   * Create the primary permissions middleware, for use in the extension's RPC
+   * middleware stack.
+   *
+   * @param {Object} opts - The options object.
+   * @param {string} opts.origin - The requesting origin.
+   * @param {string} opts.extensionId - The origin's extensionId, if any.
+   * @param {boolean} opts.isPlugin - Whether the requesting origin is a plugin.
+   */
   createMiddleware ({ origin, extensionId, isPlugin }) {
 
     if (extensionId) {
@@ -100,7 +105,10 @@ class PermissionsController {
   }
 
   /**
-   * Create middleware for prevent non-plugins from accessing methods only available to plugins
+   * Create middleware for prevent non-plugins from accessing methods only
+   * available to plugins.
+   *
+   * @param {boolean} isPlugin - Whether the requesting origin is a plugin.
    */
   createPluginMethodRestrictionMiddleware (isPlugin) {
     return createAsyncMiddleware(async (req, res, next) => {
@@ -150,6 +158,7 @@ class PermissionsController {
 
   /**
    * User approval callback.
+   *
    * @param {object} approved the approved request object
    */
   async approvePermissionsRequest (approved, accounts) {
@@ -178,6 +187,7 @@ class PermissionsController {
 
   /**
    * User rejection callback.
+   *
    * @param {string} id the id of the rejected request
    */
   async rejectPermissionsRequest (id) {
@@ -227,6 +237,7 @@ class PermissionsController {
 
   /**
    * Gets all granted permissions for the given domain, if any.
+   *
    * @param {string} origin - The origin to get permissions for.
    */
   getPermissionsFor (origin) {
@@ -235,6 +246,7 @@ class PermissionsController {
 
   /**
    * Removes the given permissions for the given domain.
+   *
    * @param {object} domains { origin: [permissions] }
    */
   removePermissionsFor (domains) {
@@ -260,6 +272,7 @@ class PermissionsController {
 
   /**
    * Removes all permissions for the given domains.
+   *
    * @param {Array<string>} domainsToDelete - The domains to remove all permissions for.
    */
   removeAllPermissionsFor (domainsToDelete) {
@@ -419,6 +432,10 @@ class PermissionsController {
   //=============================================================================
 
   /**
+   * Install the requested plugins, if the origin has their corresponding
+   * permissions.
+   * For use with the wallet_installPlugins and wallet_enable RPC methods.
+   *
    * @param {string} origin - The external domain id.
    * @param {Object} requestedPlugins - The names of the requested plugin permissions.
    */
@@ -457,6 +474,12 @@ class PermissionsController {
     return result
   }
 
+  /**
+   * Get the permitted plugins for the given origin, by plugin name.
+   * Recall that plugin names !== permission names.
+   *
+   * @param {string} origin - The origin to get the permitted plugins for.
+   */
   getPermittedPlugins (origin) {
 
     return this.getPermissionsFor(origin).reduce(
@@ -612,5 +635,5 @@ class PermissionsController {
 
 module.exports = {
   PermissionsController,
-  addInternalMethodPrefix: prefix,
+  INTERNAL_METHOD_PREFIX: WALLET_PREFIX,
 }
