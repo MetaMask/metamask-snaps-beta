@@ -329,7 +329,9 @@ module.exports = function createRequestMiddleware ({
   }
 
   /**
+   * Saves the metadata for this middleware's origin.
    *
+   * @param {Object} metadata - The metadata.
    */
   function saveDomainMetadata (metadata) {
 

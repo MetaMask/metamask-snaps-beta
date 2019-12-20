@@ -76,7 +76,7 @@ class PluginsController extends EventEmitter {
     this.getAppKeyForDomain = opts.getAppKeyForDomain
     this.onUnlock = opts.onUnlock
     this.closeAllConnections = opts.closeAllConnections
-    this._listenerMethods = this._generateMetaMaskListenerMethodsMap(
+    this._eventNamesToEventEmitters = this._getEventNamesToEventEmitters(
       opts._metaMaskEventEmitters
     )
 
@@ -202,22 +202,23 @@ class PluginsController extends EventEmitter {
   }
 
   /**
-   * Gets the listener method names so that they can be mapped to
+   * Gets the event listener method names so that they can be mapped to
    * permissions in the permissions controller.
+   * The method names are at this point the same as the event names.
    */
   getListenerMethods () {
-    return Object.keys(this._listenerMethods)
+    return Object.keys(this._eventNamesToEventEmitters)
   }
 
   /**
    * Removes all plugin MetaMask event listeners and clears all listener maps.
    */
   _removeAllMetaMaskEventListeners () {
-    this.metamaskEventListeners.forEach((listenerMap) => {
-      listenerMap.forEach((removeListener) => {
+    this.metamaskEventListeners.forEach((listenerRemovalMap) => {
+      listenerRemovalMap.forEach((removeListener) => {
         removeListener()
       })
-      listenerMap.clear()
+      listenerRemovalMap.clear()
     })
     this.metamaskEventListeners.clear()
   }
@@ -231,15 +232,15 @@ class PluginsController extends EventEmitter {
    */
   _removeMetaMaskEventListeners (pluginName) {
 
-    const listenerMap = this.metamaskEventListeners.get(pluginName)
-    if (!listenerMap) {
+    const listenerRemovalMap = this.metamaskEventListeners.get(pluginName)
+    if (!listenerRemovalMap) {
       return
     }
 
-    listenerMap.forEach((removeListener) => {
+    listenerRemovalMap.forEach((removeListener) => {
       removeListener()
     })
-    listenerMap.clear()
+    listenerRemovalMap.clear()
 
     this.metamaskEventListeners.delete(pluginName)
   }
@@ -297,7 +298,7 @@ class PluginsController extends EventEmitter {
     // if the plugin is already installed and active, just return it
     const plugin = this.get(pluginName)
     if (plugin && plugin.isActive) {
-      return { ...this.getSerializable(pluginName) }
+      return this.getSerializable(pluginName)
     }
 
     try {
@@ -318,7 +319,7 @@ class PluginsController extends EventEmitter {
         pluginName, approvedPermissions, sourceCode, ethereumProvider
       )
 
-      return { ...this.getSerializable(pluginName) }
+      return this.getSerializable(pluginName)
 
     } catch (err) {
 
@@ -485,35 +486,32 @@ class PluginsController extends EventEmitter {
   }
 
   /**
-   * Takes an EventEmitter's methods to itself for reverse lookup.
-   * See _generateMetaMaskListenerMethodsMap for usage.
-   *
-   * @param {EventEmitter} eventEmitter - The EventEmitter.
-   */
-  _eventEmitterToListenerMap (eventEmitter) {
-    return eventEmitter.eventNames().reduce((acc, eventName) => {
-
-      if (pluginRestrictedMethodDescriptions[eventName]) {
-
-        // keep a reference to the emitter so we can add and remove listeners
-        acc[eventName] = {
-          eventEmitter,
-        }
-      }
-      return acc
-    }, {})
-  }
-
-  /**
-   * Used in constructor to generate a map of event names to EventEmitters for
-   * adding and removing event listeners.
-   * See _eventEmitterToListenerMap for implementation details.
+   * Takes an array of EventEmitters and maps their event names to their emitter
+   * for reverse lookup.
+   * Used for adding and removing plugin event listeners.
+   * See. _createMetaMaskEventListener.
    *
    * @param {Array<EventEmitter>} eventEmitters - The EventEmitters to get event names from.
+   * @returns {Object<string, EventEmitter>} - An object of event names to EventEmitter objects.
    */
-  _generateMetaMaskListenerMethodsMap (eventEmitters) {
-    return eventEmitters.reduce((acc, emitter) => {
-      return { ...acc, ...this._eventEmitterToListenerMap(emitter)}
+  _getEventNamesToEventEmitters (eventEmitters) {
+    return eventEmitters.reduce((eventToEmitterMap, eventEmitter) => {
+
+      // get the map for the current emitter
+      const currentMap = eventEmitter.eventNames().reduce((acc, eventName) => {
+
+        // add to possible events to listen for if the permissions system
+        // knows about it
+        if (pluginRestrictedMethodDescriptions[eventName]) {
+          acc[eventName] = {
+            eventEmitter,
+          }
+        }
+        return acc
+      }, {})
+
+      // merge the current map into the complete map
+      return { ...eventToEmitterMap, ...currentMap }
     }, {})
   }
 
@@ -527,14 +525,14 @@ class PluginsController extends EventEmitter {
 
     const approvedListenerMethods = {}
     approvedPermissions.forEach(approvedPermission => {
-      if (this._listenerMethods[approvedPermission]) {
-        approvedListenerMethods[approvedPermission] = this._listenerMethods[approvedPermission]
+      if (this._eventNamesToEventEmitters[approvedPermission]) {
+        approvedListenerMethods[approvedPermission] = this._eventNamesToEventEmitters[approvedPermission]
       }
     })
 
     // keep track of listeners for later removal
-    const registeredListenersMap = new Map()
-    this.metamaskEventListeners.set(pluginName, registeredListenersMap)
+    const listenerRemovalMap = new Map()
+    this.metamaskEventListeners.set(pluginName, listenerRemovalMap)
 
     return (eventName, cb) => {
 
@@ -545,7 +543,7 @@ class PluginsController extends EventEmitter {
 
       // throw error if method is unknown or unpermitted
       if (!approvedListenerMethods[eventName]) {
-        if (!this._listenerMethods[eventName]) {
+        if (!this._eventNamesToEventEmitters[eventName]) {
           throw new Error('Unknown event name.')
         } else {
           throw new Error('Unpermitted event name.')
@@ -553,16 +551,18 @@ class PluginsController extends EventEmitter {
       }
 
       // remove any existing listener
-      if (registeredListenersMap.has(eventName)) {
-        // call the stored removal function, it will be replaced later
-        registeredListenersMap.get(eventName)()
+      if (listenerRemovalMap.has(eventName)) {
+        // call the stored removal function, it is about to be replaced
+        listenerRemovalMap.get(eventName)()
       }
 
       const { eventEmitter } = approvedListenerMethods[eventName]
 
-      // add listener and store reference to removal function
+      // add listener
       eventEmitter.on(eventName, cb)
-      registeredListenersMap.set(
+
+      // store reference to removal function
+      listenerRemovalMap.set(
         eventName,
         () => eventEmitter.removeListener(eventName, cb),
       )
