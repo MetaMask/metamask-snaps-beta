@@ -292,7 +292,11 @@ class PluginsController extends EventEmitter {
    */
   async processRequestedPlugin (pluginName) {
 
-    let result = {}
+    // if the plugin is already installed and active, just return it
+    const { isActive } = this.get(pluginName)
+    if (isActive) {
+      return { ...this.getSerializable(pluginName) }
+    }
 
     try {
 
@@ -312,15 +316,13 @@ class PluginsController extends EventEmitter {
         pluginName, approvedPermissions, sourceCode, ethereumProvider
       )
 
-      result = this.getSerializable(pluginName)
+      return { ...this.getSerializable(pluginName) }
 
     } catch (err) {
 
       console.warn(`Error when adding plugin:`, err)
-      result.error = serializeError(err)
+      return { error: serializeError(err) }
     }
-
-    return result
   }
 
   /**
