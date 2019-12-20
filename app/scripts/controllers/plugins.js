@@ -60,7 +60,9 @@ class PluginsController extends EventEmitter {
 
     // TODO:SECURITY disable errorStackMode for production
     this.rootRealm = SES.makeSESRootRealm({
-      consoleMode: 'allow', errorStackMode: 'allow', mathRandomMode: 'allow',
+      consoleMode: 'allow',
+      errorStackMode: 'allow',
+      mathRandomMode: 'allow',
     })
 
     this.setupProvider = opts.setupProvider
@@ -293,8 +295,8 @@ class PluginsController extends EventEmitter {
   async processRequestedPlugin (pluginName) {
 
     // if the plugin is already installed and active, just return it
-    const { isActive } = this.get(pluginName)
-    if (isActive) {
+    const plugin = this.get(pluginName)
+    if (plugin && plugin.isActive) {
       return { ...this.getSerializable(pluginName) }
     }
 
