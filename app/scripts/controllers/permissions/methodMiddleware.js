@@ -12,9 +12,15 @@ const { PLUGIN_PREFIX, PLUGIN_PREFIX_REGEX } = require('./enums')
  * return handlers will still process it.
  */
 module.exports = function createRequestMiddleware ({
-  store, storeKey, getAccounts, requestPermissions, installPlugins, getPlugins,
+  origin, isPlugin, store, metadataStoreKey, getAccounts,
+  requestPermissions, installPlugins, getPlugins,
 }) {
   return createAsyncMiddleware(async (req, res, next) => {
+
+    // defensive programming
+    if (req.origin !== origin) {
+      throw new Error('Fatal: Request origin does not match middleware origin.')
+    }
 
     if (
       typeof req.method !== 'string'
@@ -85,7 +91,7 @@ module.exports = function createRequestMiddleware ({
         }
 
         try {
-          res.result = await handleInstallPlugins(req.origin, req.params[0])
+          res.result = await handleInstallPlugins(req.params[0])
         } catch (err) {
           res.error = err
         }
@@ -94,7 +100,8 @@ module.exports = function createRequestMiddleware ({
       // returns permitted and installed plugins to the caller
       case 'wallet_getPlugins':
 
-        res.result = getPlugins(req.origin)
+        // getPlugins is already bound to the origin
+        res.result = getPlugins()
         return
 
       // basically syntactic sugar for calling a plugin RPC method
@@ -172,9 +179,7 @@ module.exports = function createRequestMiddleware ({
         try {
           if (Object.keys(requestedPlugins).length > 0) {
             // this throws if requestedPlugins is empty
-            result.plugins = await handleInstallPlugins(
-              req.origin, requestedPlugins
-            )
+            result.plugins = await handleInstallPlugins(requestedPlugins)
           }
         } catch (err) {
           if (!result.errors) {
@@ -199,7 +204,7 @@ module.exports = function createRequestMiddleware ({
           req.domainMetadata &&
           typeof req.domainMetadata.name === 'string'
         ) {
-          addDomainMetadata(req.origin, req.domainMetadata)
+          saveDomainMetadata(req.domainMetadata)
         }
 
         res.result = true
@@ -211,18 +216,22 @@ module.exports = function createRequestMiddleware ({
     }
 
     // try to infer some metadata for unknown domains, including plugins
+    const metadataState = getMetadataState()
     if (
-      req.origin !== 'metamask' && (
-        getOwnState() && !getOwnState()[req.origin]
+      origin !== 'metamask' && (
+        metadataState && metadataState[origin]
       )
     ) {
-      // plugin metadata is handled here for now
-      // TODO:plugins handle this better
       let name = 'Unknown Domain'
-      try {
-        name = new URL(req.origin).hostname
-      } catch (err) {} // noop
-      addDomainMetadata(req.origin, { name })
+      if (isPlugin) {
+        // TODO:plugins add plugin metadata on install, probably
+        name = 'Plugin: ' + origin
+      } else {
+        try {
+          name = new URL(origin).hostname
+        } catch (err) {} // noop
+      }
+      saveDomainMetadata({ name })
     }
 
     // if we make it here, continue down the middleware stack
@@ -290,9 +299,11 @@ module.exports = function createRequestMiddleware ({
     }, {})
   }
 
-  // typechecks the requested plugins and passes them to the permissions
-  // controller for installation
-  async function handleInstallPlugins (origin, requestedPlugins) {
+  /**
+   * Typechecks the requested plugins and passes them to the permissions
+   * controller for installation.
+   */
+  async function handleInstallPlugins (requestedPlugins) {
 
     // input validation
     // we expect requestedPlugins to be an object of the form:
@@ -313,19 +324,23 @@ module.exports = function createRequestMiddleware ({
       })
     }
 
-    return installPlugins(origin, requestedPlugins)
+    // installPlugins is bound to the origin
+    return installPlugins(requestedPlugins)
   }
 
-  function addDomainMetadata (origin, metadata) {
+  /**
+   *
+   */
+  function saveDomainMetadata (metadata) {
 
     // extensionId added higher up the stack, preserve it if it exists
-    const currentState = store.getState()[storeKey]
+    const currentState = store.getState()[metadataStoreKey]
     if (currentState[origin] && currentState[origin].extensionId) {
       metadata.extensionId = currentState[origin].extensionId
     }
 
     store.updateState({
-      [storeKey]: {
+      [metadataStoreKey]: {
         ...currentState,
         [origin]: {
           ...metadata,
@@ -334,7 +349,10 @@ module.exports = function createRequestMiddleware ({
     })
   }
 
-  function getOwnState () {
-    return store.getState()[storeKey]
+  /**
+   * Get the state managed by this middleware.
+   */
+  function getMetadataState () {
+    return store.getState()[metadataStoreKey]
   }
 }

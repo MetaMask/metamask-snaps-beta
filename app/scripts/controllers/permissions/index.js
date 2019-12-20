@@ -33,7 +33,7 @@ class PermissionsController {
 
   constructor ({
     openPopup, closePopup, keyringController, assetsController,
-    setupProvider, pluginRestrictedMethods, getApi, notifyDomain,
+    setupProvider, getApi, notifyDomain,
     notifyAllDomains,
   } = {}, restoredState = {}
   ) {
@@ -50,8 +50,8 @@ class PermissionsController {
     this.assetsController = assetsController
     this.setupProvider = setupProvider
     this.externalRestrictedMethods = getExternalRestrictedMethods(this)
-    this.pluginRestrictedMethods = pluginRestrictedMethods
     this.getApi = getApi
+    this.pluginRestrictedMethods = {}
   }
 
   //=============================================================================
@@ -69,7 +69,7 @@ class PermissionsController {
    */
   createMiddleware ({ origin, extensionId, isPlugin }) {
 
-    if (extensionId) {
+    if (extensionId && !isPlugin) {
       this.store.updateState({
         [METADATA_STORE_KEY]: {
           ...this.store.getState()[METADATA_STORE_KEY],
@@ -80,15 +80,20 @@ class PermissionsController {
 
     const engine = new JsonRpcEngine()
     engine.push(this.createPluginMethodRestrictionMiddleware(isPlugin))
+
     engine.push(createMethodMiddleware({
+      origin,
+      isPlugin,
       store: this.store,
-      storeKey: METADATA_STORE_KEY,
+      metadataStoreKey: METADATA_STORE_KEY,
       getAccounts: this.getAccounts.bind(this, origin),
       requestPermissions: this._requestPermissions.bind(this, origin),
-      installPlugins: this.installPlugins.bind(this),
-      getPlugins: this.getPermittedPlugins.bind(this),
+      installPlugins: this.installPlugins.bind(this, origin),
+      getPlugins: this.getPermittedPlugins.bind(this, origin),
     }))
+
     engine.push(createLoggerMiddleware({
+      origin,
       walletPrefix: WALLET_PREFIX,
       restrictedMethods: (
         Object.keys(this.externalRestrictedMethods)
@@ -98,9 +103,11 @@ class PermissionsController {
       logStoreKey: LOG_STORE_KEY,
       historyStoreKey: HISTORY_STORE_KEY,
     }))
+
     engine.push(this.permissions.providerMiddlewareFunction.bind(
       this.permissions, { origin }
     ))
+
     return asMiddleware(engine)
   }
 
@@ -442,8 +449,8 @@ class PermissionsController {
   async installPlugins (origin, requestedPlugins) {
 
     const existingPerms = this.getPermissionsFor(origin).reduce(
-      (acc, p) => {
-        acc[p.parentCapability] = true
+      (acc, perm) => {
+        acc[perm.parentCapability] = true
         return acc
       }, {}
     )
@@ -483,11 +490,11 @@ class PermissionsController {
   getPermittedPlugins (origin) {
 
     return this.getPermissionsFor(origin).reduce(
-      (acc, p) => {
+      (acc, perm) => {
 
-        if (p.parentCapability.startsWith(PLUGIN_PREFIX)) {
+        if (perm.parentCapability.startsWith(PLUGIN_PREFIX)) {
 
-          const pluginName = p.parentCapability.replace(PLUGIN_PREFIX_REGEX, '')
+          const pluginName = perm.parentCapability.replace(PLUGIN_PREFIX_REGEX, '')
           const plugin = this.pluginsController.getSerializable(pluginName)
 
           acc[pluginName] = plugin || {
@@ -532,6 +539,15 @@ class PermissionsController {
     })
   }
 
+  /**
+   * Clears domain metadata.
+   */
+  clearDomainMetadata () {
+    this.store.updateState({
+      [METADATA_STORE_KEY]: {},
+    })
+  }
+
   //=============================================================================
   // rpc-cap-related methods
   //=============================================================================
@@ -542,19 +558,18 @@ class PermissionsController {
    * initialization order.
    *
    * @param {Object} opts - The CapabilitiesController options.
-   * @param {Object} opts.metamaskEventMethods - Plugin-related internal event methods.
+   * @param {Array<string>} opts.metamaskEventMethods - Plugin-related internal event method names.
    * @param {Object} opts.pluginRestrictedMethods - Restricted methods for plugins, if any.
    * @param {Object} opts.restoredPermissions - The restored permissions state, if any.
    */
   initializePermissions ({
     pluginsController,
-    metamaskEventMethods = {},
+    metamaskEventMethods = [],
     pluginRestrictedMethods = {},
     restoredPermissions = {},
   } = {}) {
 
     this.pluginsController = pluginsController
-    this.metamaskEventMethods = metamaskEventMethods
     this.pluginRestrictedMethods = pluginRestrictedMethods
 
     const initState = Object.keys(restoredPermissions)
@@ -576,7 +591,10 @@ class PermissionsController {
     const externalMethodsToAddToRestricted = {
       ...this.pluginRestrictedMethods,
       ...api,
-      ...this.metamaskEventMethods,
+      ...metamaskEventMethods.reduce(
+        (acc, methodName) => ({ ...acc, [methodName]: true }),
+        {}
+      ),
       removePermissionsFor: this.removePermissionsFor.bind(this),
       getApprovedAccounts: this.getAccounts.bind(this),
     }
@@ -584,14 +602,14 @@ class PermissionsController {
     const namespacedPluginRestrictedMethods = Object.keys(
       externalMethodsToAddToRestricted
     ).reduce((acc, methodKey) => {
-      const hasDescription = externalMethodsToAddToRestricted[methodKey]
-      if (!hasDescription) {
+      // ignore methods without descriptions; they are not for plugins
+      if (!pluginRestrictedMethodDescriptions[methodKey]) {
         return acc
       }
       return {
         ...acc,
         ['metamask_' + methodKey]: {
-          description: pluginRestrictedMethodDescriptions[methodKey] || methodKey,
+          description: pluginRestrictedMethodDescriptions[methodKey],
           method: 'metamask_' + externalMethodsToAddToRestricted[methodKey],
         },
       }

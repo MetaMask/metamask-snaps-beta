@@ -1,6 +1,7 @@
 
 const { ethErrors } = require('eth-json-rpc-errors')
 
+// ATTN: this list determines which internal API methods a plugin can actually use
 const pluginRestrictedMethodDescriptions = {
   onNewTx: 'Take action whenever a new transaction is created',
   fetch: 'Retrieve data from external sites',
@@ -52,7 +53,6 @@ const pluginRestrictedMethodDescriptions = {
   setSelectedAddress: 'Set the currently-selected address',
   setUseBlockie: 'Toggle the Blockie identicon format',
   submitPassword: 'Submits the user password and attempts to unlock the vault. This will not be included in production.',
-  unMarkPasswordForgotten: 'Allows a user to end the seed phrase recovery process',
   unlockHardwareWalletAccount: 'Imports an account from a Trezor device',
   updateAndSetCustomRpc: 'Select a custom URL for an Ethereum RPC provider and updating it',
   verifySeedPhrase: 'Verifies the validity of the current vault seed phrase',
