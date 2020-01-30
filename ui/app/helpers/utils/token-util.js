@@ -128,11 +128,6 @@ export function calcTokenAmount (value, decimals) {
   return new BigNumber(String(value)).div(multiplier)
 }
 
-export function calcTokenValue (value, decimals) {
-  const multiplier = Math.pow(10, Number(decimals || 0))
-  return new BigNumber(String(value)).times(multiplier)
-}
-
 export function getTokenValue (tokenParams = []) {
   const valueData = tokenParams.find(param => param.name === '_value')
   return valueData && valueData.value
@@ -140,5 +135,5 @@ export function getTokenValue (tokenParams = []) {
 
 export function getTokenToAddress (tokenParams = []) {
   const toAddressData = tokenParams.find(param => param.name === '_to')
-  return toAddressData ? toAddressData.value : tokenParams[0].value
+  return toAddressData && toAddressData.value
 }

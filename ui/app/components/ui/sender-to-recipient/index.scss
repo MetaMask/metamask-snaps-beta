@@ -8,7 +8,7 @@
 
   &--default {
     border-bottom: 1px solid $geyser;
-    min-height: 42px;
+    height: 42px;
 
     .sender-to-recipient {
       &__tooltip-wrapper {
@@ -17,25 +17,6 @@
 
       &__tooltip-container {
         max-width: 100%;
-      }
-
-      &__audit--warn,
-      &__audit--approve {
-        display: flex;
-        font-size: 12px;
-        width: 180px;
-        white-space: normal;
-        color: red;
-      }
-
-      &__audit--approve {
-        color: green;
-      }
-
-      &__party-group {
-        display: flex;
-        flex-direction: row;
-        align-items: center;
       }
 
       &__party {
@@ -63,21 +44,12 @@
         }
       }
 
-      &__party--audit {
-        flex-direction: column;
-        align-items: flex-start;
-      }
-
       &__arrow-container {
         position: absolute;
         height: 100%;
         display: flex;
         align-items: center;
         justify-content: center;
-
-        [dir='rtl'] & {
-          transform: rotate(180deg);
-        }
       }
 
       &__arrow-circle {
@@ -98,19 +70,6 @@
         text-overflow: ellipsis;
         white-space: nowrap;
         font-size: .875rem;
-
-        [dir='rtl'] & {
-          /*rtl:ignore*/
-          direction: ltr;
-          /*rtl:ignore*/
-          text-align: right;
-
-          span {
-            display: block;
-            /*rtl:ignore*/
-            direction: rtl;
-          }
-        }
       }
     }
   }
@@ -143,29 +102,12 @@
         text-overflow: ellipsis;
         white-space: nowrap;
         font-size: .5rem;
-
-        [dir='rtl'] & {
-          /*rtl:ignore*/
-          direction: ltr;
-          /*rtl:ignore*/
-          text-align: right;
-
-          span {
-            display: block;
-            /*rtl:ignore*/
-            direction: rtl;
-          }
-        }
       }
 
       &__arrow-container {
         display: flex;
         justify-content: center;
         align-items: center;
-
-        [dir='rtl'] & {
-          transform: rotate(180deg);
-        }
       }
     }
   }
@@ -195,29 +137,12 @@
         text-overflow: ellipsis;
         white-space: nowrap;
         font-size: .6875rem;
-
-        [dir='rtl'] & {
-          /*rtl:ignore*/
-          direction: ltr;
-          /*rtl:ignore*/
-          text-align: right;
-
-          span {
-            display: block;
-            /*rtl:ignore*/
-            direction: rtl;
-          }
-        }
       }
 
       &__arrow-container {
         display: flex;
         justify-content: center;
         align-items: center;
-
-        [dir='rtl'] & {
-          transform: rotate(180deg);
-        }
       }
     }
   }

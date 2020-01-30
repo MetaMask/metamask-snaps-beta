@@ -28,9 +28,7 @@ function removeLeadingZeroes (str) {
 
 InputNumber.prototype.setValue = function (newValue) {
   newValue = removeLeadingZeroes(newValue)
-  if (newValue && !isValidInput(newValue)) {
-    return
-  }
+  if (newValue && !isValidInput(newValue)) return
   const { fixed, min = -1, max = Infinity, onChange } = this.props
 
   newValue = fixed ? newValue.toFixed(4) : newValue

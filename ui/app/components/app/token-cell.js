@@ -25,7 +25,7 @@ function mapStateToProps (state) {
 
 function mapDispatchToProps (dispatch) {
   return {
-    setSelectedToken: identifier => dispatch(actions.setSelectedToken(identifier)),
+    setSelectedToken: address => dispatch(actions.setSelectedToken(address)),
     hideSidebar: () => dispatch(actions.hideSidebar()),
   }
 }
@@ -53,7 +53,6 @@ TokenCell.prototype.render = function () {
     symbol,
     string,
     network,
-    fromDomain,
     setSelectedToken,
     selectedTokenAddress,
     contractExchangeRates,
@@ -63,14 +62,10 @@ TokenCell.prototype.render = function () {
     currentCurrency,
     // userAddress,
     image,
-    onClick,
   } = props
   let currentTokenToFiatRate
   let currentTokenInFiat
   let formattedFiat = ''
-
-  const identifier = this.props.identifier || `${network}:${address}`
-  const pluginIconSeed = `${fromDomain}:${identifier}`
 
   if (contractExchangeRates[address]) {
     currentTokenToFiatRate = multiplyCurrencies(
@@ -93,10 +88,11 @@ TokenCell.prototype.render = function () {
 
   return (
     h('div.token-list-item', {
-      className: `token-list-item ${selectedTokenAddress === identifier ? 'token-list-item--active' : ''}`,
+      className: `token-list-item ${selectedTokenAddress === address ? 'token-list-item--active' : ''}`,
       // style: { cursor: network === '1' ? 'pointer' : 'default' },
       // onClick: this.view.bind(this, address, userAddress, network),
-      onClick: (_event) => {
+      onClick: () => {
+        setSelectedToken(address)
         this.context.metricsEvent({
           eventOpts: {
             category: 'Navigation',
@@ -104,19 +100,14 @@ TokenCell.prototype.render = function () {
             name: 'Clicked Token',
           },
         })
-
-        if (onClick) {
-          return onClick()
-        }
-        setSelectedToken(identifier)
-        selectedTokenAddress !== identifier && sidebarOpen && hideSidebar()
+        selectedTokenAddress !== address && sidebarOpen && hideSidebar()
       },
     }, [
 
       h(Identicon, {
         className: 'token-list-item__identicon',
         diameter: 50,
-        address: address || pluginIconSeed,
+        address,
         network,
         image,
       }),
@@ -142,7 +133,7 @@ TokenCell.prototype.render = function () {
 
       tokenMenuOpen && h(TokenMenuDropdown, {
         onClose: () => this.setState({ tokenMenuOpen: false }),
-        token: { symbol, address, fromDomain, identifier },
+        token: { symbol, address },
       }),
 
       /*

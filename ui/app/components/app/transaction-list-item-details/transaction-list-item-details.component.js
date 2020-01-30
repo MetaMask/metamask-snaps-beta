@@ -17,24 +17,14 @@ export default class TransactionListItemDetails extends PureComponent {
     metricsEvent: PropTypes.func,
   }
 
-  static defaultProps = {
-    recipientEns: null,
-  }
-
   static propTypes = {
     onCancel: PropTypes.func,
     onRetry: PropTypes.func,
     showCancel: PropTypes.bool,
-    showSpeedUp: PropTypes.bool,
     showRetry: PropTypes.bool,
-    isEarliestNonce: PropTypes.bool,
     cancelDisabled: PropTypes.bool,
     transactionGroup: PropTypes.object,
-    recipientEns: PropTypes.string,
-    recipientAddress: PropTypes.string.isRequired,
     rpcPrefs: PropTypes.object,
-    senderAddress: PropTypes.string.isRequired,
-    tryReverseResolveAddress: PropTypes.func.isRequired,
   }
 
   state = {
@@ -90,12 +80,6 @@ export default class TransactionListItemDetails extends PureComponent {
     })
   }
 
-  async componentDidMount () {
-    const { recipientAddress, tryReverseResolveAddress } = this.props
-
-    tryReverseResolveAddress(recipientAddress)
-  }
-
   renderCancel () {
     const { t } = this.context
     const {
@@ -138,18 +122,13 @@ export default class TransactionListItemDetails extends PureComponent {
     const { justCopied } = this.state
     const {
       transactionGroup,
-      showSpeedUp,
       showRetry,
       onCancel,
       onRetry,
-      recipientEns,
-      recipientAddress,
       rpcPrefs: { blockExplorerUrl } = {},
-      senderAddress,
-      isEarliestNonce,
     } = this.props
     const { primaryTransaction: transaction } = transactionGroup
-    const { hash } = transaction
+    const { hash, txParams: { to, from } = {} } = transaction
 
     return (
       <div className="transaction-list-item-details">
@@ -157,7 +136,7 @@ export default class TransactionListItemDetails extends PureComponent {
           <div>{ t('details') }</div>
           <div className="transaction-list-item-details__header-buttons">
             {
-              showSpeedUp && (
+              showRetry && (
                 <Button
                   type="raised"
                   onClick={this.handleRetry}
@@ -191,17 +170,6 @@ export default class TransactionListItemDetails extends PureComponent {
                 <img src="/images/arrow-popout.svg" />
               </Button>
             </Tooltip>
-            {
-              showRetry && <Tooltip title={blockExplorerUrl ? t('viewOnCustomBlockExplorer', [blockExplorerUrl]) : t('retryTransaction')}>
-                <Button
-                  type="raised"
-                  onClick={this.handleRetry}
-                  className="transaction-list-item-details__header-button"
-                >
-                  <i className="fa fa-refresh"></i>
-                </Button>
-              </Tooltip>
-            }
           </div>
         </div>
         <div className="transaction-list-item-details__body">
@@ -209,9 +177,8 @@ export default class TransactionListItemDetails extends PureComponent {
             <SenderToRecipient
               variant={FLAT_VARIANT}
               addressOnly
-              recipientEns={recipientEns}
-              recipientAddress={recipientAddress}
-              senderAddress={senderAddress}
+              recipientAddress={to}
+              senderAddress={from}
               onRecipientClick={() => {
                 this.context.metricsEvent({
                   eventOpts: {
@@ -242,7 +209,6 @@ export default class TransactionListItemDetails extends PureComponent {
               className="transaction-list-item-details__transaction-activity-log"
               onCancel={onCancel}
               onRetry={onRetry}
-              isEarliestNonce={isEarliestNonce}
             />
           </div>
         </div>

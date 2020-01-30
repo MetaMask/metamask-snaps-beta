@@ -9,9 +9,6 @@ import {
   showModal,
   setShowFiatConversionOnTestnetsPreference,
   setAutoLogoutTimeLimit,
-  setThreeBoxSyncingPermission,
-  turnThreeBoxSyncingOnAndInitialize,
-  setUseNonceField,
 } from '../../../store/actions'
 import {preferencesSelector} from '../../../selectors/selectors'
 
@@ -22,9 +19,6 @@ export const mapStateToProps = state => {
       sendHexData,
       advancedInlineGas,
     } = {},
-    threeBoxSyncingAllowed,
-    threeBoxDisabled,
-    useNonceField,
   } = metamask
   const { showFiatInTestnets, autoLogoutTimeLimit } = preferencesSelector(state)
 
@@ -34,9 +28,6 @@ export const mapStateToProps = state => {
     advancedInlineGas,
     showFiatInTestnets,
     autoLogoutTimeLimit,
-    threeBoxSyncingAllowed,
-    threeBoxDisabled,
-    useNonceField,
   }
 }
 
@@ -47,19 +38,11 @@ export const mapDispatchToProps = dispatch => {
     displayWarning: warning => dispatch(displayWarning(warning)),
     showResetAccountConfirmationModal: () => dispatch(showModal({ name: 'CONFIRM_RESET_ACCOUNT' })),
     setAdvancedInlineGasFeatureFlag: shouldShow => dispatch(setFeatureFlag('advancedInlineGas', shouldShow)),
-    setUseNonceField: value => dispatch(setUseNonceField(value)),
     setShowFiatConversionOnTestnetsPreference: value => {
       return dispatch(setShowFiatConversionOnTestnetsPreference(value))
     },
     setAutoLogoutTimeLimit: value => {
       return dispatch(setAutoLogoutTimeLimit(value))
-    },
-    setThreeBoxSyncingPermission: newThreeBoxSyncingState => {
-      if (newThreeBoxSyncingState) {
-        dispatch(turnThreeBoxSyncingOnAndInitialize())
-      } else {
-        dispatch(setThreeBoxSyncingPermission(newThreeBoxSyncingState))
-      }
     },
   }
 }

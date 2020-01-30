@@ -23,7 +23,6 @@ export default class TransactionActivityLog extends PureComponent {
     onCancel: PropTypes.func,
     onRetry: PropTypes.func,
     primaryTransaction: PropTypes.object,
-    isEarliestNonce: PropTypes.bool,
   }
 
   handleActivityClick = hash => {
@@ -38,11 +37,11 @@ export default class TransactionActivityLog extends PureComponent {
 
   renderInlineRetry (index, activity) {
     const { t } = this.context
-    const { inlineRetryIndex, primaryTransaction = {}, onRetry, isEarliestNonce } = this.props
+    const { inlineRetryIndex, primaryTransaction = {}, onRetry } = this.props
     const { status } = primaryTransaction
     const { id } = activity
 
-    return isEarliestNonce && status !== CONFIRMED_STATUS && index === inlineRetryIndex
+    return status !== CONFIRMED_STATUS && index === inlineRetryIndex
       ? (
         <div
           className="transaction-activity-log__action-link"
@@ -55,11 +54,11 @@ export default class TransactionActivityLog extends PureComponent {
 
   renderInlineCancel (index, activity) {
     const { t } = this.context
-    const { inlineCancelIndex, primaryTransaction = {}, onCancel, isEarliestNonce } = this.props
+    const { inlineCancelIndex, primaryTransaction = {}, onCancel } = this.props
     const { status } = primaryTransaction
     const { id } = activity
 
-    return isEarliestNonce && status !== CONFIRMED_STATUS && index === inlineCancelIndex
+    return status !== CONFIRMED_STATUS && index === inlineCancelIndex
       ? (
         <div
           className="transaction-activity-log__action-link"

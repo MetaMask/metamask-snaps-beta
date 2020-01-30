@@ -38,7 +38,7 @@ const getEnvironmentType = (url = window.location.href) => {
   const parsedUrl = new URL(url)
   if (parsedUrl.pathname === '/popup.html') {
     return ENVIRONMENT_TYPE_POPUP
-  } else if (['/home.html', '/phishing.html'].includes(parsedUrl.pathname)) {
+  } else if (parsedUrl.pathname === '/home.html') {
     return ENVIRONMENT_TYPE_FULLSCREEN
   } else if (parsedUrl.pathname === '/notification.html') {
     return ENVIRONMENT_TYPE_NOTIFICATION
@@ -144,9 +144,28 @@ function removeListeners (listeners, emitter) {
   })
 }
 
-function getRandomArrayItem (array) {
-  return array[Math.floor((Math.random() * array.length))]
+function fetchWithTimeout ({ timeout = 120000 } = {}) {
+  return async function _fetch (url, opts) {
+    const abortController = new AbortController()
+    const abortSignal = abortController.signal
+    const f = fetch(url, {
+      ...opts,
+      signal: abortSignal,
+    })
+
+    const timer = setTimeout(() => abortController.abort(), timeout)
+
+    try {
+      const res = await f
+      clearTimeout(timer)
+      return res
+    } catch (e) {
+      clearTimeout(timer)
+      throw e
+    }
+  }
 }
+
 
 module.exports = {
   removeListeners,
@@ -158,5 +177,5 @@ module.exports = {
   hexToBn,
   bnToHex,
   BnMultiplyByFraction,
-  getRandomArrayItem,
+  fetchWithTimeout,
 }

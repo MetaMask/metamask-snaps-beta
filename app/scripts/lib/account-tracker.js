@@ -11,10 +11,11 @@ const EthQuery = require('eth-query')
 const ObservableStore = require('obs-store')
 const log = require('loglevel')
 const pify = require('pify')
+const Web3 = require('web3')
 const SINGLE_CALL_BALANCES_ABI = require('single-call-balance-checker-abi')
-const ethers = require('ethers')
 
-const { MAINNET_CODE, RINKEBY_CODE, ROPSTEN_CODE, KOVAN_CODE } = require('../controllers/network/enums')
+const { bnToHex } = require('./util')
+const { MAINNET_CODE, RINKEYBY_CODE, ROPSTEN_CODE, KOVAN_CODE } = require('../controllers/network/enums')
 const { SINGLE_CALL_BALANCES_ADDRESS, SINGLE_CALL_BALANCES_ADDRESS_RINKEBY, SINGLE_CALL_BALANCES_ADDRESS_ROPSTEN, SINGLE_CALL_BALANCES_ADDRESS_KOVAN } = require('../controllers/network/contract-addresses')
 
 
@@ -57,7 +58,7 @@ class AccountTracker {
     this._updateForBlock = this._updateForBlock.bind(this)
     this.network = opts.network
 
-    this.ethersProvider = new ethers.providers.Web3Provider(this._provider)
+    this.web3 = new Web3(this._provider)
   }
 
   start () {
@@ -123,9 +124,7 @@ class AccountTracker {
     // save accounts state
     this.store.updateState({ accounts })
     // fetch balances for the accounts if there is block number ready
-    if (!this._currentBlockNumber) {
-      return
-    }
+    if (!this._currentBlockNumber) return
     this._updateAccounts()
   }
 
@@ -159,9 +158,7 @@ class AccountTracker {
 
     // block gasLimit polling shouldn't be in account-tracker shouldn't be here...
     const currentBlock = await this._query.getBlockByNumber(blockNumber, false)
-    if (!currentBlock) {
-      return
-    }
+    if (!currentBlock) return
     const currentBlockGasLimit = currentBlock.gasLimit
     this.store.updateState({ currentBlockGasLimit })
 
@@ -189,7 +186,7 @@ class AccountTracker {
         await this._updateAccountsViaBalanceChecker(addresses, SINGLE_CALL_BALANCES_ADDRESS)
         break
 
-      case RINKEBY_CODE:
+      case RINKEYBY_CODE:
         await this._updateAccountsViaBalanceChecker(addresses, SINGLE_CALL_BALANCES_ADDRESS_RINKEBY)
         break
 
@@ -221,9 +218,7 @@ class AccountTracker {
     // update accounts state
     const { accounts } = this.store.getState()
     // only populate if the entry is still present
-    if (!accounts[address]) {
-      return
-    }
+    if (!accounts[address]) return
     accounts[address] = result
     this.store.updateState({ accounts })
   }
@@ -235,21 +230,23 @@ class AccountTracker {
    */
   async _updateAccountsViaBalanceChecker (addresses, deployedContractAddress) {
     const accounts = this.store.getState().accounts
-    const ethContract = new ethers.Contract(deployedContractAddress, SINGLE_CALL_BALANCES_ABI, this.ethersProvider)
-    const ethBalance = [ethers.constants.AddressZero]
+    this.web3.setProvider(this._provider)
+    const ethContract = this.web3.eth.contract(SINGLE_CALL_BALANCES_ABI).at(deployedContractAddress)
+    const ethBalance = ['0x0']
 
-    try {
-      const result = await ethContract.balances(addresses, ethBalance)
+    ethContract.balances(addresses, ethBalance, (error, result) => {
+      if (error) {
+        log.warn(`MetaMask - Account Tracker single call balance fetch failed`, error)
+        return Promise.all(addresses.map(this._updateAccount.bind(this)))
+      }
       addresses.forEach((address, index) => {
-        accounts[address] = { address, balance: result[index].toHexString() }
+        const balance = bnToHex(result[index])
+        accounts[address] = { address, balance }
       })
-    } catch (error) {
-      log.warn(`MetaMask - Account Tracker single call balance fetch failed`, error)
-      return Promise.all(addresses.map(this._updateAccount.bind(this)))
-    } finally {
       this.store.updateState({ accounts })
-    }
+    })
   }
+
 }
 
 module.exports = AccountTracker

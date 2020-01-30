@@ -18,13 +18,8 @@ describe('getEnvironmentType', function () {
     assert.equal(environmentType, ENVIRONMENT_TYPE_NOTIFICATION)
   })
 
-  it('should return fullscreen type for home.html', function () {
+  it('should return fullscreen type', function () {
     const environmentType = getEnvironmentType('http://extension-id/home.html')
-    assert.equal(environmentType, ENVIRONMENT_TYPE_FULLSCREEN)
-  })
-
-  it('should return fullscreen type for phishing.html', function () {
-    const environmentType = getEnvironmentType('http://extension-id/phishing.html')
     assert.equal(environmentType, ENVIRONMENT_TYPE_FULLSCREEN)
   })
 

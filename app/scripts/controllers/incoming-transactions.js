@@ -2,25 +2,21 @@ const ObservableStore = require('obs-store')
 const log = require('loglevel')
 const BN = require('bn.js')
 const createId = require('../lib/random-id')
-const { bnToHex } = require('../lib/util')
-import fetchWithTimeout from '../lib/fetch-with-timeout'
+const { bnToHex, fetchWithTimeout } = require('../lib/util')
 const {
   MAINNET_CODE,
   ROPSTEN_CODE,
-  RINKEBY_CODE,
+  RINKEYBY_CODE,
   KOVAN_CODE,
-  GOERLI_CODE,
   ROPSTEN,
   RINKEBY,
   KOVAN,
-  GOERLI,
   MAINNET,
 } = require('./network/enums')
 const networkTypeToIdMap = {
   [ROPSTEN]: String(ROPSTEN_CODE),
-  [RINKEBY]: String(RINKEBY_CODE),
+  [RINKEBY]: String(RINKEYBY_CODE),
   [KOVAN]: String(KOVAN_CODE),
-  [GOERLI]: String(GOERLI_CODE),
   [MAINNET]: String(MAINNET_CODE),
 }
 const fetch = fetchWithTimeout({
@@ -55,7 +51,6 @@ class IncomingTransactionsController {
         [ROPSTEN]: null,
         [RINKEBY]: null,
         [KOVAN]: null,
-        [GOERLI]: null,
         [MAINNET]: null,
       },
     }, opts.initState)
@@ -163,9 +158,7 @@ class IncomingTransactionsController {
     const newIncomingTransactions = {
       ...currentIncomingTxs,
     }
-    newTxs.forEach(tx => {
-      newIncomingTransactions[tx.hash] = tx
-    })
+    newTxs.forEach(tx => { newIncomingTransactions[tx.hash] = tx })
 
     this.store.updateState({
       incomingTxLastFetchedBlocksByNetwork: {
@@ -177,14 +170,18 @@ class IncomingTransactionsController {
   }
 
   async _fetchAll (address, fromBlock, networkType) {
-    const fetchedTxResponse = await this._fetchTxs(address, fromBlock, networkType)
-    return this._processTxFetchResponse(fetchedTxResponse)
+    try {
+      const fetchedTxResponse = await this._fetchTxs(address, fromBlock, networkType)
+      return this._processTxFetchResponse(fetchedTxResponse)
+    } catch (err) {
+      log.error(err)
+    }
   }
 
   async _fetchTxs (address, fromBlock, networkType) {
     let etherscanSubdomain = 'api'
     const currentNetworkID = networkTypeToIdMap[networkType]
-    const supportedNetworkTypes = [ROPSTEN, RINKEBY, KOVAN, GOERLI, MAINNET]
+    const supportedNetworkTypes = [ROPSTEN, RINKEBY, KOVAN, MAINNET]
 
     if (supportedNetworkTypes.indexOf(networkType) === -1) {
       return {}
@@ -209,8 +206,8 @@ class IncomingTransactionsController {
     }
   }
 
-  _processTxFetchResponse ({ status, result = [], address, currentNetworkID }) {
-    if (status === '1' && Array.isArray(result) && result.length > 0) {
+  _processTxFetchResponse ({ status, result, address, currentNetworkID }) {
+    if (status !== '0' && result.length > 0) {
       const remoteTxList = {}
       const remoteTxs = []
       result.forEach((tx) => {

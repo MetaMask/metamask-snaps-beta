@@ -15,7 +15,6 @@ export default function withTokenTracker (WrappedComponent) {
       this.state = {
         string: '',
         symbol: '',
-        balance: '',
         error: null,
       }
 
@@ -79,8 +78,8 @@ export default function withTokenTracker (WrappedComponent) {
       if (!this.tracker.running) {
         return
       }
-      const [{ string, symbol, balance }] = tokens
-      this.setState({ string, symbol, error: null, balance })
+      const [{ string, symbol }] = tokens
+      this.setState({ string, symbol, error: null })
     }
 
     removeListeners () {
@@ -92,13 +91,13 @@ export default function withTokenTracker (WrappedComponent) {
     }
 
     render () {
-      const { balance, string, symbol, error } = this.state
+      const { string, symbol, error } = this.state
+
       return (
         <WrappedComponent
           { ...this.props }
           string={string}
           symbol={symbol}
-          tokenTrackerBalance={balance}
           error={error}
         />
       )

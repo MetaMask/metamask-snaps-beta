@@ -156,15 +156,15 @@ describe('GasPriceButtonGroup Component', function () {
   })
 
   describe('renderButtonContent', () => {
-    it('should render a label if passed a gasEstimateType', () => {
+    it('should render a label if passed a labelKey', () => {
       const renderButtonContentResult = wrapper.instance().renderButtonContent({
-        gasEstimateType: 'SLOW',
+        labelKey: 'mockLabelKey',
       }, {
         className: 'someClass',
       })
       const wrappedRenderButtonContentResult = shallow(renderButtonContentResult)
       assert.equal(wrappedRenderButtonContentResult.childAt(0).children().length, 1)
-      assert.equal(wrappedRenderButtonContentResult.find('.someClass__label').text(), 'slow')
+      assert.equal(wrappedRenderButtonContentResult.find('.someClass__label').text(), 'mockLabelKey')
     })
 
     it('should render a feeInPrimaryCurrency if passed a feeInPrimaryCurrency', () => {
@@ -211,7 +211,7 @@ describe('GasPriceButtonGroup Component', function () {
 
     it('should render all elements if all args passed', () => {
       const renderButtonContentResult = wrapper.instance().renderButtonContent({
-        gasEstimateType: 'SLOW',
+        labelKey: 'mockLabel',
         feeInPrimaryCurrency: 'mockFeeInPrimaryCurrency',
         feeInSecondaryCurrency: 'mockFeeInSecondaryCurrency',
         timeEstimate: 'mockTimeEstimate',

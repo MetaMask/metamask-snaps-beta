@@ -7,13 +7,10 @@ import TransactionAction from '../transaction-action'
 import UserPreferencedCurrencyDisplay from '../user-preferenced-currency-display'
 import TokenCurrencyDisplay from '../../ui/token-currency-display'
 import TransactionListItemDetails from '../transaction-list-item-details'
-import TransactionTimeRemaining from '../transaction-time-remaining'
 import { CONFIRM_TRANSACTION_ROUTE } from '../../../helpers/constants/routes'
 import { UNAPPROVED_STATUS, TOKEN_METHOD_TRANSFER } from '../../../helpers/constants/transactions'
 import { PRIMARY, SECONDARY } from '../../../helpers/constants/common'
 import { getStatusKey } from '../../../helpers/utils/transactions.util'
-import { ENVIRONMENT_TYPE_FULLSCREEN } from '../../../../../app/scripts/lib/enums'
-import { getEnvironmentType } from '../../../../../app/scripts/lib/util'
 
 export default class TransactionListItem extends PureComponent {
   static propTypes = {
@@ -27,8 +24,7 @@ export default class TransactionListItem extends PureComponent {
     showCancelModal: PropTypes.func,
     showCancel: PropTypes.bool,
     hasEnoughCancelGas: PropTypes.bool,
-    showSpeedUp: PropTypes.bool,
-    isEarliestNonce: PropTypes.bool,
+    showRetry: PropTypes.bool,
     showFiat: PropTypes.bool,
     token: PropTypes.object,
     tokenData: PropTypes.object,
@@ -41,8 +37,6 @@ export default class TransactionListItem extends PureComponent {
     data: PropTypes.string,
     getContractMethodData: PropTypes.func,
     isDeposit: PropTypes.bool,
-    transactionTimeFeatureActive: PropTypes.bool,
-    firstPendingTransactionId: PropTypes.number,
   }
 
   static defaultProps = {
@@ -55,13 +49,6 @@ export default class TransactionListItem extends PureComponent {
 
   state = {
     showTransactionDetails: false,
-  }
-
-  componentDidMount () {
-    if (this.props.data) {
-      this.props.getContractMethodData(this.props.data)
-    }
-
   }
 
   handleClick = () => {
@@ -125,14 +112,6 @@ export default class TransactionListItem extends PureComponent {
 
     const retryId = id || initialTransactionId
 
-    this.context.metricsEvent({
-      eventOpts: {
-        category: 'Navigation',
-        action: 'Activity Log',
-        name: 'Clicked "Speed Up"',
-      },
-    })
-
     return fetchBasicGasAndTimeEstimates()
       .then(basicEstimates => fetchGasEstimates(basicEstimates.blockTime))
       .then(retryTransaction(retryId, gasPrice))
@@ -174,6 +153,12 @@ export default class TransactionListItem extends PureComponent {
       )
   }
 
+  componentDidMount () {
+    if (this.props.data) {
+      this.props.getContractMethodData(this.props.data)
+    }
+  }
+
   render () {
     const {
       assetImages,
@@ -183,25 +168,16 @@ export default class TransactionListItem extends PureComponent {
       primaryTransaction,
       showCancel,
       hasEnoughCancelGas,
-      showSpeedUp,
+      showRetry,
       tokenData,
       transactionGroup,
       rpcPrefs,
-      isEarliestNonce,
-      firstPendingTransactionId,
-      transactionTimeFeatureActive,
     } = this.props
     const { txParams = {} } = transaction
     const { showTransactionDetails } = this.state
-    const fromAddress = txParams.from
     const toAddress = tokenData
       ? tokenData.params && tokenData.params[0] && tokenData.params[0].value || txParams.to
       : txParams.to
-
-    const isFullScreen = getEnvironmentType(window.location.href) === ENVIRONMENT_TYPE_FULLSCREEN
-    const showEstimatedTime = transactionTimeFeatureActive &&
-      (transaction.id === firstPendingTransactionId) &&
-      isFullScreen
 
     return (
       <div className="transaction-list-item">
@@ -235,13 +211,6 @@ export default class TransactionListItem extends PureComponent {
                 : primaryTransaction.err && primaryTransaction.err.message
             )}
           />
-          { showEstimatedTime
-            ? <TransactionTimeRemaining
-              className="transaction-list-item__estimated-time"
-              transaction={ primaryTransaction }
-            />
-            : null
-          }
           { this.renderPrimaryCurrency() }
           { this.renderSecondaryCurrency() }
         </div>
@@ -254,15 +223,11 @@ export default class TransactionListItem extends PureComponent {
                 <TransactionListItemDetails
                   transactionGroup={transactionGroup}
                   onRetry={this.handleRetry}
-                  showSpeedUp={showSpeedUp}
-                  showRetry={getStatusKey(primaryTransaction) === 'failed'}
-                  isEarliestNonce={isEarliestNonce}
+                  showRetry={showRetry}
                   onCancel={this.handleCancel}
                   showCancel={showCancel}
                   cancelDisabled={!hasEnoughCancelGas}
                   rpcPrefs={rpcPrefs}
-                  senderAddress={fromAddress}
-                  recipientAddress={toAddress}
                 />
               </div>
             )

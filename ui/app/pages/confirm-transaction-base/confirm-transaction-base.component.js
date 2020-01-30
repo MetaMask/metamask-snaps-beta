@@ -14,9 +14,7 @@ import {
 import { CONFIRMED_STATUS, DROPPED_STATUS } from '../../helpers/constants/transactions'
 import UserPreferencedCurrencyDisplay from '../../components/app/user-preferenced-currency-display'
 import { PRIMARY, SECONDARY } from '../../helpers/constants/common'
-import { hexToDecimal } from '../../helpers/utils/conversions.util'
 import AdvancedGasInputs from '../../components/app/gas-customization/advanced-gas-inputs'
-import TextField from '../../components/ui/text-field'
 
 export default class ConfirmTransactionBase extends Component {
   static contextTypes = {
@@ -52,9 +50,6 @@ export default class ConfirmTransactionBase extends Component {
     isTxReprice: PropTypes.bool,
     methodData: PropTypes.object,
     nonce: PropTypes.string,
-    useNonceField: PropTypes.bool,
-    customNonceValue: PropTypes.string,
-    updateCustomNonce: PropTypes.func,
     assetImage: PropTypes.string,
     sendTransaction: PropTypes.func,
     showCustomizeGasModal: PropTypes.func,
@@ -64,7 +59,6 @@ export default class ConfirmTransactionBase extends Component {
     tokenData: PropTypes.object,
     tokenProps: PropTypes.object,
     toName: PropTypes.string,
-    toEns: PropTypes.string,
     toNickname: PropTypes.string,
     transactionStatus: PropTypes.string,
     txData: PropTypes.object,
@@ -102,18 +96,11 @@ export default class ConfirmTransactionBase extends Component {
     insufficientBalance: PropTypes.bool,
     hideFiatConversion: PropTypes.bool,
     transactionCategory: PropTypes.string,
-    recipientAudit: PropTypes.object,
-    getNextNonce: PropTypes.func,
-    nextNonce: PropTypes.number,
-    tryReverseResolveAddress: PropTypes.func.isRequired,
-    hideSenderToRecipient: PropTypes.bool,
-    showAccountInHeader: PropTypes.bool,
   }
 
   state = {
     submitting: false,
     submitError: null,
-    submitWarning: '',
   }
 
   componentDidUpdate (prevProps) {
@@ -122,20 +109,10 @@ export default class ConfirmTransactionBase extends Component {
       showTransactionConfirmedModal,
       history,
       clearConfirmTransaction,
-      nextNonce,
-      customNonceValue,
     } = this.props
     const { transactionStatus: prevTxStatus } = prevProps
     const statusUpdated = transactionStatus !== prevTxStatus
     const txDroppedOrConfirmed = transactionStatus === DROPPED_STATUS || transactionStatus === CONFIRMED_STATUS
-
-    if (nextNonce !== prevProps.nextNonce || customNonceValue !== prevProps.customNonceValue) {
-      if (customNonceValue > nextNonce) {
-        this.setState({ submitWarning: this.context.t('nextNonceWarning', [nextNonce]) })
-      } else {
-        this.setState({ submitWarning: '' })
-      }
-    }
 
     if (statusUpdated && txDroppedOrConfirmed) {
       showTransactionConfirmedModal({
@@ -177,7 +154,7 @@ export default class ConfirmTransactionBase extends Component {
       }
     }
 
-    if (hexToDecimal(customGas.gasLimit) < 21000) {
+    if (customGas.gasLimit < 21000) {
       return {
         valid: false,
         errorKey: GAS_LIMIT_TOO_LOW_ERROR_KEY,
@@ -227,16 +204,11 @@ export default class ConfirmTransactionBase extends Component {
       hexTransactionFee,
       hexTransactionTotal,
       hideDetails,
-      useNonceField,
-      customNonceValue,
-      updateCustomNonce,
       advancedInlineGasShown,
       customGas,
       insufficientBalance,
       updateGasAndCalculate,
       hideFiatConversion,
-      nextNonce,
-      getNextNonce,
     } = this.props
 
     if (hideDetails) {
@@ -262,13 +234,13 @@ export default class ConfirmTransactionBase extends Component {
                 customGasPrice={customGas.gasPrice}
                 customGasLimit={customGas.gasLimit}
                 insufficientBalance={insufficientBalance}
-                customPriceIsSafe
+                customPriceIsSafe={true}
                 isSpeedUp={false}
               />
               : null
             }
           </div>
-          <div className={useNonceField ? 'confirm-page-container-content__gas-fee' : null}>
+          <div>
             <ConfirmDetailRow
               label="Total"
               value={hexTransactionTotal}
@@ -279,31 +251,6 @@ export default class ConfirmTransactionBase extends Component {
               primaryValueTextColor="#2f9ae0"
             />
           </div>
-          {useNonceField ? <div>
-            <div className="confirm-detail-row">
-              <div className="confirm-detail-row__label">
-                { this.context.t('nonceFieldHeading') }
-              </div>
-              <div className="custom-nonce-input">
-                <TextField
-                  type="number"
-                  min="0"
-                  placeholder={ nextNonce ? nextNonce.toString() : null }
-                  onChange={({ target: { value } }) => {
-                    if (!value.length || Number(value) < 0) {
-                      updateCustomNonce('')
-                    } else {
-                      updateCustomNonce(String(Math.floor(value)))
-                    }
-                    getNextNonce()
-                  }}
-                  fullWidth
-                  margin="dense"
-                  value={ customNonceValue || '' }
-                />
-              </div>
-            </div>
-          </div> : null}
         </div>
       )
     )
@@ -390,8 +337,7 @@ export default class ConfirmTransactionBase extends Component {
 
     showRejectTransactionsConfirmationModal({
       unapprovedTxCount,
-      onSubmit: async () => {
-        this._removeBeforeUnload()
+      async onSubmit () {
         await cancelAllTransactions()
         clearConfirmTransaction()
         history.push(DEFAULT_ROUTE)
@@ -401,33 +347,21 @@ export default class ConfirmTransactionBase extends Component {
 
   handleCancel () {
     const { metricsEvent } = this.context
-    const {
-      onCancel,
-      txData,
-      cancelTransaction,
-      history,
-      clearConfirmTransaction,
-      actionKey,
-      txData: { origin },
-      methodData = {},
-      updateCustomNonce,
-    } = this.props
+    const { onCancel, txData, cancelTransaction, history, clearConfirmTransaction, actionKey, txData: { origin }, methodData = {} } = this.props
 
-    this._removeBeforeUnload()
-    metricsEvent({
-      eventOpts: {
-        category: 'Transactions',
-        action: 'Confirm Screen',
-        name: 'Cancel',
-      },
-      customVariables: {
-        recipientKnown: null,
-        functionType: actionKey || getMethodName(methodData.name) || 'contractInteraction',
-        origin,
-      },
-    })
-    updateCustomNonce('')
     if (onCancel) {
+      metricsEvent({
+        eventOpts: {
+          category: 'Transactions',
+          action: 'Confirm Screen',
+          name: 'Cancel',
+        },
+        customVariables: {
+          recipientKnown: null,
+          functionType: actionKey || getMethodName(methodData.name) || 'contractInteraction',
+          origin,
+        },
+      })
       onCancel(txData)
     } else {
       cancelTransaction(txData)
@@ -440,19 +374,7 @@ export default class ConfirmTransactionBase extends Component {
 
   handleSubmit () {
     const { metricsEvent } = this.context
-    const {
-      txData: { origin },
-      sendTransaction,
-      clearConfirmTransaction,
-      txData,
-      history,
-      onSubmit,
-      actionKey,
-      metaMetricsSendCount = 0,
-      setMetaMetricsSendCount,
-      methodData = {},
-      updateCustomNonce,
-    } = this.props
+    const { txData: { origin }, sendTransaction, clearConfirmTransaction, txData, history, onSubmit, actionKey, metaMetricsSendCount = 0, setMetaMetricsSendCount, methodData = {} } = this.props
     const { submitting } = this.state
 
     if (submitting) {
@@ -463,7 +385,6 @@ export default class ConfirmTransactionBase extends Component {
       submitting: true,
       submitError: null,
     }, () => {
-      this._removeBeforeUnload()
       metricsEvent({
         eventOpts: {
           category: 'Transactions',
@@ -485,7 +406,6 @@ export default class ConfirmTransactionBase extends Component {
                 this.setState({
                   submitting: false,
                 })
-                updateCustomNonce('')
               })
           } else {
             sendTransaction(txData)
@@ -495,7 +415,6 @@ export default class ConfirmTransactionBase extends Component {
                   submitting: false,
                 }, () => {
                   history.push(DEFAULT_ROUTE)
-                  updateCustomNonce('')
                 })
               })
               .catch(error => {
@@ -503,7 +422,6 @@ export default class ConfirmTransactionBase extends Component {
                   submitting: false,
                   submitError: error.message,
                 })
-                updateCustomNonce('')
               })
           }
         })
@@ -574,30 +492,8 @@ export default class ConfirmTransactionBase extends Component {
     }
   }
 
-  _beforeUnload = () => {
-    const { txData: { origin, id } = {}, cancelTransaction } = this.props
-    const { metricsEvent } = this.context
-    metricsEvent({
-      eventOpts: {
-        category: 'Transactions',
-        action: 'Confirm Screen',
-        name: 'Cancel Tx Via Notification Close',
-      },
-      customVariables: {
-        origin,
-      },
-    })
-    cancelTransaction({ id })
-  }
-
-  _removeBeforeUnload = () => {
-    if (getEnvironmentType(window.location.href) === ENVIRONMENT_TYPE_NOTIFICATION) {
-      window.removeEventListener('beforeunload', this._beforeUnload)
-    }
-  }
-
   componentDidMount () {
-    const { toAddress, txData: { origin } = {}, getNextNonce, tryReverseResolveAddress } = this.props
+    const { txData: { origin, id } = {}, cancelTransaction } = this.props
     const { metricsEvent } = this.context
     metricsEvent({
       eventOpts: {
@@ -611,15 +507,20 @@ export default class ConfirmTransactionBase extends Component {
     })
 
     if (getEnvironmentType(window.location.href) === ENVIRONMENT_TYPE_NOTIFICATION) {
-      window.addEventListener('beforeunload', this._beforeUnload)
+      window.onbeforeunload = () => {
+        metricsEvent({
+          eventOpts: {
+            category: 'Transactions',
+            action: 'Confirm Screen',
+            name: 'Cancel Tx Via Notification Close',
+          },
+          customVariables: {
+            origin,
+          },
+        })
+        cancelTransaction({ id })
+      }
     }
-
-    getNextNonce()
-    tryReverseResolveAddress(toAddress)
-  }
-
-  componentWillUnmount () {
-    this._removeBeforeUnload()
   }
 
   render () {
@@ -629,7 +530,6 @@ export default class ConfirmTransactionBase extends Component {
       fromAddress,
       toName,
       toAddress,
-      toEns,
       toNickname,
       methodData,
       valid: propsValid = true,
@@ -643,16 +543,12 @@ export default class ConfirmTransactionBase extends Component {
       contentComponent,
       onEdit,
       nonce,
-      customNonceValue,
       assetImage,
       warning,
       unapprovedTxCount,
       transactionCategory,
-      recipientAudit,
-      hideSenderToRecipient,
-      showAccountInHeader,
     } = this.props
-    const { submitting, submitError, submitWarning } = this.state
+    const { submitting, submitError } = this.state
 
     const { name } = methodData
     const { valid, errorKey } = this.getErrorKey()
@@ -661,10 +557,8 @@ export default class ConfirmTransactionBase extends Component {
       <ConfirmPageContainer
         fromName={fromName}
         fromAddress={fromAddress}
-        showAccountInHeader={showAccountInHeader}
         toName={toName}
         toAddress={toAddress}
-        toEns={toEns}
         toNickname={toNickname}
         showEdit={onEdit && !isTxReprice}
         // In the event that the key is falsy (and inherently invalid), use a fallback string
@@ -678,13 +572,13 @@ export default class ConfirmTransactionBase extends Component {
         detailsComponent={this.renderDetails()}
         dataComponent={this.renderData()}
         contentComponent={contentComponent}
-        nonce={customNonceValue || nonce}
+        nonce={nonce}
         unapprovedTxCount={unapprovedTxCount}
         assetImage={assetImage}
         identiconAddress={identiconAddress}
         errorMessage={errorMessage || submitError}
         errorKey={propsErrorKey || errorKey}
-        warning={warning || submitWarning}
+        warning={warning}
         totalTx={totalTx}
         positionOfCurrentTx={positionOfCurrentTx}
         nextTxId={nextTxId}
@@ -700,8 +594,6 @@ export default class ConfirmTransactionBase extends Component {
         onCancelAll={() => this.handleCancelAll()}
         onCancel={() => this.handleCancel()}
         onSubmit={() => this.handleSubmit()}
-        recipientAudit={recipientAudit}
-        hideSenderToRecipient={hideSenderToRecipient}
       />
     )
   }

@@ -4,6 +4,8 @@ const h = require('react-hyperscript')
 const MenuDroppo = require('../../menu-droppo')
 const extend = require('xtend')
 
+const noop = () => {}
+
 class Dropdown extends Component {
   render () {
     const {
@@ -53,6 +55,8 @@ class Dropdown extends Component {
 }
 
 Dropdown.defaultProps = {
+  isOpen: false,
+  onClick: noop,
   useCssTransition: false,
 }
 

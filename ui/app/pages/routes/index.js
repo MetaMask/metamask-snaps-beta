@@ -12,7 +12,7 @@ import classnames from 'classnames'
 // init
 import FirstTimeFlow from '../first-time-flow'
 // accounts
-import SendTransactionScreen from '../send'
+const SendTransactionScreen = require('../send/send.container')
 const ConfirmTransaction = require('../confirm-transaction')
 
 // slideout menu
@@ -31,7 +31,7 @@ const MobileSyncPage = require('../mobile-sync')
 const AddTokenPage = require('../add-token')
 const ConfirmAddTokenPage = require('../confirm-add-token')
 const ConfirmAddSuggestedTokenPage = require('../confirm-add-suggested-token')
-import CreateAccountPage from '../create-account'
+const CreateAccountPage = require('../create-account')
 
 const Loading = require('../../components/ui/loading-screen')
 const LoadingNetwork = require('../../components/app/loading-network-screen').default
@@ -141,9 +141,9 @@ class Routes extends Component {
     return Boolean(matchPath(location.pathname, { path: CONFIRM_TRANSACTION_ROUTE, exact: false }))
   }
 
-  hasPermissionsRequests () {
-    const { permissionsRequests } = this.props
-    return Array.isArray(permissionsRequests) && permissionsRequests.length > 0
+  hasProviderRequests () {
+    const { providerRequests } = this.props
+    return Array.isArray(providerRequests) && providerRequests.length > 0
   }
 
   hideAppHeader () {
@@ -162,7 +162,7 @@ class Routes extends Component {
     }
 
     if (window.METAMASK_UI_TYPE === ENVIRONMENT_TYPE_POPUP) {
-      return this.onConfirmPage() || this.hasPermissionsRequests()
+      return this.onConfirmPage() || this.hasProviderRequests()
     }
   }
 
@@ -170,7 +170,6 @@ class Routes extends Component {
     const {
       isLoading,
       alertMessage,
-      textDirection,
       loadingMessage,
       network,
       provider,
@@ -206,14 +205,9 @@ class Routes extends Component {
       }
       : null
 
-    const sidebarShouldClose = sidebarTransaction &&
-      !sidebarTransaction.status === 'failed' &&
-      !submittedPendingTransactions.find(({ id }) => id === sidebarTransaction.id)
-
     return (
       <div
         className={classnames('app', { 'mouse-user-styles': isMouseUser})}
-        dir={textDirection}
         onClick={() => setMouseUserState(true)}
         onKeyDown={e => {
           if (e.keyCode === 9) {
@@ -236,7 +230,7 @@ class Routes extends Component {
         }
         <Sidebar
           sidebarOpen={sidebarIsOpen}
-          sidebarShouldClose={sidebarShouldClose}
+          sidebarShouldClose={sidebarTransaction && !submittedPendingTransactions.find(({ id }) => id === sidebarTransaction.id)}
           hideSidebar={this.props.hideSidebar}
           transitionName={sidebarTransitionName}
           type={sidebarType}
@@ -261,9 +255,7 @@ class Routes extends Component {
     if (!this.props.isUnlocked) {
       // currently inactive: redirect to password box
       var passwordBox = document.querySelector('input[type=password]')
-      if (!passwordBox) {
-        return
-      }
+      if (!passwordBox) return
       passwordBox.focus()
     } else {
       // currently active: deactivate
@@ -331,7 +323,6 @@ Routes.propTypes = {
   isLoading: PropTypes.bool,
   loadingMessage: PropTypes.string,
   alertMessage: PropTypes.string,
-  textDirection: PropTypes.string,
   network: PropTypes.string,
   provider: PropTypes.object,
   frequentRpcListDetail: PropTypes.array,
@@ -348,7 +339,7 @@ Routes.propTypes = {
   isMouseUser: PropTypes.bool,
   setMouseUserState: PropTypes.func,
   providerId: PropTypes.string,
-  permissionsRequests: PropTypes.array,
+  providerRequests: PropTypes.array,
   autoLogoutTimeLimit: PropTypes.number,
 }
 
@@ -364,16 +355,11 @@ function mapStateToProps (state) {
 
   const { autoLogoutTimeLimit = 0 } = preferencesSelector(state)
 
-  const {
-    permissionsRequests,
-  } = metamask
-
   return {
     // state from plugin
     sidebar,
     alertOpen,
     alertMessage,
-    textDirection: state.metamask.textDirection,
     isLoading,
     loadingMessage,
     isUnlocked: state.metamask.isUnlocked,
@@ -386,7 +372,7 @@ function mapStateToProps (state) {
     isMouseUser: state.appState.isMouseUser,
     providerId: getNetworkIdentifier(state),
     autoLogoutTimeLimit,
-    permissionsRequests,
+    providerRequests: metamask.providerRequests,
   }
 }
 

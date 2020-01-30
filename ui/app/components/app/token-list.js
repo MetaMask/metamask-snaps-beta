@@ -9,13 +9,9 @@ const selectors = require('../../selectors/selectors')
 const log = require('loglevel')
 
 function mapStateToProps (state) {
-  const ethTokens = state.metamask.tokens
-  const pluginTokens = state.metamask.assets
-
   return {
     network: state.metamask.network,
-    tokens: ethTokens,
-    pluginTokens,
+    tokens: state.metamask.tokens,
     userAddress: selectors.getSelectedAddress(state),
     assetImages: state.metamask.assetImages,
   }
@@ -49,7 +45,7 @@ function TokenList () {
 }
 
 TokenList.prototype.render = function () {
-  const { userAddress, pluginTokens, assetImages } = this.props
+  const { userAddress, assetImages } = this.props
   const state = this.state
   const { tokens, isLoading, error } = state
   if (isLoading) {
@@ -78,23 +74,11 @@ TokenList.prototype.render = function () {
     ])
   }
 
-  pluginTokens.forEach((pluginToken) => {
-    // TODO: Proper decimal encoding:
-    pluginToken.string = pluginToken.balance
-  })
-  return h('div', tokens.concat(pluginTokens).map((tokenData) => {
+  return h('div', tokens.map((tokenData) => {
     tokenData.image = assetImages[tokenData.address]
-    if (tokenData.customViewUrl) {
-      tokenData.onClick = this.showPluginToken.bind(this, tokenData)
-    }
     return h(TokenCell, tokenData)
   }))
 
-}
-
-TokenList.prototype.showPluginToken = function (tokenData) {
-  const url = tokenData.customViewUrl
-  global.platform.openWindow({ url })
 }
 
 TokenList.prototype.message = function (body) {
@@ -121,9 +105,7 @@ TokenList.prototype.createFreshTokenTracker = function () {
     this.tracker.removeListener('error', this.showError)
   }
 
-  if (!global.ethereumProvider) {
-    return
-  }
+  if (!global.ethereumProvider) return
   const { userAddress } = this.props
 
   this.tracker = new TokenTracker({
@@ -172,9 +154,7 @@ TokenList.prototype.componentDidUpdate = function (prevProps) {
   const oldTokensLength = tokens ? tokens.length : 0
   const tokensLengthUnchanged = oldTokensLength === newTokens.length
 
-  if (tokensLengthUnchanged && shouldUpdateTokens) {
-    return
-  }
+  if (tokensLengthUnchanged && shouldUpdateTokens) return
 
   this.setState({ isLoading: true })
   this.createFreshTokenTracker()
@@ -188,9 +168,7 @@ TokenList.prototype.updateBalances = function (tokens) {
 }
 
 TokenList.prototype.componentWillUnmount = function () {
-  if (!this.tracker) {
-    return
-  }
+  if (!this.tracker) return
   this.tracker.stop()
   this.tracker.removeListener('update', this.balanceUpdater)
   this.tracker.removeListener('error', this.showError)
@@ -208,4 +186,3 @@ TokenList.prototype.componentWillUnmount = function () {
 //   })
 //   return result
 // }
-//

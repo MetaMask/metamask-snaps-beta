@@ -27,8 +27,6 @@ export default class ConfirmSeedPhrase extends PureComponent {
     history: PropTypes.object,
     onSubmit: PropTypes.func,
     seedPhrase: PropTypes.string,
-    selectedAddress: PropTypes.string,
-    initializeThreeBox: PropTypes.func,
   }
 
   state = {
@@ -91,13 +89,7 @@ export default class ConfirmSeedPhrase extends PureComponent {
   }
 
   handleSubmit = async () => {
-    const {
-      history,
-      setSeedPhraseBackedUp,
-      showingSeedPhraseBackupAfterOnboarding,
-      hideSeedPhraseBackupAfterOnboarding,
-      initializeThreeBox,
-    } = this.props
+    const { history, setSeedPhraseBackedUp, showingSeedPhraseBackupAfterOnboarding, hideSeedPhraseBackupAfterOnboarding } = this.props
 
     if (!this.isValid()) {
       return
@@ -117,7 +109,6 @@ export default class ConfirmSeedPhrase extends PureComponent {
           hideSeedPhraseBackupAfterOnboarding()
           history.push(DEFAULT_ROUTE)
         } else {
-          initializeThreeBox()
           history.push(INITIALIZE_END_OF_FLOW_ROUTE)
         }
       })

@@ -456,7 +456,7 @@ describe('MetaMask Reducers', () => {
   it('sets current locale', () => {
     const state = reduceMetamask({}, {
       type: actions.SET_CURRENT_LOCALE,
-      value: { locale: 'ge' },
+      value: 'ge',
     })
 
     assert.equal(state.currentLocale, 'ge')

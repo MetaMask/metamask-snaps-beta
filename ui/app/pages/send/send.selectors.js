@@ -53,6 +53,7 @@ const selectors = {
   getSendTo,
   getSendToAccounts,
   getSendToNickname,
+  getSendWarnings,
   getTokenBalance,
   getTokenExchangeRate,
   getUnapprovedTxs,
@@ -243,6 +244,11 @@ function getSendToAccounts (state) {
   const addressBookAccounts = getAddressBook(state)
   return [...fromAccounts, ...addressBookAccounts]
 }
+
+function getSendWarnings (state) {
+  return state.send.warnings
+}
+
 function getTokenBalance (state) {
   return state.metamask.send.tokenBalance
 }

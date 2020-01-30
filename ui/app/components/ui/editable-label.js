@@ -37,7 +37,6 @@ class EditableLabel extends Component {
       h('input.large-input.editable-label__input', {
         type: 'text',
         required: true,
-        dir: 'auto',
         value: this.state.value,
         onKeyPress: (event) => {
           if (event.key === 'Enter') {

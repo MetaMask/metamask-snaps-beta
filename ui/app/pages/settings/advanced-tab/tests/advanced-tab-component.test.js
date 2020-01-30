@@ -6,7 +6,7 @@ import AdvancedTab from '../advanced-tab.component'
 import TextField from '../../../../components/ui/text-field'
 
 describe('AdvancedTab Component', () => {
-  it('should render correctly when threeBoxFeatureFlag', () => {
+  it('should render correctly', () => {
     const root = shallow(
       <AdvancedTab />,
       {
@@ -16,7 +16,7 @@ describe('AdvancedTab Component', () => {
       }
     )
 
-    assert.equal(root.find('.settings-page__content-row').length, 9)
+    assert.equal(root.find('.settings-page__content-row').length, 7)
   })
 
   it('should update autoLogoutTimeLimit', () => {
@@ -32,13 +32,13 @@ describe('AdvancedTab Component', () => {
       }
     )
 
-    const autoTimeout = root.find('.settings-page__content-row').at(7)
+    const autoTimeout = root.find('.settings-page__content-row').last()
     const textField = autoTimeout.find(TextField)
 
     textField.props().onChange({ target: { value: 1440 } })
     assert.equal(root.state().autoLogoutTimeLimit, 1440)
 
-    autoTimeout.find('.settings-tab__rpc-save-button').simulate('click')
+    autoTimeout.find('button').simulate('click')
     assert.equal(setAutoLogoutTimeLimitSpy.args[0][0], 1440)
   })
 })

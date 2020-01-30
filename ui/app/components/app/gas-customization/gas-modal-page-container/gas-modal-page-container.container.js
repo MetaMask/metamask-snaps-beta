@@ -6,7 +6,6 @@ import {
   setGasLimit,
   setGasPrice,
   createSpeedUpTransaction,
-  createRetryTransaction,
   hideSidebar,
   updateSendAmount,
   setGasTotal,
@@ -34,6 +33,8 @@ import {
   preferencesSelector,
 } from '../../../../selectors/selectors.js'
 import {
+  formatTimeEstimate,
+  getFastPriceEstimateInHexWEI,
   getBasicGasEstimateLoadingStatus,
   getGasEstimatesLoadingStatus,
   getCustomGasLimit,
@@ -46,9 +47,6 @@ import {
   isCustomPriceSafe,
 } from '../../../../selectors/custom-gas'
 import {
-  getTxParams,
-} from '../../../../selectors/transactions'
-import {
   getTokenBalance,
 } from '../../../../pages/send/send.selectors'
 import {
@@ -58,9 +56,9 @@ import {
   addHexWEIsToDec,
   subtractHexWEIsToDec,
   decEthToConvertedCurrency as ethTotalToConvertedCurrency,
+  decGWEIToHexWEI,
   hexWEIToDecGWEI,
 } from '../../../../helpers/utils/conversions.util'
-import { getRenderableTimeEstimate } from '../../../../helpers/utils/gas-time-estimates.util'
 import {
   formatETHFee,
 } from '../../../../helpers/utils/formatters'
@@ -69,6 +67,7 @@ import {
   isBalanceSufficient,
 } from '../../../../pages/send/send.utils'
 import { addHexPrefix } from 'ethereumjs-util'
+import { getAdjacentGasPrices, extrapolateY } from '../gas-price-chart/gas-price-chart.utils'
 import { getMaxModeOn } from '../../../../pages/send/send-content/send-amount-row/amount-max-button/amount-max-button.selectors'
 import { calcMaxAmount } from '../../../../pages/send/send-content/send-amount-row/amount-max-button/amount-max-button.utils'
 
@@ -84,7 +83,7 @@ const mapStateToProps = (state, ownProps) => {
 
   const { gasPrice: currentGasPrice, gas: currentGasLimit, value } = getTxParams(state, selectedTransaction)
   const customModalGasPriceInHex = getCustomGasPrice(state) || currentGasPrice
-  const customModalGasLimitInHex = getCustomGasLimit(state) || currentGasLimit || '0x5208'
+  const customModalGasLimitInHex = getCustomGasLimit(state) || currentGasLimit
   const customGasTotal = calcGasTotal(customModalGasLimitInHex, customModalGasPriceInHex)
 
   const gasButtonInfo = getRenderableBasicEstimateData(state, customModalGasLimitInHex)
@@ -155,7 +154,6 @@ const mapStateToProps = (state, ownProps) => {
     },
     transaction: txData || transaction,
     isSpeedUp: transaction.status === 'submitted',
-    isRetry: transaction.status === 'failed',
     txId: transaction.id,
     insufficientBalance,
     gasEstimatesLoading,
@@ -177,7 +175,8 @@ const mapDispatchToProps = dispatch => {
     },
     hideModal: () => dispatch(hideModal()),
     updateCustomGasPrice,
-    updateCustomGasLimit: newLimit => dispatch(setCustomGasLimit(addHexPrefix(newLimit))),
+    convertThenUpdateCustomGasPrice: newPrice => updateCustomGasPrice(decGWEIToHexWEI(newPrice)),
+    convertThenUpdateCustomGasLimit: newLimit => dispatch(setCustomGasLimit(addHexPrefix(newLimit.toString(16)))),
     setGasData: (newLimit, newPrice) => {
       dispatch(setGasLimit(newLimit))
       dispatch(setGasPrice(newPrice))
@@ -189,9 +188,6 @@ const mapDispatchToProps = dispatch => {
     },
     createSpeedUpTransaction: (txId, gasPrice) => {
       return dispatch(createSpeedUpTransaction(txId, gasPrice))
-    },
-    createRetryTransaction: (txId, gasPrice) => {
-      return dispatch(createRetryTransaction(txId, gasPrice))
     },
     hideGasButtonGroup: () => dispatch(hideGasButtonGroup()),
     setCustomTimeEstimate: (timeEstimateInSeconds) => dispatch(setCustomTimeEstimate(timeEstimateInSeconds)),
@@ -212,7 +208,6 @@ const mergeProps = (stateProps, dispatchProps, ownProps) => {
     isConfirm,
     txId,
     isSpeedUp,
-    isRetry,
     insufficientBalance,
     maxModeOn,
     customGasPrice,
@@ -224,11 +219,11 @@ const mergeProps = (stateProps, dispatchProps, ownProps) => {
     transaction,
   } = stateProps
   const {
+    updateCustomGasPrice: dispatchUpdateCustomGasPrice,
     hideGasButtonGroup: dispatchHideGasButtonGroup,
     setGasData: dispatchSetGasData,
     updateConfirmTxGasAndCalculate: dispatchUpdateConfirmTxGasAndCalculate,
     createSpeedUpTransaction: dispatchCreateSpeedUpTransaction,
-    createRetryTransaction: dispatchCreateRetryTransaction,
     hideSidebar: dispatchHideSidebar,
     cancelAndClose: dispatchCancelAndClose,
     hideModal: dispatchHideModal,
@@ -256,10 +251,6 @@ const mergeProps = (stateProps, dispatchProps, ownProps) => {
         dispatchCreateSpeedUpTransaction(txId, gasPrice)
         dispatchHideSidebar()
         dispatchCancelAndClose()
-      } else if (isRetry) {
-        dispatchCreateRetryTransaction(txId, gasPrice)
-        dispatchHideSidebar()
-        dispatchCancelAndClose()
       } else {
         dispatchSetGasData(gasLimit, gasPrice)
         dispatchHideGasButtonGroup()
@@ -276,11 +267,11 @@ const mergeProps = (stateProps, dispatchProps, ownProps) => {
     },
     gasPriceButtonGroupProps: {
       ...gasPriceButtonGroupProps,
-      handleGasPriceSelection: otherDispatchProps.updateCustomGasPrice,
+      handleGasPriceSelection: dispatchUpdateCustomGasPrice,
     },
     cancelAndClose: () => {
       dispatchCancelAndClose()
-      if (isSpeedUp || isRetry) {
+      if (isSpeedUp) {
         dispatchHideSidebar()
       }
     },
@@ -300,6 +291,18 @@ function calcCustomGasPrice (customGasPriceInHex) {
 
 function calcCustomGasLimit (customGasLimitInHex) {
   return parseInt(customGasLimitInHex, 16)
+}
+
+function getTxParams (state, selectedTransaction = {}) {
+  const { metamask: { send } } = state
+  const { txParams } = selectedTransaction
+  return txParams || {
+    from: send.from,
+    gas: send.gasLimit || '0x5208',
+    gasPrice: send.gasPrice || getFastPriceEstimateInHexWEI(state, true),
+    to: send.to,
+    value: getSelectedToken(state) ? '0x0' : send.amount,
+  }
 }
 
 function addHexWEIsToRenderableEth (aHexWEI, bHexWEI) {
@@ -322,4 +325,32 @@ function addHexWEIsToRenderableFiat (aHexWEI, bHexWEI, convertedCurrency, conver
     partialRight(ethTotalToConvertedCurrency, [convertedCurrency, conversionRate]),
     partialRight(formatCurrency, [convertedCurrency]),
   )(aHexWEI, bHexWEI)
+}
+
+function getRenderableTimeEstimate (currentGasPrice, gasPrices, estimatedTimes) {
+  const minGasPrice = gasPrices[0]
+  const maxGasPrice = gasPrices[gasPrices.length - 1]
+  let priceForEstimation = currentGasPrice
+  if (currentGasPrice < minGasPrice) {
+    priceForEstimation = minGasPrice
+  } else if (currentGasPrice > maxGasPrice) {
+    priceForEstimation = maxGasPrice
+  }
+
+  const {
+    closestLowerValueIndex,
+    closestHigherValueIndex,
+    closestHigherValue,
+    closestLowerValue,
+  } = getAdjacentGasPrices({ gasPrices, priceToPosition: priceForEstimation })
+
+  const newTimeEstimate = extrapolateY({
+    higherY: estimatedTimes[closestHigherValueIndex],
+    lowerY: estimatedTimes[closestLowerValueIndex],
+    higherX: closestHigherValue,
+    lowerX: closestLowerValue,
+    xForExtrapolation: priceForEstimation,
+  })
+
+  return formatTimeEstimate(newTimeEstimate, currentGasPrice > maxGasPrice, currentGasPrice < minGasPrice)
 }

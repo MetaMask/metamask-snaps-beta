@@ -8,19 +8,12 @@ import { getTokenData } from '../../../helpers/utils/transactions.util'
 import { getHexGasTotal, increaseLastGasPrice } from '../../../helpers/utils/confirm-tx.util'
 import { formatDate } from '../../../helpers/utils/util'
 import {
-  fetchGasEstimates,
   fetchBasicGasAndTimeEstimates,
+  fetchGasEstimates,
   setCustomGasPriceForRetry,
   setCustomGasLimit,
 } from '../../../ducks/gas/gas.duck'
-import {
-  getIsMainnet,
-  preferencesSelector,
-  getSelectedAddress,
-  conversionRateSelector,
-  getKnownMethodData,
-  getFeatureFlags,
-} from '../../../selectors/selectors'
+import { getIsMainnet, preferencesSelector, getSelectedAddress, conversionRateSelector, getKnownMethodData } from '../../../selectors/selectors'
 import { isBalanceSufficient } from '../../../pages/send/send.utils'
 
 const mapStateToProps = (state, ownProps) => {
@@ -28,10 +21,10 @@ const mapStateToProps = (state, ownProps) => {
   const { showFiatInTestnets } = preferencesSelector(state)
   const isMainnet = getIsMainnet(state)
   const { transactionGroup: { primaryTransaction } = {} } = ownProps
-  const { txParams: { gas: gasLimit, gasPrice, data } = {}, transactionCategory } = primaryTransaction
+  const { txParams: { gas: gasLimit, gasPrice, data, to } = {} } = primaryTransaction
   const selectedAddress = getSelectedAddress(state)
   const selectedAccountBalance = accounts[selectedAddress].balance
-  const isDeposit = transactionCategory === 'incoming'
+  const isDeposit = selectedAddress === to
   const selectRpcInfo = frequentRpcListDetail.find(rpcInfo => rpcInfo.rpcUrl === provider.rpcTarget)
   const { rpcPrefs } = selectRpcInfo || {}
 
@@ -45,8 +38,6 @@ const mapStateToProps = (state, ownProps) => {
     conversionRate: conversionRateSelector(state),
   })
 
-  const transactionTimeFeatureActive = getFeatureFlags(state).transactionTime
-
   return {
     methodData: getKnownMethodData(state, data) || {},
     showFiat: (isMainnet || !!showFiatInTestnets),
@@ -54,7 +45,6 @@ const mapStateToProps = (state, ownProps) => {
     hasEnoughCancelGas,
     rpcPrefs,
     isDeposit,
-    transactionTimeFeatureActive,
   }
 }
 

@@ -23,12 +23,6 @@ function mapDispatchToProps (dispatch) {
           dispatch(actions.hideModal())
         })
     },
-    hideAsset: (fromDomain, asset) => {
-      dispatch(actions.removeAsset(fromDomain, asset))
-        .then(() => {
-          dispatch(actions.hideModal())
-        })
-    },
   }
 }
 
@@ -47,9 +41,8 @@ module.exports = connect(mapStateToProps, mapDispatchToProps)(HideTokenConfirmat
 
 
 HideTokenConfirmationModal.prototype.render = function () {
-  const { token, network, hideToken, hideModal, assetImages, hideAsset } = this.props
-
-  const { symbol, address, fromDomain } = token
+  const { token, network, hideToken, hideModal, assetImages } = this.props
+  const { symbol, address } = token
   const image = assetImages[address]
 
   return h('div.hide-token-confirmation', {}, [
@@ -80,7 +73,7 @@ HideTokenConfirmationModal.prototype.render = function () {
           this.context.t('cancel'),
         ]),
         h('button.btn-secondary.hide-token-confirmation__button.btn--large', {
-          onClick: () => fromDomain ? hideAsset(fromDomain, token) : hideToken(address),
+          onClick: () => hideToken(address),
         }, [
           this.context.t('hide'),
         ]),

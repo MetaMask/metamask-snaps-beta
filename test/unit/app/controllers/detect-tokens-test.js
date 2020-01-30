@@ -26,8 +26,10 @@ describe('DetectTokensController', () => {
     keyringMemStore = new ObservableStore({ isUnlocked: false})
     network = new NetworkController()
     preferences = new PreferencesController({ network })
-    network.initializeProvider(networkControllerProviderConfig)
     controller = new DetectTokensController({ preferences: preferences, network: network, keyringMemStore: keyringMemStore })
+
+    network.initializeProvider(networkControllerProviderConfig)
+
   })
 
   after(() => {

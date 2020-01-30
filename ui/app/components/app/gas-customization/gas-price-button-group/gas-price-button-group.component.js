@@ -2,11 +2,9 @@ import React, { Component } from 'react'
 import PropTypes from 'prop-types'
 import ButtonGroup from '../../../ui/button-group'
 import Button from '../../../ui/button'
-import { GAS_ESTIMATE_TYPES } from '../../../../helpers/constants/common'
-
 
 const GAS_OBJECT_PROPTYPES_SHAPE = {
-  gasEstimateType: PropTypes.oneOf(Object.values(GAS_ESTIMATE_TYPES)).isRequired,
+  label: PropTypes.string,
   feeInPrimaryCurrency: PropTypes.string,
   feeInSecondaryCurrency: PropTypes.string,
   timeEstimate: PropTypes.string,
@@ -29,19 +27,8 @@ export default class GasPriceButtonGroup extends Component {
     showCheck: PropTypes.bool,
   }
 
-  gasEstimateTypeLabel (gasEstimateType) {
-    if (gasEstimateType === GAS_ESTIMATE_TYPES.SLOW) {
-      return this.context.t('slow')
-    } else if (gasEstimateType === GAS_ESTIMATE_TYPES.AVERAGE) {
-      return this.context.t('average')
-    } else if (gasEstimateType === GAS_ESTIMATE_TYPES.FAST) {
-      return this.context.t('fast')
-    }
-    throw new Error(`Unrecognized gas estimate type: ${gasEstimateType}`)
-  }
-
   renderButtonContent ({
-    gasEstimateType,
+    labelKey,
     feeInPrimaryCurrency,
     feeInSecondaryCurrency,
     timeEstimate,
@@ -50,7 +37,7 @@ export default class GasPriceButtonGroup extends Component {
     showCheck,
   }) {
     return (<div>
-      { gasEstimateType && <div className={`${className}__label`}>{ this.gasEstimateTypeLabel(gasEstimateType) }</div> }
+      { labelKey && <div className={`${className}__label`}>{ this.context.t(labelKey) }</div> }
       { timeEstimate && <div className={`${className}__time-estimate`}>{ timeEstimate }</div> }
       { feeInPrimaryCurrency && <div className={`${className}__primary-currency`}>{ feeInPrimaryCurrency }</div> }
       { feeInSecondaryCurrency && <div className={`${className}__secondary-currency`}>{ feeInSecondaryCurrency }</div> }

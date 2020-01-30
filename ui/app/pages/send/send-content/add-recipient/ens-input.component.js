@@ -86,12 +86,8 @@ export default class EnsInput extends Component {
     log.info(`ENS attempting to resolve name: ${recipient}`)
     this.ens.lookup(recipient)
       .then((address) => {
-        if (address === ZERO_ADDRESS) {
-          throw new Error(this.context.t('noAddressForName'))
-        }
-        if (address === ZERO_X_ERROR_ADDRESS) {
-          throw new Error(this.context.t('ensRegistrationError'))
-        }
+        if (address === ZERO_ADDRESS) throw new Error(this.context.t('noAddressForName'))
+        if (address === ZERO_X_ERROR_ADDRESS) throw new Error(this.context.t('ensRegistrationError'))
         this.props.updateEnsResolution(address)
       })
       .catch((reason) => {
@@ -159,7 +155,6 @@ export default class EnsInput extends Component {
           <input
             className="ens-input__wrapper__input"
             type="text"
-            dir="auto"
             placeholder={t('recipientAddressPlaceholder')}
             onChange={this.onChange}
             onPaste={this.onPaste}
@@ -236,9 +231,7 @@ export default class EnsInput extends Component {
   ensIconContents () {
     const { loadingEns, ensFailure, ensResolution, toError } = this.state || { ensResolution: ZERO_ADDRESS }
 
-    if (toError) {
-      return
-    }
+    if (toError) return
 
     if (loadingEns) {
       return (

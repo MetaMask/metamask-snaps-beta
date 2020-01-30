@@ -63,9 +63,7 @@ export default class AddContact extends PureComponent {
     return (
       <EnsInput
         className="send__to-row"
-        scanQrCode={_ => {
-          this.props.scanQrCode()
-        }}
+        scanQrCode={_ => { this.props.scanQrCode() }}
         onChange={this.dValidate}
         onPaste={text => this.setState({ ethAddress: text })}
         onReset={() => this.setState({ ethAddress: '', ensAddress: '' })}
@@ -125,7 +123,7 @@ export default class AddContact extends PureComponent {
             history.push(CONTACT_LIST_ROUTE)
           }}
           submitText={this.context.t('save')}
-          submitButtonType="confirm"
+          submitButtonType={'confirm'}
         />
       </div>
     )

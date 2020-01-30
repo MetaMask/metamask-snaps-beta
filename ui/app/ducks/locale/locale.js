@@ -7,9 +7,9 @@ function reduceMetamask (state, action) {
   const localeMessagesState = extend({}, state.localeMessages)
 
   switch (action.type) {
-    case actions.SET_CURRENT_LOCALE:
+    case actions.SET_LOCALE_MESSAGES:
       return extend(localeMessagesState, {
-        current: action.value.messages,
+        current: action.value,
       })
     default:
       return localeMessagesState

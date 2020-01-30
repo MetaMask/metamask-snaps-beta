@@ -17,9 +17,7 @@ FiatValue.prototype.render = function () {
 
   const value = formatBalance(props.value, 6)
 
-  if (value === 'None') {
-    return value
-  }
+  if (value === 'None') return value
   var fiatDisplayNumber, fiatTooltipNumber
   var splitBalance = value.split(' ')
 

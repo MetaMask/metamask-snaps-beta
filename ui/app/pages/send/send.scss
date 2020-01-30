@@ -60,10 +60,6 @@
         width: 18px;
         height: 18px;
         margin-right: .5rem;
-
-        [dir='rtl'] & {
-          transform: rotate(180deg);
-        }
       }
     }
 

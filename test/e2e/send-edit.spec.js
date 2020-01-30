@@ -1,20 +1,27 @@
+const path = require('path')
 const assert = require('assert')
 const webdriver = require('selenium-webdriver')
 const { By, Key, until } = webdriver
 const {
   delay,
+  buildChromeWebDriver,
+  buildFirefoxWebdriver,
+  installWebExt,
+  getExtensionIdChrome,
+  getExtensionIdFirefox,
 } = require('./func')
 const {
   checkBrowserForConsoleErrors,
+  closeAllWindowHandlesExcept,
   verboseReportOnFailure,
   findElement,
   findElements,
-  setupFetchMocking,
-  prepareExtensionForTesting,
 } = require('./helpers')
-const enLocaleMessages = require('../../app/_locales/en/messages.json')
+const fetchMockResponses = require('./fetch-mocks.js')
+
 
 describe('Using MetaMask with an existing account', function () {
+  let extensionId
   let driver
 
   const testSeedPhrase = 'forum vessel pink push lonely enact gentle tail admit parrot grunt dress'
@@ -26,9 +33,61 @@ describe('Using MetaMask with an existing account', function () {
   this.bail(true)
 
   before(async function () {
-    const result = await prepareExtensionForTesting()
-    driver = result.driver
-    await setupFetchMocking(driver)
+    let extensionUrl
+    switch (process.env.SELENIUM_BROWSER) {
+      case 'chrome': {
+        const extensionPath = path.resolve('dist/chrome')
+        driver = buildChromeWebDriver(extensionPath)
+        extensionId = await getExtensionIdChrome(driver)
+        await delay(regularDelayMs)
+        extensionUrl = `chrome-extension://${extensionId}/home.html`
+        break
+      }
+      case 'firefox': {
+        const extensionPath = path.resolve('dist/firefox')
+        driver = buildFirefoxWebdriver()
+        await installWebExt(driver, extensionPath)
+        await delay(regularDelayMs)
+        extensionId = await getExtensionIdFirefox(driver)
+        extensionUrl = `moz-extension://${extensionId}/home.html`
+        break
+      }
+    }
+    // Depending on the state of the application built into the above directory (extPath) and the value of
+    // METAMASK_DEBUG we will see different post-install behaviour and possibly some extra windows. Here we
+    // are closing any extraneous windows to reset us to a single window before continuing.
+    const [tab1] = await driver.getAllWindowHandles()
+    await closeAllWindowHandlesExcept(driver, [tab1])
+    await driver.switchTo().window(tab1)
+    await driver.get(extensionUrl)
+  })
+
+  beforeEach(async function () {
+    await driver.executeScript(
+      'window.origFetch = window.fetch.bind(window);' +
+      'window.fetch = ' +
+      '(...args) => { ' +
+      'if (args[0] === "https://ethgasstation.info/json/ethgasAPI.json") { return ' +
+      'Promise.resolve({ json: () => Promise.resolve(JSON.parse(\'' + fetchMockResponses.ethGasBasic + '\')) }); } else if ' +
+      '(args[0] === "https://ethgasstation.info/json/predictTable.json") { return ' +
+      'Promise.resolve({ json: () => Promise.resolve(JSON.parse(\'' + fetchMockResponses.ethGasPredictTable + '\')) }); } else if ' +
+      '(args[0].match(/chromeextensionmm/)) { return ' +
+      'Promise.resolve({ json: () => Promise.resolve(JSON.parse(\'' + fetchMockResponses.metametrics + '\')) }); } else if ' +
+      '(args[0] === "https://dev.blockscale.net/api/gasexpress.json") { return ' +
+      'Promise.resolve({ json: () => Promise.resolve(JSON.parse(\'' + fetchMockResponses.gasExpress + '\')) }); } ' +
+      'return window.origFetch(...args); };' +
+      'function cancelInfuraRequest(requestDetails) {' +
+        'console.log("Canceling: " + requestDetails.url);' +
+        'return {' +
+          'cancel: true' +
+        '};' +
+     ' }' +
+      'window.chrome && window.chrome.webRequest && window.chrome.webRequest.onBeforeRequest.addListener(' +
+        'cancelInfuraRequest,' +
+        '{urls: ["https://*.infura.io/*"]},' +
+        '["blocking"]' +
+      ');'
+    )
   })
 
   afterEach(async function () {
@@ -52,7 +111,7 @@ describe('Using MetaMask with an existing account', function () {
   describe('First time flow starting from an existing seed phrase', () => {
     it('clicks the continue button on the welcome screen', async () => {
       await findElement(driver, By.css('.welcome-page__header'))
-      const welcomeScreenBtn = await findElement(driver, By.xpath(`//button[contains(text(), '${enLocaleMessages.getStarted.message}')]`))
+      const welcomeScreenBtn = await findElement(driver, By.css('.first-time-flow__button'))
       welcomeScreenBtn.click()
       await delay(largeDelayMs)
     })
@@ -89,7 +148,7 @@ describe('Using MetaMask with an existing account', function () {
 
     it('clicks through the success screen', async () => {
       await findElement(driver, By.xpath(`//div[contains(text(), 'Congratulations')]`))
-      const doneButton = await findElement(driver, By.xpath(`//button[contains(text(), '${enLocaleMessages.endOfFlowMessage10.message}')]`))
+      const doneButton = await findElement(driver, By.css('button.first-time-flow__button'))
       await doneButton.click()
       await delay(regularDelayMs)
     })
@@ -114,7 +173,7 @@ describe('Using MetaMask with an existing account', function () {
 
       const gasModal = await driver.findElement(By.css('span .modal'))
 
-      const [gasPriceInput, gasLimitInput] = await findElements(driver, By.css('.advanced-gas-inputs__gas-edit-row__input'))
+      const [gasPriceInput, gasLimitInput] = await findElements(driver, By.css('.advanced-tab__gas-edit-row__input'))
       await gasPriceInput.sendKeys(Key.chord(Key.CONTROL, 'a'))
       await delay(50)
 
@@ -131,8 +190,6 @@ describe('Using MetaMask with an existing account', function () {
       await delay(50)
 
       await gasLimitInput.sendKeys('25000')
-
-      await delay(1000)
 
       const save = await findElement(driver, By.xpath(`//button[contains(text(), 'Save')]`))
       await save.click()
@@ -173,7 +230,7 @@ describe('Using MetaMask with an existing account', function () {
 
       const gasModal = await driver.findElement(By.css('span .modal'))
 
-      const [gasPriceInput, gasLimitInput] = await findElements(driver, By.css('.advanced-gas-inputs__gas-edit-row__input'))
+      const [gasPriceInput, gasLimitInput] = await findElements(driver, By.css('.advanced-tab__gas-edit-row__input'))
       await gasPriceInput.sendKeys(Key.chord(Key.CONTROL, 'a'))
       await delay(50)
 
@@ -189,8 +246,6 @@ describe('Using MetaMask with an existing account', function () {
       await delay(50)
 
       await gasLimitInput.sendKeys('100000')
-
-      await delay(1000)
 
       const save = await findElement(driver, By.xpath(`//button[contains(text(), 'Save')]`))
       await save.click()
@@ -218,10 +273,8 @@ describe('Using MetaMask with an existing account', function () {
     })
 
     it('finds the transaction in the transactions list', async function () {
-      await driver.wait(async () => {
-        const confirmedTxes = await findElements(driver, By.css('.transaction-list__completed-transactions .transaction-list-item'))
-        return confirmedTxes.length === 1
-      }, 10000)
+      const transactions = await findElements(driver, By.css('.transaction-list-item'))
+      assert.equal(transactions.length, 1)
 
       const txValues = await findElements(driver, By.css('.transaction-list-item__amount--primary'))
       assert.equal(txValues.length, 1)

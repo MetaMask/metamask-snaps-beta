@@ -10,7 +10,6 @@ const ethUtil = require('ethereumjs-util')
 const { fetchLocale } = require('../helpers/utils/i18n-helper')
 const { getMethodDataAsync } = require('../helpers/utils/transactions.util')
 const { fetchSymbolAndDecimals } = require('../helpers/utils/token-util')
-import switchDirection from '../helpers/utils/switch-direction'
 const log = require('loglevel')
 const { ENVIRONMENT_TYPE_NOTIFICATION } = require('../../../app/scripts/lib/enums')
 const { hasUnconfirmedTransactions } = require('../helpers/utils/confirm-tx.util')
@@ -178,9 +177,6 @@ var actions = {
   VIEW_PENDING_TX: 'VIEW_PENDING_TX',
   updateTransactionParams,
   UPDATE_TRANSACTION_PARAMS: 'UPDATE_TRANSACTION_PARAMS',
-  setNextNonce,
-  SET_NEXT_NONCE: 'SET_NEXT_NONCE',
-  getNextNonce,
   // send screen
   UPDATE_GAS_LIMIT: 'UPDATE_GAS_LIMIT',
   UPDATE_GAS_PRICE: 'UPDATE_GAS_PRICE',
@@ -192,6 +188,7 @@ var actions = {
   UPDATE_SEND_AMOUNT: 'UPDATE_SEND_AMOUNT',
   UPDATE_SEND_MEMO: 'UPDATE_SEND_MEMO',
   UPDATE_SEND_ERRORS: 'UPDATE_SEND_ERRORS',
+  UPDATE_SEND_WARNINGS: 'UPDATE_SEND_WARNINGS',
   UPDATE_MAX_MODE: 'UPDATE_MAX_MODE',
   UPDATE_SEND: 'UPDATE_SEND',
   CLEAR_SEND: 'CLEAR_SEND',
@@ -216,6 +213,7 @@ var actions = {
   setMaxModeTo,
   updateSend,
   updateSendErrors,
+  updateSendWarnings,
   clearSend,
   setSelectedAddress,
   gasLoadingStarted,
@@ -241,7 +239,6 @@ var actions = {
   addTokens,
   removeToken,
   updateTokens,
-  removeAsset,
   removeSuggestedTokens,
   addKnownMethodData,
   UPDATE_TOKENS: 'UPDATE_TOKENS',
@@ -302,10 +299,6 @@ var actions = {
 
   SET_USE_BLOCKIE: 'SET_USE_BLOCKIE',
   setUseBlockie,
-  SET_USE_NONCEFIELD: 'SET_USE_NONCEFIELD',
-  setUseNonceField,
-  UPDATE_CUSTOM_NONCE: 'UPDATE_CUSTOM_NONCE',
-  updateCustomNonce,
 
   SET_PARTICIPATE_IN_METAMETRICS: 'SET_PARTICIPATE_IN_METAMETRICS',
   SET_METAMETRICS_SEND_COUNT: 'SET_METAMETRICS_SEND_COUNT',
@@ -314,8 +307,10 @@ var actions = {
 
   // locale
   SET_CURRENT_LOCALE: 'SET_CURRENT_LOCALE',
+  SET_LOCALE_MESSAGES: 'SET_LOCALE_MESSAGES',
   setCurrentLocale,
   updateCurrentLocale,
+  setLocaleMessages,
   //
   // Feature Flags
   setFeatureFlag,
@@ -329,6 +324,7 @@ var actions = {
   setUseNativeCurrencyAsPrimaryCurrencyPreference,
   setShowFiatConversionOnTestnetsPreference,
   setAutoLogoutTimeLimit,
+  unsetMigratedPrivacyMode,
 
   // Onboarding
   setCompletedOnboarding,
@@ -350,18 +346,10 @@ var actions = {
 
   createCancelTransaction,
   createSpeedUpTransaction,
-  createRetryTransaction,
 
-  // Permissions
-  approvePermissionsRequest,
-  rejectPermissionsRequest,
-  removePermissionsFor,
-  selectApprovedAccount,
-  // clearing permission state
-  clearPermissions, // remove permissions only
-  clearPermissionsHistory,
-  clearPermissionsLog,
-  clearAllPermissionsData, // remove all of the above
+  approveProviderRequestByOrigin,
+  rejectProviderRequestByOrigin,
+  clearApprovedOrigins,
 
   setFirstTimeFlowType,
   SET_FIRST_TIME_FLOW_TYPE: 'SET_FIRST_TIME_FLOW_TYPE',
@@ -374,7 +362,6 @@ var actions = {
   // AppStateController-related actions
   SET_LAST_ACTIVE_TIME: 'SET_LAST_ACTIVE_TIME',
   setLastActiveTime,
-  setMkrMigrationReminderTimestamp,
 
   getContractMethodData,
   loadingMethoDataStarted,
@@ -390,23 +377,7 @@ var actions = {
 
   setSeedPhraseBackedUp,
   verifySeedPhrase,
-  hideSeedPhraseBackupAfterOnboarding,
   SET_SEED_PHRASE_BACKED_UP_TO_TRUE: 'SET_SEED_PHRASE_BACKED_UP_TO_TRUE',
-
-  initializeThreeBox,
-  restoreFromThreeBox,
-  getThreeBoxLastUpdated,
-  setThreeBoxSyncingPermission,
-  setShowRestorePromptToFalse,
-  turnThreeBoxSyncingOn,
-
-  removePlugin,
-  removePlugins,
-  clearPlugins,
-
-  turnThreeBoxSyncingOnAndInitialize,
-
-  tryReverseResolveAddress,
 }
 
 module.exports = actions
@@ -483,13 +454,13 @@ function createNewVaultAndRestore (password, seed) {
   return (dispatch) => {
     dispatch(actions.showLoadingIndication())
     log.debug(`background.createNewVaultAndRestore`)
-    let vault
+
     return new Promise((resolve, reject) => {
-      background.createNewVaultAndRestore(password, seed, (err, _vault) => {
+      background.createNewVaultAndRestore(password, seed, (err) => {
         if (err) {
           return reject(err)
         }
-        vault = _vault
+
         resolve()
       })
     })
@@ -497,7 +468,6 @@ function createNewVaultAndRestore (password, seed) {
       .then(() => {
         dispatch(actions.showAccountsPage())
         dispatch(actions.hideLoadingIndication())
-        return vault
       })
       .catch(err => {
         dispatch(actions.displayWarning(err.message))
@@ -614,19 +584,6 @@ function requestRevealSeedWords (password) {
   }
 }
 
-function tryReverseResolveAddress (address) {
-  return () => {
-    return new Promise((resolve) => {
-      background.tryReverseResolveAddress(address, (err) => {
-        if (err) {
-          log.error(err)
-        }
-        resolve()
-      })
-    })
-  }
-}
-
 function fetchInfoToSync () {
   return dispatch => {
     log.debug(`background.fetchInfoToSync`)
@@ -688,9 +645,7 @@ function addNewKeyring (type, opts) {
     log.debug(`background.addNewKeyring`)
     background.addNewKeyring(type, opts, (err) => {
       dispatch(actions.hideLoadingIndication())
-      if (err) {
-        return dispatch(actions.displayWarning(err.message))
-      }
+      if (err) return dispatch(actions.displayWarning(err.message))
       dispatch(actions.showAccountsPage())
     })
   }
@@ -886,6 +841,8 @@ function signMsg (msgData) {
   log.debug('action - signMsg')
   return (dispatch) => {
     dispatch(actions.showLoadingIndication())
+    window.onbeforeunload = null
+
     return new Promise((resolve, reject) => {
       log.debug(`actions calling background.signMessage`)
       background.signMessage(msgData, (err, newState) => {
@@ -912,6 +869,7 @@ function signPersonalMsg (msgData) {
   log.debug('action - signPersonalMsg')
   return (dispatch) => {
     dispatch(actions.showLoadingIndication())
+    window.onbeforeunload = null
     return new Promise((resolve, reject) => {
       log.debug(`actions calling background.signPersonalMessage`)
       background.signPersonalMessage(msgData, (err, newState) => {
@@ -938,6 +896,7 @@ function signTypedMsg (msgData) {
   log.debug('action - signTypedMsg')
   return (dispatch) => {
     dispatch(actions.showLoadingIndication())
+    window.onbeforeunload = null
     return new Promise((resolve, reject) => {
       log.debug(`actions calling background.signTypedMessage`)
       background.signTypedMessage(msgData, (err, newState) => {
@@ -1069,6 +1028,13 @@ function updateSendErrors (errorObject) {
   }
 }
 
+function updateSendWarnings (warningObject) {
+  return {
+    type: actions.UPDATE_SEND_WARNINGS,
+    value: warningObject,
+  }
+}
+
 function setSendTokenBalance (tokenBalance) {
   return {
     type: actions.UPDATE_SEND_TOKEN_BALANCE,
@@ -1094,13 +1060,6 @@ function updateSendAmount (amount) {
   return {
     type: actions.UPDATE_SEND_AMOUNT,
     value: amount,
-  }
-}
-
-function updateCustomNonce (value) {
-  return {
-    type: actions.UPDATE_CUSTOM_NONCE,
-    value: value,
   }
 }
 
@@ -1150,6 +1109,7 @@ function sendTx (txData) {
   log.info(`actions - sendTx: ${JSON.stringify(txData.txParams)}`)
   return (dispatch, getState) => {
     log.debug(`actions calling background.approveTransaction`)
+    window.onbeforeunload = null
     background.approveTransaction(txData.id, (err) => {
       if (err) {
         dispatch(actions.txError(err))
@@ -1226,6 +1186,7 @@ function updateAndApproveTx (txData) {
   return (dispatch) => {
     log.debug(`actions calling background.updateAndApproveTx`)
     dispatch(actions.showLoadingIndication())
+    window.onbeforeunload = null
     return new Promise((resolve, reject) => {
       background.updateAndApproveTransaction(txData, err => {
         dispatch(actions.updateTransactionParams(txData.id, txData.txParams))
@@ -1235,7 +1196,7 @@ function updateAndApproveTx (txData) {
           dispatch(actions.txError(err))
           dispatch(actions.goHome())
           log.error(err.message)
-          return reject(err)
+          reject(err)
         }
 
         resolve(txData)
@@ -1247,7 +1208,6 @@ function updateAndApproveTx (txData) {
         dispatch(actions.clearSend())
         dispatch(actions.completedTx(txData.id))
         dispatch(actions.hideLoadingIndication())
-        dispatch(actions.updateCustomNonce(''))
         dispatch(closeCurrentNotificationWindow())
 
         return txData
@@ -1284,6 +1244,7 @@ function txError (err) {
 function cancelMsg (msgData) {
   return (dispatch) => {
     dispatch(actions.showLoadingIndication())
+    window.onbeforeunload = null
     return new Promise((resolve, reject) => {
       log.debug(`background.cancelMessage`)
       background.cancelMessage(msgData.id, (err, newState) => {
@@ -1306,6 +1267,7 @@ function cancelMsg (msgData) {
 function cancelPersonalMsg (msgData) {
   return (dispatch) => {
     dispatch(actions.showLoadingIndication())
+    window.onbeforeunload = null
     return new Promise((resolve, reject) => {
       const id = msgData.id
       background.cancelPersonalMessage(id, (err, newState) => {
@@ -1328,6 +1290,7 @@ function cancelPersonalMsg (msgData) {
 function cancelTypedMsg (msgData) {
   return (dispatch) => {
     dispatch(actions.showLoadingIndication())
+    window.onbeforeunload = null
     return new Promise((resolve, reject) => {
       const id = msgData.id
       background.cancelTypedMessage(id, (err, newState) => {
@@ -1351,6 +1314,7 @@ function cancelTx (txData) {
   return (dispatch) => {
     log.debug(`background.cancelTransaction`)
     dispatch(actions.showLoadingIndication())
+    window.onbeforeunload = null
     return new Promise((resolve, reject) => {
       background.cancelTransaction(txData.id, err => {
         if (err) {
@@ -1380,6 +1344,7 @@ function cancelTx (txData) {
  */
 function cancelTxs (txDataList) {
   return async (dispatch) => {
+    window.onbeforeunload = null
     dispatch(actions.showLoadingIndication())
     const txIds = txDataList.map(({id}) => id)
     const cancellations = txIds.map((id) => new Promise((resolve, reject) => {
@@ -1714,7 +1679,7 @@ function addToken (address, symbol, decimals, image) {
         dispatch(actions.hideLoadingIndication())
         if (err) {
           dispatch(actions.displayWarning(err.message))
-          return reject(err)
+          reject(err)
         }
         dispatch(actions.updateTokens(tokens))
         resolve(tokens)
@@ -1731,28 +1696,10 @@ function removeToken (address) {
         dispatch(actions.hideLoadingIndication())
         if (err) {
           dispatch(actions.displayWarning(err.message))
-          return reject(err)
+          reject(err)
         }
         dispatch(actions.updateTokens(tokens))
         resolve(tokens)
-      })
-    })
-  }
-}
-
-function removeAsset (fromDomain, asset) {
-  return (dispatch) => {
-    dispatch(actions.showLoadingIndication())
-    return new Promise((resolve, reject) => {
-      console.log('fromDomain, asset', fromDomain, asset)
-      background.removeAsset(fromDomain, asset, (err, removedAsset) => {
-        console.log('removedAsset', removedAsset)
-        dispatch(actions.hideLoadingIndication())
-        if (err) {
-          dispatch(actions.displayWarning(err.message))
-          return reject(err)
-        }
-        resolve(removedAsset)
       })
     })
   }
@@ -1781,6 +1728,7 @@ function addTokens (tokens) {
 function removeSuggestedTokens () {
   return (dispatch) => {
     dispatch(actions.showLoadingIndication())
+    window.onbeforeunload = null
     return new Promise((resolve) => {
       background.removeSuggestedTokens((err, suggestedTokens) => {
         dispatch(actions.hideLoadingIndication())
@@ -1838,7 +1786,7 @@ function retryTransaction (txId, gasPrice) {
       background.retryTransaction(txId, gasPrice, (err, newState) => {
         if (err) {
           dispatch(actions.displayWarning(err.message))
-          return reject(err)
+          reject(err)
         }
 
         const { selectedAddressTxList } = newState
@@ -1861,7 +1809,7 @@ function createCancelTransaction (txId, customGasPrice) {
       background.createCancelTransaction(txId, customGasPrice, (err, newState) => {
         if (err) {
           dispatch(actions.displayWarning(err.message))
-          return reject(err)
+          reject(err)
         }
 
         const { selectedAddressTxList } = newState
@@ -1884,29 +1832,7 @@ function createSpeedUpTransaction (txId, customGasPrice) {
       background.createSpeedUpTransaction(txId, customGasPrice, (err, newState) => {
         if (err) {
           dispatch(actions.displayWarning(err.message))
-          return reject(err)
-        }
-
-        const { selectedAddressTxList } = newState
-        newTx = selectedAddressTxList[selectedAddressTxList.length - 1]
-        resolve(newState)
-      })
-    })
-      .then(newState => dispatch(actions.updateMetamaskState(newState)))
-      .then(() => newTx)
-  }
-}
-
-function createRetryTransaction (txId, customGasPrice) {
-  log.debug('background.createRetryTransaction')
-  let newTx
-
-  return dispatch => {
-    return new Promise((resolve, reject) => {
-      background.createSpeedUpTransaction(txId, customGasPrice, (err, newState) => {
-        if (err) {
-          dispatch(actions.displayWarning(err.message))
-          return reject(err)
+          reject(err)
         }
 
         const { selectedAddressTxList } = newState
@@ -2047,11 +1973,11 @@ function addToAddressBook (recipient, nickname = '', memo = '') {
  * @description Calls the addressBookController to remove an existing address.
  * @param {String} addressToRemove - Address of the entry to remove from the address book
  */
-function removeFromAddressBook (chainId, addressToRemove) {
+function removeFromAddressBook (addressToRemove) {
   log.debug(`background.removeFromAddressBook`)
 
   return () => {
-    background.removeFromAddressBook(chainId, checksumAddress(addressToRemove))
+    background.removeFromAddressBook(checksumAddress(addressToRemove))
   }
 }
 
@@ -2259,7 +2185,7 @@ function setAccountLabel (account, label) {
 
         if (err) {
           dispatch(actions.displayWarning(err.message))
-          return reject(err)
+          reject(err)
         }
 
         dispatch({
@@ -2321,9 +2247,7 @@ function pairUpdate (coin) {
     dispatch(actions.hideWarning())
     shapeShiftRequest('marketinfo', {pair: `${coin.toLowerCase()}_eth`}, (mktResponse) => {
       dispatch(actions.hideSubLoadingIndication())
-      if (mktResponse.error) {
-        return dispatch(actions.displayWarning(mktResponse.error))
-      }
+      if (mktResponse.error) return dispatch(actions.displayWarning(mktResponse.error))
       dispatch({
         type: actions.PAIR_UPDATE,
         value: {
@@ -2341,9 +2265,7 @@ function shapeShiftSubview () {
     shapeShiftRequest('marketinfo', {pair}, (mktResponse) => {
       shapeShiftRequest('getcoins', {}, (response) => {
         dispatch(actions.hideSubLoadingIndication())
-        if (mktResponse.error) {
-          return dispatch(actions.displayWarning(mktResponse.error))
-        }
+        if (mktResponse.error) return dispatch(actions.displayWarning(mktResponse.error))
         dispatch({
           type: actions.SHAPESHIFT_SUBVIEW,
           value: {
@@ -2361,9 +2283,7 @@ function coinShiftRquest (data, marketData) {
     dispatch(actions.showLoadingIndication())
     shapeShiftRequest('shift', { method: 'POST', data}, (response) => {
       dispatch(actions.hideLoadingIndication())
-      if (response.error) {
-        return dispatch(actions.displayWarning(response.error))
-      }
+      if (response.error) return dispatch(actions.displayWarning(response.error))
       var message = `
         Deposit your ${response.depositType} to the address below:`
       log.debug(`background.createShapeShiftTx`)
@@ -2398,9 +2318,7 @@ function reshowQrCode (data, coin) {
   return (dispatch) => {
     dispatch(actions.showLoadingIndication())
     shapeShiftRequest('marketinfo', {pair: `${coin.toLowerCase()}_eth`}, (mktResponse) => {
-      if (mktResponse.error) {
-        return dispatch(actions.displayWarning(mktResponse.error))
-      }
+      if (mktResponse.error) return dispatch(actions.displayWarning(mktResponse.error))
 
       var message = [
         `Deposit your ${coin} to the address below:`,
@@ -2673,49 +2591,35 @@ function setUseBlockie (val) {
   }
 }
 
-function setUseNonceField (val) {
-  return (dispatch) => {
-    dispatch(actions.showLoadingIndication())
-    log.debug(`background.setUseNonceField`)
-    background.setUseNonceField(val, (err) => {
-      dispatch(actions.hideLoadingIndication())
-      if (err) {
-        return dispatch(actions.displayWarning(err.message))
-      }
-    })
-    dispatch({
-      type: actions.SET_USE_NONCEFIELD,
-      value: val,
-    })
-  }
-}
-
 function updateCurrentLocale (key) {
   return (dispatch) => {
     dispatch(actions.showLoadingIndication())
     return fetchLocale(key)
       .then((localeMessages) => {
         log.debug(`background.setCurrentLocale`)
-        background.setCurrentLocale(key, (err, textDirection) => {
+        background.setCurrentLocale(key, (err) => {
+          dispatch(actions.hideLoadingIndication())
           if (err) {
-            dispatch(actions.hideLoadingIndication())
             return dispatch(actions.displayWarning(err.message))
           }
-          switchDirection(textDirection)
-          dispatch(actions.setCurrentLocale(key, localeMessages))
-          dispatch(actions.hideLoadingIndication())
+          dispatch(actions.setCurrentLocale(key))
+          dispatch(actions.setLocaleMessages(localeMessages))
         })
       })
   }
 }
 
-function setCurrentLocale (locale, messages) {
+function setCurrentLocale (key) {
   return {
     type: actions.SET_CURRENT_LOCALE,
-    value: {
-      locale,
-      messages,
-    },
+    value: key,
+  }
+}
+
+function setLocaleMessages (localeMessages) {
+  return {
+    type: actions.SET_LOCALE_MESSAGES,
+    value: localeMessages,
   }
 }
 
@@ -2739,94 +2643,23 @@ function setPendingTokens (pendingTokens) {
   }
 }
 
-// Permissions
-
-/**
- * @param {string} origin
- */
-function selectApprovedAccount (origin) {
-  return (dispatch) => {
-    background.getApprovedAccounts(origin, (err, accounts) => {
-      if (err) {
-        log.error(err)
-      } else if (Array.isArray(accounts) && accounts.length > 0) {
-        dispatch(actions.setSelectedAddress(accounts[0]))
-      }
-    })
-  }
-}
-
-/**
- * Approves the permission requests with the given IDs.
- * @param {string} requestId
- * @param {Array} accounts
- */
-function approvePermissionsRequest (requestId, accounts) {
+function approveProviderRequestByOrigin (origin) {
   return () => {
-    background.approvePermissionsRequest(requestId, accounts)
+    background.approveProviderRequestByOrigin(origin)
   }
 }
 
-/**
- * Rejects the permission requests with the given IDs.
- * @param {Array} requestId
- */
-function rejectPermissionsRequest (requestId) {
+function rejectProviderRequestByOrigin (origin) {
   return () => {
-    background.rejectPermissionsRequest(requestId)
+    background.rejectProviderRequestByOrigin(origin)
   }
 }
 
-/**
- * Clears the given permissions for the given origin.
- */
-function removePermissionsFor (domains) {
+function clearApprovedOrigins () {
   return () => {
-    background.removePermissionsFor(domains)
+    background.clearApprovedOrigins()
   }
 }
-
-/**
- * Clears all permissions for all domains.
- */
-function clearAllPermissionsData () {
-  return () => {
-    background.clearPermissions()
-    background.clearPermissionsHistory()
-    background.clearPermissionsLog()
-    background.clearDomainMetadata()
-    background.clearAddressAudits()
-  }
-}
-
-/**
- * Clears all permissions for all domains.
- */
-function clearPermissions () {
-  return () => {
-    background.clearPermissions()
-  }
-}
-
-/**
- * Clears the permission log.
- */
-function clearPermissionsHistory () {
-  return () => {
-    background.clearPermissionsHistory()
-  }
-}
-
-/**
- * Clears the permission log.
- */
-function clearPermissionsLog () {
-  return () => {
-    background.clearPermissionsLog()
-  }
-}
-
-// ////
 
 function setFirstTimeFlowType (type) {
   return (dispatch) => {
@@ -2860,16 +2693,6 @@ function setNetworksTabAddMode (isInAddMode) {
 function setLastActiveTime () {
   return (dispatch) => {
     background.setLastActiveTime((err) => {
-      if (err) {
-        return dispatch(actions.displayWarning(err.message))
-      }
-    })
-  }
-}
-
-function setMkrMigrationReminderTimestamp (timestamp) {
-  return (dispatch) => {
-    background.setMkrMigrationReminderTimestamp(timestamp, (err) => {
       if (err) {
         return dispatch(actions.displayWarning(err.message))
       }
@@ -2948,6 +2771,12 @@ function getTokenParams (tokenAddress) {
   }
 }
 
+function unsetMigratedPrivacyMode () {
+  return () => {
+    background.unsetMigratedPrivacyMode()
+  }
+}
+
 function setSeedPhraseBackedUp (seedPhraseBackupState) {
   return (dispatch) => {
     log.debug(`background.setSeedPhraseBackedUp`)
@@ -2957,152 +2786,8 @@ function setSeedPhraseBackedUp (seedPhraseBackupState) {
           dispatch(actions.displayWarning(err.message))
           return reject(err)
         }
-        return forceUpdateMetamaskState(dispatch)
-          .then(resolve)
-          .catch(reject)
+        return forceUpdateMetamaskState(dispatch).then(() => resolve())
       })
     })
   }
 }
-
-function hideSeedPhraseBackupAfterOnboarding () {
-  return {
-    type: actions.HIDE_SEED_PHRASE_BACKUP_AFTER_ONBOARDING,
-  }
-}
-
-function initializeThreeBox () {
-  return (dispatch) => {
-    return new Promise((resolve, reject) => {
-      background.initializeThreeBox((err) => {
-        if (err) {
-          dispatch(actions.displayWarning(err.message))
-          return reject(err)
-        }
-        resolve()
-      })
-    })
-  }
-}
-
-function setShowRestorePromptToFalse () {
-  return (dispatch) => {
-    return new Promise((resolve, reject) => {
-      background.setShowRestorePromptToFalse((err) => {
-        if (err) {
-          dispatch(actions.displayWarning(err.message))
-          return reject(err)
-        }
-        resolve()
-      })
-    })
-  }
-}
-
-function turnThreeBoxSyncingOn () {
-  return (dispatch) => {
-    return new Promise((resolve, reject) => {
-      background.turnThreeBoxSyncingOn((err) => {
-        if (err) {
-          dispatch(actions.displayWarning(err.message))
-          return reject(err)
-        }
-        resolve()
-      })
-    })
-  }
-}
-
-function restoreFromThreeBox (accountAddress) {
-  return (dispatch) => {
-    return new Promise((resolve, reject) => {
-      background.restoreFromThreeBox(accountAddress, (err) => {
-        if (err) {
-          dispatch(actions.displayWarning(err.message))
-          return reject(err)
-        }
-        resolve()
-      })
-    })
-  }
-}
-
-function getThreeBoxLastUpdated () {
-  return (dispatch) => {
-    return new Promise((resolve, reject) => {
-      background.getThreeBoxLastUpdated((err, lastUpdated) => {
-        if (err) {
-          dispatch(actions.displayWarning(err.message))
-          return reject(err)
-        }
-        resolve(lastUpdated)
-      })
-    })
-  }
-}
-
-function setThreeBoxSyncingPermission (threeBoxSyncingAllowed) {
-  return (dispatch) => {
-    return new Promise((resolve, reject) => {
-      background.setThreeBoxSyncingPermission(threeBoxSyncingAllowed, (err) => {
-        if (err) {
-          dispatch(actions.displayWarning(err.message))
-          return reject(err)
-        }
-        resolve()
-      })
-    })
-  }
-}
-
-function turnThreeBoxSyncingOnAndInitialize () {
-  return async (dispatch) => {
-    await dispatch(setThreeBoxSyncingPermission(true))
-    await dispatch(turnThreeBoxSyncingOn())
-    await dispatch(initializeThreeBox(true))
-  }
-}
-
-function setNextNonce (nextNonce) {
-  return {
-    type: actions.SET_NEXT_NONCE,
-    value: nextNonce,
-  }
-}
-
-function getNextNonce () {
-  return (dispatch, getState) => {
-    const address = getState().metamask.selectedAddress
-    return new Promise((resolve, reject) => {
-      background.getNextNonce(address, (err, nextNonce) => {
-        if (err) {
-          dispatch(actions.displayWarning(err.message))
-          return reject(err)
-        }
-        dispatch(setNextNonce(nextNonce))
-        resolve(nextNonce)
-      })
-    })
-  }
-}
-
-function removePlugin (pluginName) {
-  return () => {
-    background.removePlugin(pluginName)
-  }
-}
-
-function removePlugins (pluginNames) {
-  return () => {
-    background.removePlugins(pluginNames)
-  }
-}
-
-function clearPlugins () {
-  return () => {
-    background.clearPluginState()
-  }
-}
-
-window.deletePlugin = removePlugin
-
