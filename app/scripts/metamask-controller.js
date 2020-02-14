@@ -1722,7 +1722,7 @@ module.exports = class MetamaskController extends EventEmitter {
   setupProvider (senderUrl, getDomainMetadata, isPlugin) {
     const { clientSide, serverSide } = makeDuplexPair()
     this.setupUntrustedCommunication(serverSide, senderUrl, getDomainMetadata, isPlugin)
-    const provider = new MetamaskInpageProvider(clientSide)
+    const provider = new MetamaskInpageProvider(clientSide, !isPlugin)
     return provider
   }
 
