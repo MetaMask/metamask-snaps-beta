@@ -91,7 +91,7 @@ class ResourceController extends EventEmitter {
   }
 
   handleRpcRequest (req, res, _next, end, engine) {
-    const [method, opts] = req.params
+    const [ method, opts ] = req.params
     const requestor = engine.domain
     try {
       switch (method) {
@@ -105,7 +105,7 @@ class ResourceController extends EventEmitter {
           res.result = this.remove(requestor, opts)
           return end()
         default:
-          res.error = ethErrors.rpc.methodNotFound({ data: `${req.method}:${method}` })
+          res.error = ethErrors.rpc.methodNotFound({ data: req })
           end(res.error)
       }
     } catch (err) {

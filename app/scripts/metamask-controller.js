@@ -72,6 +72,7 @@ const {
   PhishingController,
 } = require('gaba')
 const backEndMetaMetricsEvent = require('./lib/backend-metametrics')
+const { RESOURCE_KEYS } = require('./lib/enums')
 
 module.exports = class MetamaskController extends EventEmitter {
 
@@ -174,7 +175,7 @@ module.exports = class MetamaskController extends EventEmitter {
 
     this.pluginAccountsController = new ResourceController({
       requiredFields: ['address'],
-      storageKey: 'resources:pluginAccounts',
+      storageKey: RESOURCE_KEYS.PLUGIN_ACCOUNTS,
     })
 
     this.accountsController = new AccountsController({
@@ -231,6 +232,11 @@ module.exports = class MetamaskController extends EventEmitter {
     })
 
     this.addressBookController = new AddressBookController(undefined, initState.AddressBookController)
+
+    this.assetsController = new ResourceController({
+      requiredFields: ['symbol', 'balance', 'identifier', 'decimals'],
+      storageKey: RESOURCE_KEYS.ASSETS,
+    })
 
     this.threeBoxController = new ThreeBoxController({
       preferencesController: this.preferencesController,
@@ -311,11 +317,6 @@ module.exports = class MetamaskController extends EventEmitter {
 
     this.addressAuditController = new AddressAuditController({
       initState: initState.AddressAuditController,
-    })
-
-    this.assetsController = new ResourceController({
-      requiredFields: ['symbol', 'balance', 'identifier', 'decimals'],
-      storageKey: 'resources:assets',
     })
 
     this.pluginsController = new PluginsController({

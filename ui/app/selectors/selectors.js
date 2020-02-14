@@ -1,5 +1,6 @@
 import { NETWORK_TYPES } from '../helpers/constants/common'
 import { stripHexPrefix, addHexPrefix } from 'ethereumjs-util'
+import { RESOURCE_KEYS } from '../../../app/scripts/lib/enums'
 
 const abi = require('human-standard-token-abi')
 const {
@@ -430,11 +431,11 @@ function getFeatureFlags (state) {
 }
 
 function getResourceTokens (state) {
-  const resources = state.metamask['resources:assets'] // TODO: create constant
+  const resources = state.metamask[RESOURCE_KEYS.ASSETS]
   return resources.filter(resource => resource.identifier)
 }
 
 function getResourceAccounts (state) {
-  const resources = state.metamask['resources:pluginAccounts'] // TODO: create constant
+  const resources = state.metamask[RESOURCE_KEYS.PLUGIN_ACCOUNTS]
   return resources.filter(resource => resource.address)
 }
