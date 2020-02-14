@@ -43,7 +43,9 @@ describe('ResourcesController as AssetsController', () => {
     assets.update(domain, result)
 
     Object.keys(result).forEach((key) => {
-      if (key === 'fromDomain') return
+      if (key === 'fromDomain') {
+        return
+      }
       if (key === 'balance') {
         assert.notEqual(result[key], sampleAsset[key], `${key} should be updated`)
       } else {
