@@ -38,7 +38,7 @@ class PermissionsController {
     setupProvider, pluginRestrictedMethods, getApi, metamaskEventMethods,
     notifyDomain, notifyAllDomains,
   } = {},
-  restoredPermissions = {}, restoredState = {}
+  restoredState = {}
   ) {
     this.store = new ObservableStore({
       [METADATA_STORE_KEY]: restoredState[METADATA_STORE_KEY] || {},
@@ -52,14 +52,12 @@ class PermissionsController {
     this.setupProvider = setupProvider
     this.pluginsController = pluginsController
     this.pluginAccountsController = pluginAccountsController
-    this.keyringController = keyringController
     this.assetsController = assetsController
     this.accountsController = accountsController
     this.externalRestrictedMethods = getExternalRestrictedMethods(this)
     this.pluginRestrictedMethods = pluginRestrictedMethods
     this.getApi = getApi
     this.metamaskEventMethods = metamaskEventMethods
-    this._initializePermissions(restoredPermissions)
   }
 
   //=============================================================================
@@ -434,7 +432,7 @@ class PermissionsController {
     }
 
     // assert accounts exist
-    const allAccounts = await this.keyringController.getAccounts()
+    const allAccounts = await this.accountsController.getAccounts()
     accounts.forEach(acc => {
       if (!allAccounts.includes(acc)) {
         throw new Error(`Unknown account: ${acc}`)

@@ -11,6 +11,7 @@ const Dnode = require('dnode')
 const Capnode = require('capnode').default
 const extension = require('extensionizer')
 const ObservableStore = require('obs-store')
+const sigUtil = require('eth-sig-util')
 const ComposableObservableStore = require('./lib/ComposableObservableStore')
 const asStream = require('obs-store/lib/asStream')
 const AccountTracker = require('./lib/account-tracker')
@@ -162,11 +163,32 @@ module.exports = class MetamaskController extends EventEmitter {
       initState: initState.IncomingTransactionsController,
     })
 
+    const additionalKeyrings = [TrezorKeyring, LedgerBridgeKeyring]
+    this.keyringController = new KeyringController({
+      keyringTypes: additionalKeyrings,
+      initState: initState.KeyringController,
+      getNetwork: this.networkController.getNetworkState.bind(this.networkController),
+      encryptor: opts.encryptor || undefined,
+    })
+    this.keyringController.memStore.subscribe((s) => this._onKeyringControllerUpdate(s))
+
+    this.pluginAccountsController = new ResourceController({
+      requiredFields: ['address'],
+      storageKey: 'resources:pluginAccounts',
+    })
+
+    this.accountsController = new AccountsController({
+      keyringController: this.keyringController,
+      pluginAccountsController: this.pluginAccountsController,
+    }, initState.AccountsController)
+    this.accountsController.store.subscribe((s) => this._onAccountControllerUpdate(s))
+
     // account tracker watches balances, nonces, and any code at their address.
     this.accountTracker = new AccountTracker({
       provider: this.provider,
       blockTracker: this.blockTracker,
       network: this.networkController,
+      isPluginAccount: this.accountsController.isPluginAccount.bind(this.accountsController),
     })
 
     // start and stop polling for balances based on activeControllerConnections
@@ -196,26 +218,6 @@ module.exports = class MetamaskController extends EventEmitter {
       this.accountTracker._updateAccounts()
     })
 
-    const additionalKeyrings = [TrezorKeyring, LedgerBridgeKeyring]
-    this.keyringController = new KeyringController({
-      keyringTypes: additionalKeyrings,
-      initState: initState.KeyringController,
-      getNetwork: this.networkController.getNetworkState.bind(this.networkController),
-      encryptor: opts.encryptor || undefined,
-    })
-    this.keyringController.memStore.subscribe((s) => this._onKeyringControllerUpdate(s))
-
-    this.pluginAccountsController = new ResourceController({
-      requiredFields: ['address'],
-      storageKey: 'resources:pluginAccounts',
-    })
-
-    this.accountsController = new AccountsController({
-      keyringController: this.keyringController,
-      pluginAccountsController: this.pluginAccountsController,
-    }, initState.AccountsController)
-    this.accountsController.store.subscribe((s) => this._onAccountControllerUpdate(s))
-
     // detect tokens controller
     this.detectTokensController = new DetectTokensController({
       preferences: this.preferencesController,
@@ -240,22 +242,19 @@ module.exports = class MetamaskController extends EventEmitter {
       version,
     })
 
-    this.assetsController = new AssetsController({
-      // TODO: Persist asset state?
-      // For now handled by plugin persistence.
-    })
-
     this.permissionsController = new PermissionsController({
+      restoredPermissions: initState.PermissionsController,
       setupProvider: this.setupProvider.bind(this),
-      keyringController: this.keyringController,
+      accountsController: this.accountsController,
       assetsController: this.assetsController,
+      pluginAccountsController: this.pluginAccountsController,
       openPopup: opts.openPopup,
       closePopup: opts.closePopup,
       provider: this.provider,
       getApi: this.getPluginsApi.bind(this),
       notifyDomain: this.notifyConnections.bind(this),
       notifyAllDomains: this.notifyAllConnections.bind(this),
-    }, initState.PermissionsMetadata)
+    })
 
     this.txController = new TransactionController({
       initState: initState.TransactionController || initState.TransactionManager,
@@ -336,16 +335,9 @@ module.exports = class MetamaskController extends EventEmitter {
     })
     this.accountsController.pluginsController = this.pluginsController
 
-    this.permissionsController = new PermissionsController({
-      restoredPermissions: initState.PermissionsController,
-      setupProvider: this.setupProvider.bind(this),
-      accountsController: this.accountsController,
-      assetsController: this.assetsController,
+    this.permissionsController.initializePermissions({
       pluginsController: this.pluginsController,
-      pluginAccountsController: this.pluginAccountsController,
-      openPopup: opts.openPopup,
-      closePopup: opts.closePopup,
-      provider: this.provider,
+      restoredPermissions: initState.PermissionsController,
       pluginRestrictedMethods: {
         updatePluginState: this.pluginsController.updatePluginState.bind(this.pluginsController),
         getPluginState: this.pluginsController.getPluginState.bind(this.pluginsController),
@@ -406,9 +398,7 @@ module.exports = class MetamaskController extends EventEmitter {
       ThreeBoxController: this.threeBoxController.store,
       ABTestController: this.abTestController.store,
       EnsController: this.ensController.store,
-      // Disabling to avoid piping plugin source codes to UI with every update:
-      // TODO: Optimize in a different way:
-      // PluginsController: this.pluginsController.store,
+      PluginsController: this.pluginsController.store,
       AssetsController: this.assetsController.store,
       PluginAccountsController: this.pluginAccountsController.store,
       AddressAuditController: this.addressAuditController.store,

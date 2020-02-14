@@ -6378,14 +6378,6 @@ capnode@^4.0.2:
     crypto-random-string "^1.0.0"
     stream "0.0.2"
 
-capnode@^4.0.1:
-  version "4.0.1"
-  resolved "https://registry.yarnpkg.com/capnode/-/capnode-4.0.1.tgz#0f66290a30cc4e0ef7d5a7df540be9d68678a3f7"
-  integrity sha512-T0HI8AgZtDEsrmvNc56A7oo9WYrsn1JNo9789N+kIqaNJLKHXiS/iNmLoVm450MwgIbN+arYP2dHlkz5ZR9p3A==
-  dependencies:
-    crypto-random-string "^1.0.0"
-    stream "0.0.2"
-
 capture-stack-trace@^1.0.0:
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/capture-stack-trace/-/capture-stack-trace-1.0.1.tgz#a6c0bbe1f38f3aa0b92238ecb6ff42c344d4135d"
@@ -9215,11 +9207,6 @@ emitter-component@^1.1.1:
   resolved "https://registry.yarnpkg.com/emitter-component/-/emitter-component-1.1.1.tgz#065e2dbed6959bf470679edabeaf7981d1003ab6"
   integrity sha1-Bl4tvtaVm/RwZ57avq95gdEAOrY=
 
-emitter-component@^1.1.1:
-  version "1.1.1"
-  resolved "https://registry.yarnpkg.com/emitter-component/-/emitter-component-1.1.1.tgz#065e2dbed6959bf470679edabeaf7981d1003ab6"
-  integrity sha1-Bl4tvtaVm/RwZ57avq95gdEAOrY=
-
 emoji-regex@^7.0.1:
   version "7.0.3"
   resolved "https://registry.yarnpkg.com/emoji-regex/-/emoji-regex-7.0.3.tgz#933a04052860c85e83c122479c4748a8e4c72156"
@@ -10130,6 +10117,13 @@ eth-json-rpc-errors@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/eth-json-rpc-errors/-/eth-json-rpc-errors-2.0.0.tgz#bdc19df8b80a820844709193372f0d75fb74fed8"
   integrity sha512-casdSTVOxbC3ptfUdclJRvU0Sgmdm/QtezLku8l4iVR5wNFe+KF+tfnlm2I84xxpx7mkyyHeeUxmRkcB5Os6mw==
+  dependencies:
+    fast-safe-stringify "^2.0.6"
+
+eth-json-rpc-errors@^2.0.2:
+  version "2.0.2"
+  resolved "https://registry.yarnpkg.com/eth-json-rpc-errors/-/eth-json-rpc-errors-2.0.2.tgz#c1965de0301fe941c058e928bebaba2e1285e3c4"
+  integrity sha512-uBCRM2w2ewusRHGxN8JhcuOb2RN3ueAOYH/0BhqdFmQkZx5lj5+fLKTz0mIVOzd4FG5/kUksCzCD7eTEim6gaA==
   dependencies:
     fast-safe-stringify "^2.0.6"
 
@@ -15933,16 +15927,6 @@ json-rpc-engine@^5.1.3, json-rpc-engine@^5.1.5:
     promise-to-callback "^1.0.0"
     safe-event-emitter "^1.0.1"
 
-json-rpc-engine@^5.1.5:
-  version "5.1.5"
-  resolved "https://registry.yarnpkg.com/json-rpc-engine/-/json-rpc-engine-5.1.5.tgz#a5f9915356ea916d5305716354080723c63dede7"
-  integrity sha512-HTT9HixG4j8vHYrmJIckgbISW9Q8tCkySv7x7Q8zjMpcw10wSe/dZSQ0w08VkDm3y195K4074UlvD3hxaznvlw==
-  dependencies:
-    async "^2.0.1"
-    eth-json-rpc-errors "^2.0.0"
-    promise-to-callback "^1.0.0"
-    safe-event-emitter "^1.0.1"
-
 json-rpc-error@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/json-rpc-error/-/json-rpc-error-2.0.0.tgz#a7af9c202838b5e905c7250e547f1aff77258a02"
@@ -18289,11 +18273,11 @@ mersenne-twister@^1.0.1:
   integrity sha1-+RZhjuQ9cXnvz2Qb7EUx65Zwl4o=
 
 metamask-inpage-provider@MetaMask/metamask-inpage-provider#snaps:
-  version "5.0.0"
-  resolved "https://codeload.github.com/MetaMask/metamask-inpage-provider/tar.gz/a3fc8b8b7d68b90839c4f281c6c4d9d55939f50d"
+  version "4.1.2"
+  resolved "https://codeload.github.com/MetaMask/metamask-inpage-provider/tar.gz/ffeff9d4a62fadc1c3d1b77610fda4ab9fa1f129"
   dependencies:
     capnode "^4.0.2"
-    eth-json-rpc-errors "^2.0.0"
+    eth-json-rpc-errors "^2.0.2"
     fast-deep-equal "^2.0.1"
     json-rpc-engine "^5.1.5"
     json-rpc-middleware-stream "^2.1.1"

@@ -1,6 +1,6 @@
 const ObservableStore = require('obs-store')
 const EventEmitter = require('safe-event-emitter')
-const { errors: rpcErrors } = require('eth-json-rpc-errors')
+const { ethErrors } = require('eth-json-rpc-errors')
 
 /**
  * Resource Controller
@@ -105,7 +105,7 @@ class ResourceController extends EventEmitter {
           res.result = this.remove(requestor, opts)
           return end()
         default:
-          res.error = rpcErrors.methodNotFound(null, `${req.method}:${method}`)
+          res.error = ethErrors.rpc.methodNotFound({ data: `${req.method}:${method}` })
           end(res.error)
       }
     } catch (err) {

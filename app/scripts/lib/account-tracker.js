@@ -47,6 +47,7 @@ class AccountTracker {
     this.store = new ObservableStore(initState)
 
     this._provider = opts.provider
+    this._isPluginAccount = opts.isPluginAccount
     this._query = pify(new EthQuery(this._provider))
     this._blockTracker = opts.blockTracker
     // blockTracker.currentBlock may be null

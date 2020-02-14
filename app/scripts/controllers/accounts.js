@@ -148,6 +148,11 @@ class AccountsController extends EventEmitter {
     return origin
   }
 
+  isPluginAccount (address) {
+    const pluginAccounts = this.pluginAccounts.resources
+    return Boolean(pluginAccounts.find(acct => acct.address === address))
+  }
+
   async signTransaction (ethTx, fromAddress, opts) {
     try {
       const signedTx = await this.keyringController.signTransaction(ethTx, fromAddress, opts)
