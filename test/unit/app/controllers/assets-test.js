@@ -5,6 +5,7 @@ describe('ResourcesController as AssetsController', () => {
   let assets
 
   const requiredFields = ['symbol', 'balance', 'identifier', 'decimals', 'customViewUrl']
+  const storageKey = 'resources:assets'
 
   const domain = 'www.domain.com'
   const sampleAsset = {
@@ -18,6 +19,7 @@ describe('ResourcesController as AssetsController', () => {
   beforeEach(() => {
     assets = new ResourcesController({
       requiredFields,
+      storageKey,
     })
   })
 
