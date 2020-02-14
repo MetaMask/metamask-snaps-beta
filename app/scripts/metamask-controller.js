@@ -424,7 +424,10 @@ module.exports = class MetamaskController extends EventEmitter {
         } else if (
           this.keyringController.memStore.getState().isUnlocked
         ) {
-          return await this.permissionsController.getAccounts(origin)
+          const permittedAccounts = await this.permissionsController.getAccounts(origin)
+          // TODO: figure out plugin account permissions
+          const pluginAccounts = await this.accountsController.getPluginAccounts()
+          return [ ...permittedAccounts, ...pluginAccounts ]
         }
         return [] // changing this is a breaking change
       },

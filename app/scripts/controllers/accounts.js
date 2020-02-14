@@ -34,8 +34,12 @@ class AccountsController extends EventEmitter {
 
   async getAccounts () {
     const keyAccounts = await this.keyringController.getAccounts()
-    const pluginAccounts = this.pluginAccounts.resources.map(acct => acct.address)
+    const pluginAccounts = await this.getPluginAccounts()
     return [...keyAccounts, ...pluginAccounts]
+  }
+
+  async getPluginAccounts () {
+    return this.pluginAccounts.resources.map(acct => acct.address)
   }
 
   async exportAccount (address) {
