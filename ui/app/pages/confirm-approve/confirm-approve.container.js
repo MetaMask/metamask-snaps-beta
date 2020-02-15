@@ -51,11 +51,7 @@ const mapStateToProps = (state, ownProps) => {
     ? origin[0].toUpperCase() + origin.slice(1)
     : ''
 
-  if (!approvedOrigins) {
-    approvedOrigins = {}
-  }
-
-  const { siteImage } = approvedOrigins[origin] || {}
+  const { siteImage } = approvedOrigins ? approvedOrigins[origin] || {} : {}
   return {
     toAddress,
     tokenAddress,
