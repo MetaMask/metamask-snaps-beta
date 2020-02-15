@@ -118,7 +118,7 @@ function getExternalRestrictedMethods (permissionsController, addPrompt) {
     },
 
     'customPrompt': {
-      description: 'Prompt you for input via popup.',
+      description: 'Prompt you for input via a custom popup.',
       method: async (req, res, _next, end, engine) => {
         const requestor = engine.domain
         const result = await addPrompt(`MetaMask Notice: ${requestor}`, req.params[0])
