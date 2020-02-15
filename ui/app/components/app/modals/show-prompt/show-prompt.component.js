@@ -29,7 +29,7 @@ export default class ShowPrompt extends PureComponent {
 
   promptIframe = (content) => {
     return <iframe
-      title={ 'title' }
+      title="title"
       srcDoc={ content }
     />
   }
