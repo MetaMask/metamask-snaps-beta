@@ -798,10 +798,18 @@ module.exports = class PluginsController extends EventEmitter {
         Buffer,
         Date,
 
+        // timers
+        clearTimeout,
+        setInterval,
+        clearInterval,
+
         window: {
           crypto,
           SubtleCrypto,
           setTimeout,
+          clearTimeout,
+          setInterval,
+          clearInterval,
           fetch,
           XMLHttpRequest,
           WebSocket,
