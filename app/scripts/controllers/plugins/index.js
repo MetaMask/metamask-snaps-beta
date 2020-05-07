@@ -797,6 +797,17 @@ module.exports = class PluginsController extends EventEmitter {
         WebSocket,
         Buffer,
         Date,
+        Int8Array,
+        Uint8Array,
+        Uint8ClampedArray,
+        Int16Array,
+        Uint16Array,
+        Int32Array,
+        Uint32Array,
+        Float32Array,
+        Float64Array,
+        BigInt64Array,
+        BigUint64Array,
 
         // timers
         clearTimeout,
@@ -813,6 +824,17 @@ module.exports = class PluginsController extends EventEmitter {
           fetch,
           XMLHttpRequest,
           WebSocket,
+          Int8Array,
+          Uint8Array,
+          Uint8ClampedArray,
+          Int16Array,
+          Uint16Array,
+          Int32Array,
+          Uint32Array,
+          Float32Array,
+          Float64Array,
+          BigInt64Array,
+          BigUint64Array
         },
       })
       sessedPlugin()
