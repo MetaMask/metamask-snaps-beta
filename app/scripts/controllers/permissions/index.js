@@ -37,6 +37,7 @@ class PermissionsController {
     pluginsController, assetsController, accountsController,
     setupProvider, pluginRestrictedMethods, getApi, metamaskEventMethods,
     notifyDomain, notifyAllDomains, addPrompt,
+    getProviderState,
   } = {},
   restoredState = {}
   ) {
@@ -49,6 +50,7 @@ class PermissionsController {
     this.notifyAllDomains = notifyAllDomains
     this._openPopup = openPopup
     this._closePopup = closePopup
+    this._getProviderState = getProviderState
     this.setupProvider = setupProvider
     this.pluginsController = pluginsController
     this.pluginAccountsController = pluginAccountsController
@@ -93,6 +95,7 @@ class PermissionsController {
       store: this.store,
       metadataStoreKey: METADATA_STORE_KEY,
       getAccounts: this.getAccounts.bind(this, origin),
+      getProviderState: this._getProviderState,
       requestPermissions: this._requestPermissions.bind(this, origin),
       installPlugins: this.installPlugins.bind(this, origin),
       getPlugins: this.getPermittedPlugins.bind(this, origin),

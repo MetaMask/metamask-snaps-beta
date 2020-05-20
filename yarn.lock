@@ -1995,6 +1995,36 @@
   resolved "https://registry.yarnpkg.com/@metamask/forwarder/-/forwarder-1.0.0.tgz#3e321022a36561cc6e7b7c84df25f600925f4d95"
   integrity sha512-ufgPndhZz0oNhRrixiR6cXH/HwtFwurWvbrU8zAZsFnf1hB4L2VB2Wey/P1wStIx+BJJQjyROvCDyPDoz4ny1A==
 
+"@metamask/inpage-provider@./metamask-inpage-provider-5.0.2.tgz":
+  version "5.0.2"
+  resolved "./metamask-inpage-provider-5.0.2.tgz#835da897d0b32878ebc22ace4cac9bb3e8cd709a"
+  dependencies:
+    capnode "^4.0.2"
+    eth-json-rpc-errors "^2.0.2"
+    fast-deep-equal "^2.0.1"
+    json-rpc-engine "^5.1.5"
+    json-rpc-middleware-stream "^2.1.1"
+    loglevel "^1.6.1"
+    obj-multiplex "^1.0.0"
+    post-message-stream "^3.0.0"
+    pump "^3.0.0"
+    safe-event-emitter "^1.0.1"
+
+"@metamask/inpage-provider@MetaMask/inpage-provider#snaps-updated":
+  version "5.0.2"
+  resolved "https://codeload.github.com/MetaMask/inpage-provider/tar.gz/ed73bfadf4d2d193ccd27e01179ad006f2c6ef91"
+  dependencies:
+    capnode "^4.0.2"
+    eth-json-rpc-errors "^2.0.2"
+    fast-deep-equal "^2.0.1"
+    json-rpc-engine "^5.1.5"
+    json-rpc-middleware-stream "^2.1.1"
+    loglevel "^1.6.1"
+    obj-multiplex "^1.0.0"
+    post-message-stream "^3.0.0"
+    pump "^3.0.0"
+    safe-event-emitter "^1.0.1"
+
 "@metamask/onboarding@^0.1.2":
   version "0.1.2"
   resolved "https://registry.yarnpkg.com/@metamask/onboarding/-/onboarding-0.1.2.tgz#d5126cbb5e593d782645d6236c497e27bd38d3c4"
@@ -18309,21 +18339,6 @@ mersenne-twister@^1.0.1:
   resolved "https://registry.yarnpkg.com/mersenne-twister/-/mersenne-twister-1.1.0.tgz#f916618ee43d7179efcf641bec4531eb9670978a"
   integrity sha1-+RZhjuQ9cXnvz2Qb7EUx65Zwl4o=
 
-metamask-inpage-provider@MetaMask/metamask-inpage-provider#snaps:
-  version "4.1.2"
-  resolved "https://codeload.github.com/MetaMask/metamask-inpage-provider/tar.gz/54e58be09d966ea9b522e27e4ef31bf27d982d5d"
-  dependencies:
-    capnode "^4.0.2"
-    eth-json-rpc-errors "^2.0.2"
-    fast-deep-equal "^2.0.1"
-    json-rpc-engine "^5.1.5"
-    json-rpc-middleware-stream "^2.1.1"
-    loglevel "^1.6.1"
-    obj-multiplex "^1.0.0"
-    obs-store "^4.0.3"
-    pump "^3.0.0"
-    safe-event-emitter "^1.0.1"
-
 metamask-logo@^2.1.4:
   version "2.1.4"
   resolved "https://registry.yarnpkg.com/metamask-logo/-/metamask-logo-2.1.4.tgz#0612b2b0ffc7eeb6be480c310785426ad9599e3c"
@@ -21004,6 +21019,12 @@ post-message-stream@^3.0.0:
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/post-message-stream/-/post-message-stream-3.0.0.tgz#90d9f54bd209e6b6f5d74795b87588205b547048"
   integrity sha1-kNn1S9IJ5rb110eVuHWIIFtUcEg=
+  dependencies:
+    readable-stream "^2.1.4"
+
+post-message-stream@rekmarks/post-message-stream#multi-env:
+  version "4.0.0"
+  resolved "https://codeload.github.com/rekmarks/post-message-stream/tar.gz/00fb91105fd811be51a8e73097e568d7be6e5f87"
   dependencies:
     readable-stream "^2.1.4"
 

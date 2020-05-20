@@ -1,7 +1,7 @@
 const Dnode = require('dnode')
 const pump = require('pump')
 // const { ethErrors, serializeError } = require('eth-json-rpc-errors')
-const MetamaskInpageProvider = require('metamask-inpage-provider')
+const { MetamaskInpageProvider } = require('@metamask/inpage-provider')
 const SES = require('ses')
 const { WorkerPostMessageStream } = require('post-message-stream')
 const { setupMultiplex } = require('../../lib/stream-utils')
@@ -89,7 +89,9 @@ function installPlugin ({
   backgroundApiKeys,
 } = {}) {
 
-  const ethereumProvider = new MetamaskInpageProvider(self.rpcStream, false)
+  const ethereumProvider = new MetamaskInpageProvider(self.rpcStream, {
+    shouldSendMetadata: false,
+  })
 
   _startPlugin(pluginName, approvedPermissions, sourceCode, ethereumProvider, backgroundApiKeys)
 }
@@ -146,7 +148,7 @@ function _startPlugin (pluginName, approvedPermissions, sourceCode, ethereumProv
   this._setPluginToActive(pluginName)
 }
 
-function generateBackgroundApi (pluginName, backgroundApiKeys) {
+function generateBackgroundApi (_pluginName, backgroundApiKeys) {
   // TODO: bind background API methods to pluginName
   return backgroundApiKeys.reduce((api, key) => {
     api[key] = self.backgroundApi[key]

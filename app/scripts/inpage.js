@@ -35,40 +35,19 @@ const restoreContextAfterImports = () => {
 cleanContextForImports()
 const log = require('loglevel')
 const { WindowPostMessageStream } = require('post-message-stream')
-const MetamaskInpageProvider = require('metamask-inpage-provider')
+const { initializeProvider } = require('@metamask/inpage-provider')
 
 restoreContextAfterImports()
 
 log.setDefaultLevel(process.env.METAMASK_DEBUG ? 'debug' : 'warn')
 
 //
-// setup plugin communication
+// initialize inpage provider
 //
 
-// setup background connection
-const metamaskStream = new WindowPostMessageStream({
-  name: 'inpage',
-  target: 'contentscript',
-})
-
-// compose the inpage provider
-const inpageProvider = new MetamaskInpageProvider(metamaskStream)
-
-// set a high max listener count to avoid unnecesary warnings
-inpageProvider.setMaxListeners(100)
-
-// Work around for web3@1.0 deleting the bound `sendAsync` but not the unbound
-// `sendAsync` method on the prototype, causing `this` reference issues
-const proxiedInpageProvider = new Proxy(inpageProvider, {
-  // straight up lie that we deleted the property so that it doesnt
-  // throw an error in strict mode
-  deleteProperty: () => true,
-})
-
-window.ethereum = proxiedInpageProvider
-
-inpageProvider._publicConfigStore.subscribe(function (state) {
-  if (state.onboardingcomplete) {
-    window.postMessage('onboardingcomplete', '*')
-  }
+initializeProvider({
+  connectionStream: new WindowPostMessageStream({
+    name: 'inpage',
+    target: 'contentscript',
+  }),
 })
