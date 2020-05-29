@@ -1,3 +1,5 @@
+/* global BigInt64Array, BigUint64Array, define */
+
 const ObservableStore = require('obs-store')
 const EventEmitter = require('safe-event-emitter')
 const extend = require('xtend')
@@ -113,11 +115,9 @@ class PluginsController extends EventEmitter {
       )
 
       try {
-
         this._startPlugin(pluginName, approvedPermissions, sourceCode, ethereumProvider)
       } catch (err) {
-
-        console.warn(`failed to start '${pluginName}', deleting it`)
+        console.warn(`failed to start '${pluginName}', deleting it`, err)
         // Clean up failed plugins:
         this.removePlugin(pluginName)
       }
@@ -652,7 +652,6 @@ class PluginsController extends EventEmitter {
         wallet: ethereumProvider,
         console, // Adding console for now for logging purposes.
         BigInt,
-        setTimeout,
         crypto,
         SubtleCrypto,
         fetch,
@@ -661,13 +660,67 @@ class PluginsController extends EventEmitter {
         Buffer,
         Date,
 
+        // Timers. TODO: Must constrain or remove for production.
+        setTimeout,
+        clearTimeout,
+        setInterval,
+        clearInterval,
+
+        // Typed Arrays:
+        Int8Array,
+        Uint8Array,
+        Uint8ClampedArray,
+        Int16Array,
+        Uint16Array,
+        Int32Array,
+        Uint32Array,
+        Float32Array,
+        Float64Array,
+        BigInt64Array,
+        BigUint64Array,
+
+        // Other ethers.js requirements:
+        MessageChannel,
+        atob,
+        btoa,
+        define,
+
         window: {
+          wallet: ethereumProvider,
+          console, // Adding console for now for logging purposes.
+          BigInt,
           crypto,
           SubtleCrypto,
-          setTimeout,
           fetch,
           XMLHttpRequest,
           WebSocket,
+          Buffer,
+          Date,
+
+          // Timers. TODO: Must constrain or remove for production.
+          setTimeout,
+          clearTimeout,
+          setInterval,
+          clearInterval,
+
+          // Typed Arrays:
+          Int8Array,
+          Uint8Array,
+          Uint8ClampedArray,
+          Int16Array,
+          Uint16Array,
+          Int32Array,
+          Uint32Array,
+          Float32Array,
+          Float64Array,
+          BigInt64Array,
+          BigUint64Array,
+
+          // Other ethers.js requirements:
+          MessageChannel,
+          atob,
+          btoa,
+          define,
         },
       })
       sessedPlugin()
