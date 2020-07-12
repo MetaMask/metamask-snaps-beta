@@ -4,7 +4,7 @@ const pump = require('pump')
 const log = require('loglevel')
 const querystring = require('querystring')
 const { Writable } = require('readable-stream')
-const LocalMessageDuplexStream = require('post-message-stream')
+const { WindowPostMessageStream } = require('post-message-stream')
 const ObjectMultiplex = require('obj-multiplex')
 const extension = require('extensionizer')
 const PortStream = require('extension-port-stream')
@@ -59,7 +59,7 @@ async function start () {
  */
 async function setupStreams () {
   // the transport-specific streams for communication between inpage and background
-  const pageStream = new LocalMessageDuplexStream({
+  const pageStream = new WindowPostMessageStream({
     name: 'contentscript',
     target: 'inpage',
   })

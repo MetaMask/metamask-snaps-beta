@@ -34,7 +34,7 @@ const restoreContextAfterImports = () => {
 
 cleanContextForImports()
 const log = require('loglevel')
-const LocalMessageDuplexStream = require('post-message-stream')
+const { WindowPostMessageStream } = require('post-message-stream')
 const MetamaskInpageProvider = require('metamask-inpage-provider')
 
 restoreContextAfterImports()
@@ -46,7 +46,7 @@ log.setDefaultLevel(process.env.METAMASK_DEBUG ? 'debug' : 'warn')
 //
 
 // setup background connection
-const metamaskStream = new LocalMessageDuplexStream({
+const metamaskStream = new WindowPostMessageStream({
   name: 'inpage',
   target: 'contentscript',
 })

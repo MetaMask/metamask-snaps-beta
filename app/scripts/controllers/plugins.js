@@ -682,6 +682,62 @@ class PluginsController extends EventEmitter {
     return true
   }
 
+  // /**
+  //  * Attempts to evaluate a plugin in SES.
+  //  * Generates the APIs for the plugin. May throw on error.
+  //  *
+  //  * @param {string} pluginName - The name of the plugin.
+  //  * @param {Array<string>} approvedPermissions - The plugin's approved permissions.
+  //  * Should always be a value returned from the permissions controller.
+  //  * @param {string} sourceCode - The source code of the plugin.
+  //  * @param {Object} ethereumProvider - The plugin's Ethereum provider object.
+  //  */
+  // _startPluginInWorker (pluginName, approvedPermissions, sourceCode, ethereumProvider) {
+
+  //   console.log(`starting plugin '${pluginName}' in worker`)
+
+  //   const apisToProvide = this._generateApisToProvide(
+  //     pluginName, approvedPermissions
+  //   )
+  //   Object.assign(ethereumProvider, apisToProvide)
+
+  //   try {
+
+  //     const sessedPlugin = this.rootRealm.evaluate(sourceCode, {
+
+  //       wallet: ethereumProvider,
+  //       console, // Adding console for now for logging purposes.
+  //       BigInt,
+  //       setTimeout,
+  //       crypto,
+  //       SubtleCrypto,
+  //       fetch,
+  //       XMLHttpRequest,
+  //       WebSocket,
+  //       Buffer,
+  //       Date,
+
+  //       window: {
+  //         crypto,
+  //         SubtleCrypto,
+  //         setTimeout,
+  //         fetch,
+  //         XMLHttpRequest,
+  //         WebSocket,
+  //       },
+  //     })
+  //     sessedPlugin()
+  //   } catch (err) {
+
+  //     console.log(`error encountered trying to run plugin '${pluginName}', removing it`)
+  //     this.removePlugin(pluginName)
+  //     throw err
+  //   }
+
+  //   this._setPluginToActive(pluginName)
+  //   return true
+  // }
+
   async _setPluginToActive (pluginName) {
     this._updatePlugin(pluginName, 'isActive', true)
   }
