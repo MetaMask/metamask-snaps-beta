@@ -404,6 +404,7 @@ var actions = {
   removePlugin,
   removePlugins,
   clearPlugins,
+  runWorkerPlugin,
 
   resolvePrompt,
   rejectPrompt,
@@ -3103,6 +3104,12 @@ function removePlugins (pluginNames) {
 function clearPlugins () {
   return () => {
     background.clearPluginState()
+  }
+}
+
+function runWorkerPlugin () {
+  return () => {
+    background.runWorkerPlugin()
   }
 }
 

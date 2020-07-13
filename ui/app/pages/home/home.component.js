@@ -53,6 +53,7 @@ export default class Home extends PureComponent {
     removePlugin: PropTypes.func,
     clearPlugins: PropTypes.func,
     clearAllPermissionsData: PropTypes.func,
+    runWorkerPlugin: PropTypes.func,
     hasPermissionsData: PropTypes.bool,
     hasPlugins: PropTypes.bool,
   }
@@ -197,6 +198,14 @@ export default class Home extends PureComponent {
                     disabled={!hasPermissionsData}
                   >
                     { 'Delete All Permissions' }
+                  </Button>
+
+                  <Button
+                    onClick={() => {
+                      this.props.runWorkerPlugin()
+                    }}
+                  >
+                    { 'Run Worker Plugin' }
                   </Button>
                 </div>
               </TransactionView>

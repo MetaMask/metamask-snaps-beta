@@ -255,7 +255,6 @@ module.exports = class MetamaskController extends EventEmitter {
 
     this.permissionsController = new PermissionsController({
       restoredPermissions: initState.PermissionsController,
-      setupProvider: this.setupProvider.bind(this),
       accountsController: this.accountsController,
       assetsController: this.assetsController,
       pluginAccountsController: this.pluginAccountsController,
@@ -325,7 +324,8 @@ module.exports = class MetamaskController extends EventEmitter {
     })
 
     this.pluginsController = new PluginsController({
-      setupProvider: this.setupProvider.bind(this),
+      setupProvider: this.setupPluginProvider.bind(this),
+      setupWorkerPluginProvider: this.setupWorkerPluginProvider.bind(this),
       _metaMaskEventEmitters: this.getAttenuatedEventEmitters([
         this.txController,
         this.networkController,
@@ -412,7 +412,7 @@ module.exports = class MetamaskController extends EventEmitter {
     })
     this.memStore.subscribe(this.sendUpdate.bind(this))
 
-    const password = process.env.CONF && process.env.conf.password
+    const password = process.env.CONF && process.env.CONF.password
     if (
       password && !this.isUnlocked() &&
       this.onboardingController.completedOnboarding
@@ -674,6 +674,7 @@ module.exports = class MetamaskController extends EventEmitter {
       removePlugin: this.pluginsController.removePlugin.bind(this.pluginsController),
       removePlugins: this.pluginsController.removePlugins.bind(this.pluginsController),
       clearPluginState: this.pluginsController.clearState.bind(this.pluginsController),
+      runWorkerPlugin: this.pluginsController.runWorkerPlugin.bind(this.pluginsController),
 
       // prompts
       resolvePrompt: this.promptsController.resolvePrompt.bind(this.promptsController),
@@ -1585,7 +1586,13 @@ module.exports = class MetamaskController extends EventEmitter {
    * @param {string} extensionId - The extension id of the sender, if the sender
    * is an extension
    */
-  setupUntrustedCommunication (connectionStream, senderUrl, extensionId, isPlugin = false) {
+  setupUntrustedCommunication (
+    connectionStream,
+    senderUrl,
+    extensionId,
+    isPlugin = false,
+    isWorker = false
+  ) {
     // Check if new connection is blacklisted
     if (this.phishingController.test(senderUrl.hostname)) {
       log.debug('MetaMask - sending phishing warning for', senderUrl.hostname)
@@ -1598,7 +1605,9 @@ module.exports = class MetamaskController extends EventEmitter {
 
     // messages between inpage and background
     this.setupProviderConnection(mux.createStream('provider'), senderUrl, extensionId, isPlugin)
-    this.setupCapnodeConnection(mux.createStream('cap'), senderUrl)
+    if (!isWorker) {
+      this.setupCapnodeConnection(mux.createStream('cap'), senderUrl)
+    }
   }
 
   /**
@@ -1732,13 +1741,23 @@ module.exports = class MetamaskController extends EventEmitter {
     )
   }
 
-  setupProvider (senderUrl, getDomainMetadata, isPlugin) {
+  /**
+   * For plugins running in SES, in the background process.
+   */
+  setupPluginProvider (senderUrl) {
     const { clientSide, serverSide } = makeDuplexPair()
-    this.setupUntrustedCommunication(serverSide, senderUrl, getDomainMetadata, isPlugin)
+    this.setupUntrustedCommunication(serverSide, senderUrl, null, true, false)
     const provider = new MetamaskInpageProvider(clientSide, {
-      shouldSendMetadata: !isPlugin,
+      shouldSendMetadata: false,
     })
     return provider
+  }
+
+  /**
+   * For plugins running in workers.
+   */
+  setupWorkerPluginProvider (senderUrl, connectionStream, _workerId) {
+    this.setupUntrustedCommunication(connectionStream, senderUrl, null, true, true)
   }
 
   /**

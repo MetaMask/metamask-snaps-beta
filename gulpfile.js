@@ -27,6 +27,8 @@ const mkdirp = require('mkdirp')
 const imagemin = require('gulp-imagemin')
 const { makeStringTransform } = require('browserify-transform-tools')
 
+const conf = require('rc')('metamask', {})
+
 const packageJSON = require('./package.json')
 const dependencies = Object.keys(packageJSON && packageJSON.dependencies || {})
 const materialUIDependencies = ['@material-ui/core']
@@ -577,6 +579,7 @@ function generateBundler (opts, performBundle) {
     IN_TEST: opts.testing,
     PUBNUB_SUB_KEY: process.env.PUBNUB_SUB_KEY || '',
     PUBNUB_PUB_KEY: process.env.PUBNUB_PUB_KEY || '',
+    CONF: opts.devMode ? conf : ({}),
   }), {
     global: true,
   })

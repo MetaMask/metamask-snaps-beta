@@ -4,9 +4,9 @@ const pump = require('pump')
 const makeDuplexPair = require('./duplex-socket')
 
 module.exports = {
-  jsonParseStream: jsonParseStream,
-  jsonStringifyStream: jsonStringifyStream,
-  setupMultiplex: setupMultiplex,
+  jsonParseStream,
+  jsonStringifyStream,
+  setupMultiplex,
   makeDuplexPair,
 }
 

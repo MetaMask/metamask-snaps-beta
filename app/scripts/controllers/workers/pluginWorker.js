@@ -1,157 +1,195 @@
 const Dnode = require('dnode')
-const pump = require('pump')
 // const { ethErrors, serializeError } = require('eth-json-rpc-errors')
 const { MetamaskInpageProvider } = require('@metamask/inpage-provider')
+const ObjectMultiplex = require('obj-multiplex')
+const pump = require('pump')
 const SES = require('ses')
 const { WorkerPostMessageStream } = require('post-message-stream')
-const { setupMultiplex } = require('../../lib/stream-utils')
-const { STREAM_NAMES } = require('./enums')
+// const { STREAM_NAMES } = require('./enums')
 
-
-init()
-
-async function init () {
-
-  self.backgroundApi = null
-  self.rpcStream = null
-  self.command = null
-
-  self.plugins = new Map()
-
-  self.rootRealm = SES.makeSESRootRealm({
-    consoleMode: 'allow',
-    errorStackMode: 'allow',
-    mathRandomMode: 'allow',
-  })
-
-  await connectToParent()
+const STREAM_NAMES = {
+  BACKGROUND_API: 'backgroundApi',
+  JSON_RPC: 'jsonRpc',
+  COMMAND: 'command',
 }
 
-/**
- * Establishes a streamed connection to the background account manager
- */
-function connectToParent () {
+module.exports = {
+  worker,
+  STREAM_NAMES,
+}
 
-  const parentStream = new WorkerPostMessageStream()
-  const mux = setupMultiplex(parentStream)
+function worker () {
 
-  pump(
-    parentStream,
-    mux,
-    parentStream,
-    (err) => {
-      console.error('Parent stream failure, closing.', err)
-      self.close()
-    }
-  )
+  init()
 
-  self.command = mux.createStream(STREAM_NAMES.COMMAND)
-  self.command.on('data', _onCommandMessage)
+  async function init () {
 
-  self.rpcStream = mux.createStream(STREAM_NAMES.JSON_RPC)
+    self.backgroundApi = null
+    self.rpcStream = null
+    self.command = null
 
-  const backgroundApiStream = mux.createStream(STREAM_NAMES.BACKGROUND_API)
-  return new Promise((resolve, _reject) => {
-    const dnode = Dnode()
-    backgroundApiStream.pipe(dnode).pipe(backgroundApiStream)
-    dnode.once('remote', (metamaskConnection) => {
-      self.backgroundApi = metamaskConnection
-      resolve()
+    self.plugins = new Map()
+
+    self.rootRealm = SES.makeSESRootRealm({
+      consoleMode: 'allow',
+      errorStackMode: 'allow',
+      mathRandomMode: 'allow',
     })
-  })
-}
 
-function _onCommandMessage (message) {
-
-  if (typeof message !== 'object') {
-    console.error('Command stream received non-object message.')
-    return
+    await connectToParent()
   }
 
-  const { command, data } = message
+  /**
+   * Establishes a streamed connection to the background account manager
+   */
+  function connectToParent () {
 
-  switch (command) {
+    const parentStream = new WorkerPostMessageStream()
+    const mux = setupMultiplex(parentStream, 'Parent')
 
-    case 'installPlugin':
-      installPlugin(data)
-      break
+    pump(
+      parentStream,
+      mux,
+      parentStream,
+      (err) => {
+        console.error('Parent stream failure, closing.', err)
+        self.close()
+      }
+    )
 
-    default:
-      console.error(`Unrecognized command: ${command}.`)
-      break
+    self.command = mux.createStream(STREAM_NAMES.COMMAND)
+    self.command.on('data', _onCommandMessage)
+
+    self.rpcStream = mux.createStream(STREAM_NAMES.JSON_RPC)
+
+    const backgroundApiStream = mux.createStream(STREAM_NAMES.BACKGROUND_API)
+    return new Promise((resolve, _reject) => {
+      const dnode = Dnode()
+      backgroundApiStream.pipe(dnode).pipe(backgroundApiStream)
+      dnode.once('remote', (metamaskConnection) => {
+        self.backgroundApi = metamaskConnection
+        resolve()
+      })
+    })
   }
-}
 
-function installPlugin ({
-  pluginName,
-  approvedPermissions,
-  sourceCode,
-  backgroundApiKeys,
-} = {}) {
+  function _onCommandMessage (message) {
 
-  const ethereumProvider = new MetamaskInpageProvider(self.rpcStream, {
-    shouldSendMetadata: false,
-  })
+    if (typeof message !== 'object') {
+      console.error('Command stream received non-object message.')
+      return
+    }
 
-  _startPlugin(pluginName, approvedPermissions, sourceCode, ethereumProvider, backgroundApiKeys)
-}
+    const { command, data } = message
 
-/**
- * Attempts to evaluate a plugin in SES.
- * Generates the APIs for the plugin. May throw on error.
- *
- * @param {string} pluginName - The name of the plugin.
- * @param {Array<string>} approvedPermissions - The plugin's approved permissions.
- * Should always be a value returned from the permissions controller.
- * @param {string} sourceCode - The source code of the plugin.
- * @param {Object} ethereumProvider - The plugin's Ethereum provider object.
- */
-function _startPlugin (pluginName, approvedPermissions, sourceCode, ethereumProvider, backgroundApiKeys) {
+    switch (command) {
 
-  console.log(`starting plugin '${pluginName}'`)
+      case 'installPlugin':
+        installPlugin(data)
+          .then(() => {
+            self.command.write({ response: 'OK' })
+          })
+          .catch((error) => {
+            self.command.write({ response: 'FAILURE', error: error.message })
+          })
 
-  Object.assign(ethereumProvider, generateBackgroundApi(backgroundApiKeys, approvedPermissions))
+        break
 
-  try {
+      case 'ping':
+        self.command.write({ response: 'OK' })
+        break
 
-    const sessedPlugin = self.rootRealm.evaluate(sourceCode, {
+      default:
+        console.error(`Unrecognized command: ${command}.`)
+        break
+    }
+  }
 
-      wallet: ethereumProvider,
-      console, // Adding console for now for logging purposes.
-      BigInt,
-      setTimeout,
-      crypto,
-      SubtleCrypto,
-      fetch,
-      XMLHttpRequest,
-      WebSocket,
-      Buffer, // TODO:WW may not be available? we'll see
-      Date,
+  async function installPlugin ({
+    pluginName,
+    // approvedPermissions,
+    sourceCode,
+    backgroundApiKeys,
+  } = {}) {
 
-      window: {
+    const ethereumProvider = new MetamaskInpageProvider(self.rpcStream, {
+      shouldSendMetadata: false,
+    })
+
+    _startPlugin(pluginName, null, sourceCode, ethereumProvider, backgroundApiKeys)
+  }
+
+  /**
+   * Attempts to evaluate a plugin in SES.
+   * Generates the APIs for the plugin. May throw on error.
+   *
+   * @param {string} pluginName - The name of the plugin.
+   * @param {Array<string>} approvedPermissions - The plugin's approved permissions.
+   * Should always be a value returned from the permissions controller.
+   * @param {string} sourceCode - The source code of the plugin.
+   * @param {Object} ethereumProvider - The plugin's Ethereum provider object.
+   */
+  function _startPlugin (pluginName, _approvedPermissions, sourceCode, ethereumProvider, backgroundApiKeys) {
+
+    console.log(`starting plugin '${pluginName}' in worker`)
+
+    // Object.assign(ethereumProvider, generateBackgroundApi(backgroundApiKeys, approvedPermissions))
+    Object.assign(ethereumProvider, generateBackgroundApi(backgroundApiKeys))
+
+    try {
+
+      const sessedPlugin = self.rootRealm.evaluate(sourceCode, {
+
+        wallet: ethereumProvider,
+        console, // Adding console for now for logging purposes.
+        BigInt,
+        setTimeout,
         crypto,
         SubtleCrypto,
-        setTimeout,
         fetch,
         XMLHttpRequest,
         WebSocket,
-      },
-    })
-    sessedPlugin()
-  } catch (err) {
+        Buffer, // TODO:WW may not be available? we'll see
+        Date,
 
-    console.log(`error encountered trying to run plugin '${pluginName}', removing it`)
-    this.removePlugin(pluginName)
-    throw err
+        window: {
+          crypto,
+          SubtleCrypto,
+          setTimeout,
+          fetch,
+          XMLHttpRequest,
+          WebSocket,
+        },
+      })
+      sessedPlugin()
+    } catch (err) {
+      // _removePlugin(pluginName)
+      console.error(`error encountered trying to run plugin '${pluginName} in worker'`)
+    }
+
+    // _setPluginToActive(pluginName)
   }
 
-  this._setPluginToActive(pluginName)
-}
+  function generateBackgroundApi (backgroundApiKeys) {
+    return backgroundApiKeys.reduce((api, key) => {
+      api[key] = self.backgroundApi[key]
+      return api
+    }, {})
+  }
 
-function generateBackgroundApi (_pluginName, backgroundApiKeys) {
-  // TODO:WW bind background API methods to pluginName
-  return backgroundApiKeys.reduce((api, key) => {
-    api[key] = self.backgroundApi[key]
-    return api
-  }, {})
+  function setupMultiplex (connectionStream, streamName) {
+    const mux = new ObjectMultiplex()
+    pump(
+      connectionStream,
+      mux,
+      connectionStream,
+      (err) => {
+        if (err) {
+          console.error(`${streamName} stream failure, closing worker.`, err)
+        }
+        self.close()
+      }
+    )
+    return mux
+  }
 }

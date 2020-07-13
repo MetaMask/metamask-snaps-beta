@@ -1995,21 +1995,6 @@
   resolved "https://registry.yarnpkg.com/@metamask/forwarder/-/forwarder-1.0.0.tgz#3e321022a36561cc6e7b7c84df25f600925f4d95"
   integrity sha512-ufgPndhZz0oNhRrixiR6cXH/HwtFwurWvbrU8zAZsFnf1hB4L2VB2Wey/P1wStIx+BJJQjyROvCDyPDoz4ny1A==
 
-"@metamask/inpage-provider@./metamask-inpage-provider-5.0.2.tgz":
-  version "5.0.2"
-  resolved "./metamask-inpage-provider-5.0.2.tgz#835da897d0b32878ebc22ace4cac9bb3e8cd709a"
-  dependencies:
-    capnode "^4.0.2"
-    eth-json-rpc-errors "^2.0.2"
-    fast-deep-equal "^2.0.1"
-    json-rpc-engine "^5.1.5"
-    json-rpc-middleware-stream "^2.1.1"
-    loglevel "^1.6.1"
-    obj-multiplex "^1.0.0"
-    post-message-stream "^3.0.0"
-    pump "^3.0.0"
-    safe-event-emitter "^1.0.1"
-
 "@metamask/inpage-provider@MetaMask/inpage-provider#snaps-updated":
   version "5.0.2"
   resolved "https://codeload.github.com/MetaMask/inpage-provider/tar.gz/ed73bfadf4d2d193ccd27e01179ad006f2c6ef91"

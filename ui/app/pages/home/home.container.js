@@ -16,6 +16,7 @@ import {
   turnThreeBoxSyncingOn,
   getThreeBoxLastUpdated,
   removePlugin,
+  runWorkerPlugin,
   clearPlugins,
   clearAllPermissionsData,
   setShowRestorePromptToFalse,
@@ -40,7 +41,6 @@ const mapStateToProps = state => {
 
   const isPopup = getEnvironmentType(window.location.href) === ENVIRONMENT_TYPE_POPUP
 
-  // TODO:plugins:prod remove
   const hasPermissionsData = (
     Object.keys(getAllPermissions(state)).length > 0 ||
     Object.keys(getPermissionsHistory(state)).length > 0 ||
@@ -84,6 +84,7 @@ const mapDispatchToProps = (dispatch) => ({
   setShowRestorePromptToFalse: () => dispatch(setShowRestorePromptToFalse()),
   removePlugin: (pluginName) => dispatch(removePlugin(pluginName)),
   clearPlugins: () => dispatch(clearPlugins()),
+  runWorkerPlugin: () => dispatch(runWorkerPlugin()),
   clearAllPermissionsData: () => dispatch(clearAllPermissionsData()),
 })
 

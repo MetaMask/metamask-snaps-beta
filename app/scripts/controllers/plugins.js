@@ -2,11 +2,13 @@ const ObservableStore = require('obs-store')
 const EventEmitter = require('safe-event-emitter')
 const extend = require('xtend')
 const { ethErrors, serializeError } = require('eth-json-rpc-errors')
+const nodeify = require('../lib/nodeify')
 
 const {
   pluginRestrictedMethodDescriptions,
 } = require('./permissions/restrictedMethods')
 const { PLUGIN_PREFIX } = require('./permissions/enums')
+const WorkerController = require('./workers')
 
 const ENUMS = {
   // which plugin properties should be serialized
@@ -35,11 +37,11 @@ const SES = (
     : require('ses')
 )
 
-const createGetDomainMetadataFunction = (pluginName) => {
-  return async () => {
-    return { name: pluginName }
-  }
-}
+// const createGetDomainMetadataFunction = (pluginName) => {
+//   return async () => {
+//     return { name: pluginName }
+//   }
+// }
 
 /*
  * A plugin is initialized in three phases:
@@ -66,13 +68,15 @@ class PluginsController extends EventEmitter {
     })
 
     this.setupProvider = opts.setupProvider
+    this.workers = new WorkerController({
+      setupWorkerConnection: opts.setupWorkerPluginProvider,
+    })
 
     this._getAccounts = opts._getAccounts
     this._removeAllPermissionsFor = opts._removeAllPermissionsFor
     this._getPermissionsFor = opts._getPermissionsFor
     this.getApi = opts.getApi
     this.getAppKeyForDomain = opts.getAppKeyForDomain
-    this.onUnlock = opts.onUnlock
     this.closeAllConnections = opts.closeAllConnections
     this._eventNamesToEventEmitters = this._getEventNamesToEventEmitters(
       opts._metaMaskEventEmitters
@@ -108,8 +112,8 @@ class PluginsController extends EventEmitter {
 
       const ethereumProvider = this.setupProvider(
         { hostname: pluginName },
-        createGetDomainMetadataFunction(pluginName),
-        true
+        // createGetDomainMetadataFunction(pluginName),
+        // true
       )
 
       try {
@@ -305,8 +309,8 @@ class PluginsController extends EventEmitter {
 
       const ethereumProvider = this.setupProvider(
         { hostname: pluginName },
-        createGetDomainMetadataFunction(pluginName),
-        true
+        // createGetDomainMetadataFunction(pluginName),
+        // true
       )
 
       const { sourceCode } = await this.add(pluginName)
@@ -579,11 +583,11 @@ class PluginsController extends EventEmitter {
 
     const apiList = approvedPermissions
       ? approvedPermissions.map(perm => {
-          const metamaskMethod = perm.match(/metamask_(.+)/)
-          return metamaskMethod
-            ? metamaskMethod[1]
-            : perm
-        })
+        const metamaskMethod = perm.match(/metamask_(.+)/)
+        return metamaskMethod
+          ? metamaskMethod[1]
+          : perm
+      })
       : []
 
     const onMetaMaskEvent = this._createMetaMaskEventListener(pluginName, apiList)
@@ -605,13 +609,61 @@ class PluginsController extends EventEmitter {
       registerAccountMessageHandler,
       registerApiRequestHandler,
       getAppKey: () => this.getAppKeyForDomain(pluginName),
-      onUnlock: this.onUnlock,
     }
     apiList.forEach(apiKey => {
       apisToProvide[apiKey] = possibleApis[apiKey]
     })
 
     return apisToProvide
+  }
+
+  /**
+   * Generate the APIs to provide for the given plugin.
+   *
+   * @param {string} pluginName - The name of the plugin.
+   * @param {Array<string>} approvedPermissions - The plugin's approved permissions.
+   */
+  _generateApisToProvideForWorker (pluginName, approvedPermissions) {
+
+    const apiList = approvedPermissions
+      ? approvedPermissions.map(perm => {
+        const metamaskMethod = perm.match(/metamask_(.+)/)
+        return metamaskMethod
+          ? metamaskMethod[1]
+          : perm
+      })
+      : []
+
+    // TODO:WW: event support
+    // const onMetaMaskEvent = this._createMetaMaskEventListener(pluginName, apiList)
+
+    const possibleApis = {
+      updatePluginState: this.updatePluginState.bind(this, pluginName),
+      getPluginState: this.getPluginState.bind(this, pluginName),
+      // onNewTx: () => {},
+      ...this.getApi(),
+    }
+
+    const registerRpcMessageHandler = this._registerRpcMessageHandler.bind(this, pluginName)
+    const registerApiRequestHandler = this._registerApiRequestHandler.bind(this, pluginName)
+    const registerAccountMessageHandler = this._registerAccountMessageHandler.bind(this, pluginName)
+
+    async function getAppKey () {
+      return this.getAppKeyForDomain(pluginName)
+    }
+
+    const apisToProvide = {
+      // onMetaMaskEvent,
+      registerRpcMessageHandler,
+      registerAccountMessageHandler,
+      registerApiRequestHandler,
+      getAppKey: nodeify(getAppKey, this),
+    }
+    apiList.forEach(apiKey => {
+      apisToProvide[apiKey] = possibleApis[apiKey]
+    })
+
+    return { api: apisToProvide, keys: Object.keys(apisToProvide) }
   }
 
   _registerRpcMessageHandler (pluginName, handler) {
@@ -624,6 +676,27 @@ class PluginsController extends EventEmitter {
 
   _registerApiRequestHandler (pluginName, handler) {
     this.apiRequestHandlers.set(pluginName, handler)
+  }
+
+  runWorkerPlugin () {
+    this._startPluginInWorker(
+      'fooPlugin',
+      [],
+      '() => { console.log(\'Welcome to Flavortown.\')'
+    )
+  }
+
+  async _startPluginInWorker (pluginName, approvedPermissions, sourceCode) {
+    const { api, apiKeys } = this._generateApisToProvideForWorker(pluginName, approvedPermissions)
+    const workerId = await this.workers.createPluginWorker(
+      { hostname: pluginName },
+      () => api
+    )
+    await this.workers.startPlugin({
+      pluginName,
+      sourceCode,
+      backgroundApiKeys: apiKeys,
+    }, workerId)
   }
 
   /**
@@ -681,62 +754,6 @@ class PluginsController extends EventEmitter {
     this._setPluginToActive(pluginName)
     return true
   }
-
-  // /**
-  //  * Attempts to evaluate a plugin in SES.
-  //  * Generates the APIs for the plugin. May throw on error.
-  //  *
-  //  * @param {string} pluginName - The name of the plugin.
-  //  * @param {Array<string>} approvedPermissions - The plugin's approved permissions.
-  //  * Should always be a value returned from the permissions controller.
-  //  * @param {string} sourceCode - The source code of the plugin.
-  //  * @param {Object} ethereumProvider - The plugin's Ethereum provider object.
-  //  */
-  // _startPluginInWorker (pluginName, approvedPermissions, sourceCode, ethereumProvider) {
-
-  //   console.log(`starting plugin '${pluginName}' in worker`)
-
-  //   const apisToProvide = this._generateApisToProvide(
-  //     pluginName, approvedPermissions
-  //   )
-  //   Object.assign(ethereumProvider, apisToProvide)
-
-  //   try {
-
-  //     const sessedPlugin = this.rootRealm.evaluate(sourceCode, {
-
-  //       wallet: ethereumProvider,
-  //       console, // Adding console for now for logging purposes.
-  //       BigInt,
-  //       setTimeout,
-  //       crypto,
-  //       SubtleCrypto,
-  //       fetch,
-  //       XMLHttpRequest,
-  //       WebSocket,
-  //       Buffer,
-  //       Date,
-
-  //       window: {
-  //         crypto,
-  //         SubtleCrypto,
-  //         setTimeout,
-  //         fetch,
-  //         XMLHttpRequest,
-  //         WebSocket,
-  //       },
-  //     })
-  //     sessedPlugin()
-  //   } catch (err) {
-
-  //     console.log(`error encountered trying to run plugin '${pluginName}', removing it`)
-  //     this.removePlugin(pluginName)
-  //     throw err
-  //   }
-
-  //   this._setPluginToActive(pluginName)
-  //   return true
-  // }
 
   async _setPluginToActive (pluginName) {
     this._updatePlugin(pluginName, 'isActive', true)
