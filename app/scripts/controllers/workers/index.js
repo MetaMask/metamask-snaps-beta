@@ -50,7 +50,7 @@ module.exports = class WebWorkerController extends SafeEventEmitter {
     const commandStream = mux.createStream(STREAM_NAMES.COMMAND)
 
     const rpcStream = mux.createStream(STREAM_NAMES.JSON_RPC)
-    // TODO: MetamaskController.setupProviderConnection(rpcStream)
+    // TODO:WW MetamaskController.setupProviderConnection(rpcStream)
 
     const dnode = Dnode(getApiFunction())
     pump(

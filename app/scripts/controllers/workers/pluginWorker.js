@@ -125,7 +125,7 @@ function _startPlugin (pluginName, approvedPermissions, sourceCode, ethereumProv
       fetch,
       XMLHttpRequest,
       WebSocket,
-      Buffer, // TODO: may not be available? we'll see
+      Buffer, // TODO:WW may not be available? we'll see
       Date,
 
       window: {
@@ -149,7 +149,7 @@ function _startPlugin (pluginName, approvedPermissions, sourceCode, ethereumProv
 }
 
 function generateBackgroundApi (_pluginName, backgroundApiKeys) {
-  // TODO: bind background API methods to pluginName
+  // TODO:WW bind background API methods to pluginName
   return backgroundApiKeys.reduce((api, key) => {
     api[key] = self.backgroundApi[key]
     return api
