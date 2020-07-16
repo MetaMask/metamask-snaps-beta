@@ -1,6 +1,6 @@
 const watchify = require('watchify')
 const browserify = require('browserify')
-const envify = require('envify/custom')
+// const envify = require('envify/custom')
 const gulp = require('gulp')
 const source = require('vinyl-source-stream')
 const buffer = require('vinyl-buffer')
@@ -26,8 +26,9 @@ const sesify = require('sesify')
 const mkdirp = require('mkdirp')
 const imagemin = require('gulp-imagemin')
 const { makeStringTransform } = require('browserify-transform-tools')
+const pathUtil = require('path')
 
-const conf = require('rc')('metamask', {})
+// const conf = require('rc')('metamask', {})
 
 const packageJSON = require('./package.json')
 const dependencies = Object.keys(packageJSON && packageJSON.dependencies || {})
@@ -550,6 +551,12 @@ function generateBundler (opts, performBundle) {
     }
   }
 
+  browserifyOpts.noParse = [
+    // './node_modules/snap-workers/dist/*',
+    // '**/node_modules/snap-workers/dist/*',
+    pathUtil.join(require.resolve('snap-workers').slice(0, -8), 'dist/*')
+  ]
+
   let bundler = browserify(browserifyOpts)
     .transform('babelify')
     // Transpile any dependencies using the object spread/rest operator
@@ -572,17 +579,17 @@ function generateBundler (opts, performBundle) {
     bundler = bundler.external(opts.externalDependencies)
   }
 
-  // Inject variables into bundle
-  bundler.transform(envify({
-    METAMASK_DEBUG: opts.devMode,
-    NODE_ENV: opts.devMode ? 'development' : 'production',
-    IN_TEST: opts.testing,
-    PUBNUB_SUB_KEY: process.env.PUBNUB_SUB_KEY || '',
-    PUBNUB_PUB_KEY: process.env.PUBNUB_PUB_KEY || '',
-    CONF: opts.devMode ? conf : ({}),
-  }), {
-    global: true,
-  })
+  // // Inject variables into bundle
+  // bundler.transform(envify({
+  //   METAMASK_DEBUG: opts.devMode,
+  //   NODE_ENV: opts.devMode ? 'development' : 'production',
+  //   IN_TEST: opts.testing,
+  //   PUBNUB_SUB_KEY: process.env.PUBNUB_SUB_KEY || '',
+  //   PUBNUB_PUB_KEY: process.env.PUBNUB_PUB_KEY || '',
+  //   CONF: opts.devMode ? conf : ({}),
+  // }), {
+  //   global: true,
+  // })
 
   if (opts.watch) {
     bundler = watchify(bundler)

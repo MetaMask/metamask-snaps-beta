@@ -1997,7 +1997,7 @@
 
 "@metamask/inpage-provider@MetaMask/inpage-provider#snaps-updated":
   version "5.0.2"
-  resolved "https://codeload.github.com/MetaMask/inpage-provider/tar.gz/ed73bfadf4d2d193ccd27e01179ad006f2c6ef91"
+  resolved "https://codeload.github.com/MetaMask/inpage-provider/tar.gz/e11a1fbd57da843c95d51a82cbd12bb3bada3918"
   dependencies:
     capnode "^4.0.2"
     eth-json-rpc-errors "^2.0.2"
@@ -15986,6 +15986,13 @@ json-rpc-error@^2.0.0:
   dependencies:
     inherits "^2.0.1"
 
+json-rpc-middleware-stream@MetaMask/json-rpc-middleware-stream#snaps:
+  version "2.1.1"
+  resolved "https://codeload.github.com/MetaMask/json-rpc-middleware-stream/tar.gz/ab6c1b2e82ec600a95d2c82fde7e56225ffb10d2"
+  dependencies:
+    readable-stream "^3.6.0"
+    safe-event-emitter "^1.0.1"
+
 json-rpc-middleware-stream@^2.1.1:
   version "2.1.1"
   resolved "https://registry.yarnpkg.com/json-rpc-middleware-stream/-/json-rpc-middleware-stream-2.1.1.tgz#06e5409e201e7ddeae47bef29f7059eafd4d5325"
@@ -21009,9 +21016,7 @@ post-message-stream@^3.0.0:
 
 post-message-stream@rekmarks/post-message-stream#multi-env:
   version "4.0.0"
-  resolved "https://codeload.github.com/rekmarks/post-message-stream/tar.gz/00fb91105fd811be51a8e73097e568d7be6e5f87"
-  dependencies:
-    readable-stream "^2.1.4"
+  resolved "https://codeload.github.com/rekmarks/post-message-stream/tar.gz/1be6bdf2ffadbd2ae045983656601c7edbb07bb8"
 
 postcss-flexbugs-fixes@^4.1.0:
   version "4.1.0"
@@ -22750,7 +22755,7 @@ read-pkg@^4.0.1:
     parse-json "^4.0.0"
     pify "^3.0.0"
 
-"readable-stream@1 || 2", readable-stream@2, readable-stream@^2.0.1, readable-stream@^2.0.2, readable-stream@^2.0.4, readable-stream@^2.0.6, readable-stream@^2.1.4, readable-stream@^2.1.5, readable-stream@^2.2.2, readable-stream@^2.2.6, readable-stream@^2.3.3, readable-stream@~2.3.3:
+"readable-stream@1 || 2", readable-stream@2, readable-stream@2.3.3, readable-stream@^2.0.1, readable-stream@^2.0.2, readable-stream@^2.0.4, readable-stream@^2.0.6, readable-stream@^2.1.5, readable-stream@^2.2.2, readable-stream@^2.2.6, readable-stream@^2.3.3, readable-stream@~2.3.3:
   version "2.3.3"
   resolved "https://registry.yarnpkg.com/readable-stream/-/readable-stream-2.3.3.tgz#368f2512d79f9d46fdfc71349ae7878bbc1eb95c"
   integrity sha512-m+qzzcn7KUxEmd1gMbchF+Y2eIUbieUaxkWtptyHywrX0rE8QEYqPC07Vuy4Wm32/xE16NcdBctb8S0Xe/5IeQ==
@@ -22794,6 +22799,28 @@ readable-stream@^2.0.0, readable-stream@^2.0.5, readable-stream@^2.2.8, readable
     safe-buffer "~5.1.1"
     string_decoder "~1.1.1"
     util-deprecate "~1.0.1"
+
+readable-stream@^2.1.4:
+  version "2.3.7"
+  resolved "https://registry.yarnpkg.com/readable-stream/-/readable-stream-2.3.7.tgz#1eca1cf711aef814c04f62252a36a62f6cb23b57"
+  integrity sha512-Ebho8K4jIbHAxnuxi7o42OrZgF/ZTNcsZj6nRKyUmkhLFq8CHItp/fy6hQZuZmP/n3yZ9VBUbp4zz/mX8hmYPw==
+  dependencies:
+    core-util-is "~1.0.0"
+    inherits "~2.0.3"
+    isarray "~1.0.0"
+    process-nextick-args "~2.0.0"
+    safe-buffer "~5.1.1"
+    string_decoder "~1.1.1"
+    util-deprecate "~1.0.1"
+
+readable-stream@^3.6.0:
+  version "3.6.0"
+  resolved "https://registry.yarnpkg.com/readable-stream/-/readable-stream-3.6.0.tgz#337bbda3adc0706bd3e024426a286d4b4b2c9198"
+  integrity sha512-BViHy7LKeTz4oNnkcLJ+lVSL6vpiFeX6/d3oSH8zCW7UxP2onchk+vTGB143xuFjHS3deTgkKoXXymXqymiIdA==
+  dependencies:
+    inherits "^2.0.3"
+    string_decoder "^1.1.1"
+    util-deprecate "^1.0.1"
 
 readable-stream@~1.0.15, readable-stream@~1.0.17:
   version "1.0.34"
@@ -24687,6 +24714,10 @@ smart-buffer@^4.0.2:
   version "4.1.0"
   resolved "https://registry.yarnpkg.com/smart-buffer/-/smart-buffer-4.1.0.tgz#91605c25d91652f4661ea69ccf45f1b331ca21ba"
   integrity sha512-iVICrxOzCynf/SNaBQCw34eM9jROU/s5rzIhpOvzhzuYHfJR/DhZfDkXiZSgKXfgv26HT3Yni3AV/DGw0cGnnw==
+
+snap-workers@rekmarks/snap-workers:
+  version "1.0.0"
+  resolved "https://codeload.github.com/rekmarks/snap-workers/tar.gz/184fb06314898597eb86e930c4dfe0754630386c"
 
 snapdragon-node@^2.0.1:
   version "2.1.1"

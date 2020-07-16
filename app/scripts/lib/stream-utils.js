@@ -36,9 +36,10 @@ function jsonStringifyStream () {
 /**
  * Sets up stream multiplexing for the given stream
  * @param {any} connectionStream - the stream to mux
+ * @param {string} streamName - the name of the stream, for identification in errors
  * @return {stream.Stream} the multiplexed stream
  */
-function setupMultiplex (connectionStream) {
+function setupMultiplex (connectionStream, streamName) {
   const mux = new ObjectMultiplex()
   pump(
     connectionStream,
@@ -46,7 +47,9 @@ function setupMultiplex (connectionStream) {
     connectionStream,
     (err) => {
       if (err) {
-        console.error(err)
+        streamName
+          ? console.error(`${streamName} stream failure.`, err)
+          : console.error(err)
       }
     }
   )

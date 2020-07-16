@@ -1,7 +1,7 @@
-const WritableStream = require('readable-stream').Writable
+const { Writable } = require('readable-stream')
 const promiseToCallback = require('promise-to-callback')
 
-class AsyncWritableStream extends WritableStream {
+class AsyncWritableStream extends Writable {
 
   constructor (asyncWriteFn, _opts) {
     const opts = Object.assign({ objectMode: true }, _opts)

@@ -2,6 +2,15 @@
 // this must run before anything else
 require('./lib/freezeGlobals')
 
+if (!('process' in window)) {
+  window.process = {}
+}
+if (!('env' in process)) {
+  process.env = {}
+}
+process.env.METAMASK_DEBUG = true
+process.env.NODE_ENV = 'development'
+
 // polyfills
 import 'abortcontroller-polyfill/dist/polyfill-patch-fetch'
 

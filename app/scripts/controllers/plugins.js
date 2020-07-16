@@ -663,7 +663,7 @@ class PluginsController extends EventEmitter {
       apisToProvide[apiKey] = possibleApis[apiKey]
     })
 
-    return { api: apisToProvide, keys: Object.keys(apisToProvide) }
+    return { api: apisToProvide, apiKeys: Object.keys(apisToProvide) }
   }
 
   _registerRpcMessageHandler (pluginName, handler) {
@@ -682,6 +682,7 @@ class PluginsController extends EventEmitter {
     this._startPluginInWorker(
       'fooPlugin',
       [],
+      // '(() => { console.log(\'Welcome to Flavortown.\'))()'
       '() => { console.log(\'Welcome to Flavortown.\')'
     )
   }

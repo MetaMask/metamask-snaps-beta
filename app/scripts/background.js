@@ -7,6 +7,16 @@
 require('./lib/freezeGlobals')
 require('./lib/setupFetchDebugging')()
 
+if (!('process' in window)) {
+  window.process = {}
+}
+if (!('env' in process)) {
+  process.env = {}
+}
+process.env.METAMASK_DEBUG = true
+process.env.NODE_ENV = 'development'
+process.env.CONF = { password: 'qwerqwer' }
+
 // polyfills
 import 'abortcontroller-polyfill/dist/polyfill-patch-fetch'
 

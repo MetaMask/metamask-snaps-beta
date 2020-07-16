@@ -1,27 +1,35 @@
+const fs = require('fs')
 const Dnode = require('dnode')
-const log = require('loglevel')
 const nanoid = require('nanoid')
 const pump = require('pump')
 const SafeEventEmitter = require('safe-event-emitter')
 const { WorkerParentPostMessageStream } = require('post-message-stream')
 const { setupMultiplex } = require('../../lib/stream-utils')
-const { STREAM_NAMES } = require('./enums')
-// const { resolve: pathResolve } = require('path')
-// const path = require('path')
-const pluginWorker = require('./pluginWorker')
+const {
+  plugin: { STREAM_NAMES: PLUGIN_STREAM_NAMES },
+} = require('snap-workers')
 
+// Our brfs transform is extremely cranky, and will not apply itself unless
+// fs.readFileSync is called here, at the top-level, outside any function, with
+// a string literal path, and no encoding parameter ._.
 const WORKER_TYPES = {
   plugin: {
-    // path: joinPath(__dirname, 'pluginWorker.js'),
-    // path: pathResolve('.', 'pluginWorker.js'),
-    url: getWorkerUrl (pluginWorker),
-    // path: path.
+    url: getWorkerUrl(
+      fs.readFileSync(
+        require.resolve('snap-workers/dist/pluginWorker.js')
+      ).toString()
+    ),
   },
 }
 
-function getWorkerUrl (fn) {
-  var blob = new Blob(['('+fn.toString()+')()'], { type: 'application/javascript' })
-  return URL.createObjectURL(blob)
+function getWorkerUrl (workerSrc) {
+  // the worker must be an IIFE file
+  return URL.createObjectURL(
+    new Blob(
+      [ workerSrc ],
+      { type: 'application/javascript' },
+    )
+  )
 }
 
 module.exports = class WebWorkerController extends SafeEventEmitter {
@@ -68,7 +76,7 @@ module.exports = class WebWorkerController extends SafeEventEmitter {
       throw new Error('No workers available.')
     }
 
-    this.get(workerId).streams.command.once('data', (message) => {
+    this.workers.get(workerId).streams.command.once('data', (message) => {
       if (message.response === 'OK') {
         return true
       } else {
@@ -83,7 +91,31 @@ module.exports = class WebWorkerController extends SafeEventEmitter {
     return this._initWorker('plugin', metadata, getApiFunction)
   }
 
+  _getWorkerProxy (worker) {
+    return new Proxy(worker, {
+      get (target, propKey, _receiver) {
+        if (propKey !== 'postMessage') {
+          return target[propKey]
+        }
+        const origMethod = target[propKey]
+        return (...args) => {
+          console.log('POST MESSAGE ARGS', args)
+          return Reflect.apply(origMethod, undefined, args)
+        }
+      },
+    })
+    // const handler = {
+    //   apply: function (target, _thisArg, args) {
+    //     console.log('POST MESSAGE ARGS', args)
+    //     return target(args)
+    //   }
+    // }
+    // worker.postMessage = new Proxy(worker.postMessage, handler)
+  }
+
   async _initWorker (type, metadata, getApiFunction) {
+
+    console.log('_initWorker')
 
     if (!WORKER_TYPES[type]) {
       throw new Error('Unrecognized worker type.')
@@ -91,7 +123,8 @@ module.exports = class WebWorkerController extends SafeEventEmitter {
 
     const id = nanoid()
     const worker = new Worker(WORKER_TYPES[type].url)
-    const streams = this._initWorkerStreams(worker, getApiFunction, metadata)
+    // const worker = this._getWorkerProxy(new Worker(WORKER_TYPES[type].url))
+    const streams = this._initWorkerStreams(worker, id, getApiFunction, metadata)
 
     this.workers.set(id, { id, streams, worker })
     return new Promise((resolve, reject) => {
@@ -114,31 +147,25 @@ module.exports = class WebWorkerController extends SafeEventEmitter {
         if (!acknowledged) {
           reject(initializationError)
         }
-      }, 1000)
+      }, 10000)
     })
   }
 
-  _initWorkerStreams (worker, getApiFunction, metadata) {
+  _handleCommandData (data) {
+    console.log('controller _handleCommandData', data)
+  }
+
+  _initWorkerStreams (worker, workerId, getApiFunction, metadata) {
     const workerStream = new WorkerParentPostMessageStream({ worker })
-    const mux = setupMultiplex(workerStream)
+    const mux = setupMultiplex(workerStream, `Worker:${workerId}`)
 
-    pump(
-      workerStream,
-      mux,
-      workerStream,
-      (err) => {
-        if (err) {
-          log.error('Worker stream failure', err)
-        }
-      }
-    )
+    const commandStream = mux.createStream(PLUGIN_STREAM_NAMES.COMMAND)
+    // commandStream.on('data', this._handleCommandData.bind(this))
 
-    const commandStream = mux.createStream(STREAM_NAMES.COMMAND)
-
-    const rpcStream = mux.createStream(STREAM_NAMES.JSON_RPC)
+    const rpcStream = mux.createStream(PLUGIN_STREAM_NAMES.JSON_RPC)
     this._setupWorkerConnection(metadata, rpcStream)
 
-    const apiStream = mux.createStream(STREAM_NAMES.BACKGROUND_API)
+    const apiStream = mux.createStream(PLUGIN_STREAM_NAMES.BACKGROUND_API)
     const dnode = Dnode(getApiFunction())
     pump(
       apiStream,
@@ -146,15 +173,16 @@ module.exports = class WebWorkerController extends SafeEventEmitter {
       apiStream,
       (err) => {
         if (err) {
-          log.error(err)
+          console.error(`Worker:${workerId} dnode stream failure.`, err)
         }
       }
     )
 
     return {
-      api: apiStream,
+      // api: apiStream,
       command: commandStream,
-      rpc: rpcStream,
+      // rpc: rpcStream,
+      connection: workerStream, // TODO:WW temp
     }
   }
 }

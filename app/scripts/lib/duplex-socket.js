@@ -1,6 +1,6 @@
 // From: https://stackoverflow.com/a/55136548/272576
 // Modified to our eslint and to support object-mode.
-const Duplex = require('stream').Duplex
+const { Duplex } = require('readable-stream')
 const assert = require('assert')
 
 // Define some unique property names.
