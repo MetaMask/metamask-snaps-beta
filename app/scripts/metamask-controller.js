@@ -334,6 +334,7 @@ module.exports = class MetamaskController extends EventEmitter {
       _getAccounts: this.keyringController.getAccounts.bind(this.keyringController),
       _removeAllPermissionsFor: this.permissionsController.removeAllPermissionsFor.bind(this.permissionsController),
       _getPermissionsFor: this.permissionsController.getPermissionsFor.bind(this.permissionsController),
+      requestPermissions: this.permissionsController._requestPermissions.bind(this.permissionsController),
       closeAllConnections: this.closeAllConnections.bind(this),
       getApi: this.getPluginsApi.bind(this),
       initState: initState.PluginsController,
@@ -674,7 +675,8 @@ module.exports = class MetamaskController extends EventEmitter {
       removePlugin: this.pluginsController.removePlugin.bind(this.pluginsController),
       removePlugins: this.pluginsController.removePlugins.bind(this.pluginsController),
       clearPluginState: this.pluginsController.clearState.bind(this.pluginsController),
-      runWorkerPlugin: this.pluginsController.runWorkerPlugin.bind(this.pluginsController),
+      runDummyWorkerPlugin: this.pluginsController.runDummyWorkerPlugin.bind(this.pluginsController),
+      removeDummyWorkerPlugin: this.pluginsController.removeDummyWorkerPlugin.bind(this.pluginsController),
 
       // prompts
       resolvePrompt: this.promptsController.resolvePrompt.bind(this.promptsController),
@@ -697,20 +699,11 @@ module.exports = class MetamaskController extends EventEmitter {
       // etc
       getState: (cb) => cb(null, this.getState()),
       setCurrentCurrency: this.setCurrentCurrency.bind(this),
-      setUseBlockie: this.setUseBlockie.bind(this),
-      setParticipateInMetaMetrics: this.setParticipateInMetaMetrics.bind(this),
-      setMetaMetricsSendCount: this.setMetaMetricsSendCount.bind(this),
-      setFirstTimeFlowType: this.setFirstTimeFlowType.bind(this),
       setCurrentLocale: this.setCurrentLocale.bind(this),
-      markAccountsFound: this.markAccountsFound.bind(this),
-      markPasswordForgotten: this.markPasswordForgotten.bind(this),
-      unMarkPasswordForgotten: this.unMarkPasswordForgotten.bind(this),
       getGasPrice: (cb) => cb(null, this.getGasPrice()),
 
       // coinbase
       buyEth: this.buyEth.bind(this),
-      // shapeshift
-      createShapeShiftTx: this.createShapeShiftTx.bind(this),
 
       // primary HD keyring management
       addNewAccount: nodeify(this.addNewAccount, this),

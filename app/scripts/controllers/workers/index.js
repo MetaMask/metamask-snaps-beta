@@ -8,6 +8,7 @@ const { setupMultiplex } = require('../../lib/stream-utils')
 const {
   plugin: { STREAM_NAMES: PLUGIN_STREAM_NAMES },
 } = require('snap-workers')
+const CommandEngine = require('./CommandEngine')
 
 // Our brfs transform is extremely cranky, and will not apply itself unless
 // fs.readFileSync is called here, at the top-level, outside any function, with
@@ -40,77 +41,85 @@ module.exports = class WebWorkerController extends SafeEventEmitter {
     super()
     this._setupWorkerConnection = setupWorkerConnection
     this.workers = new Map()
+    this.pluginToWorkerMap = new Map()
+    this.workerToPluginMap = new Map()
   }
 
-  command (id, message) {
+  async command (workerId, message, timeout) {
     if (typeof message !== 'object') {
       throw new Error('Must send object.')
     }
 
-    const workerObj = this.workers.get(id)
+    const workerObj = this.workers.get(workerId)
     if (!workerObj) {
-      throw new Error(`Worker with id ${id} not found.`)
+      throw new Error(`Worker with id ${workerId} not found.`)
     }
 
-    workerObj.streams.command.write(message)
+    console.log('Parent: Sending Command', message)
+
+    return await workerObj.commandEngine.command(message, timeout)
   }
 
-  terminate (id) {
-    const workerObj = this.workers.get(id)
-    Object.keys(workerObj.streams).forEach(stream => {
+  terminateAll () {
+    for (const workerId of this.workers.keys()) {
+      this.terminate(workerId)
+    }
+  }
+
+  terminateWorkerOf (pluginName) {
+    const workerId = this.pluginToWorkerMap.get(pluginName)
+    workerId && this.terminate(workerId)
+  }
+
+  terminate (workerId) {
+    const workerObj = this.workers.get(workerId)
+    Object.values(workerObj.streams).forEach(stream => {
       try {
+        !stream.destroyed && stream.destroy()
         stream.removeAllListeners()
-        stream.destroy()
       } catch (err) {
         console.log('Error while destroying stream', err)
       }
     })
     workerObj.worker.terminate()
-    this.workers.delete(id)
+    this._removePluginAndWorkerMapping(workerId)
+    this.workers.delete(workerId)
+    console.log(`worker:${workerId} terminated`)
   }
 
-  async startPlugin (pluginData, workerId) {
+  async startPlugin (workerId, pluginData) {
 
-    const id = workerId || this.workers.keys().next()
-    if (!id) {
+    const _workerId = workerId || this.workers.keys().next()
+    if (!_workerId) {
       throw new Error('No workers available.')
     }
 
-    this.workers.get(workerId).streams.command.once('data', (message) => {
-      if (message.response === 'OK') {
-        return true
-      } else {
-        throw new Error(`Failed to start plugin: ${message.error}`)
-      }
-    })
+    this._mapPluginAndWorker(pluginData.pluginName, workerId)
 
-    this.command(id, { command: 'installPlugin', data: pluginData })
+    return await this.command(_workerId, { command: 'installPlugin', data: pluginData })
   }
 
   async createPluginWorker (metadata, getApiFunction) {
     return this._initWorker('plugin', metadata, getApiFunction)
   }
 
-  _getWorkerProxy (worker) {
-    return new Proxy(worker, {
-      get (target, propKey, _receiver) {
-        if (propKey !== 'postMessage') {
-          return target[propKey]
-        }
-        const origMethod = target[propKey]
-        return (...args) => {
-          console.log('POST MESSAGE ARGS', args)
-          return Reflect.apply(origMethod, undefined, args)
-        }
-      },
-    })
-    // const handler = {
-    //   apply: function (target, _thisArg, args) {
-    //     console.log('POST MESSAGE ARGS', args)
-    //     return target(args)
-    //   }
-    // }
-    // worker.postMessage = new Proxy(worker.postMessage, handler)
+  _mapPluginAndWorker (pluginName, workerId) {
+    this.pluginToWorkerMap.set(pluginName, workerId)
+    this.workerToPluginMap.set(workerId, pluginName)
+  }
+
+  _getWorkerForPlugin (pluginName) {
+    return this.pluginToWorkerMap.get(pluginName)
+  }
+
+  _getPluginForWorker (workerId) {
+    return this.workerToPluginMap.get(workerId)
+  }
+
+  _removePluginAndWorkerMapping (workerId) {
+    const pluginName = this.workerToPluginMap.get(workerId)
+    this.workerToPluginMap.delete(workerId)
+    this.pluginToWorkerMap.delete(pluginName)
   }
 
   async _initWorker (type, metadata, getApiFunction) {
@@ -121,38 +130,14 @@ module.exports = class WebWorkerController extends SafeEventEmitter {
       throw new Error('Unrecognized worker type.')
     }
 
-    const id = nanoid()
-    const worker = new Worker(WORKER_TYPES[type].url)
-    // const worker = this._getWorkerProxy(new Worker(WORKER_TYPES[type].url))
-    const streams = this._initWorkerStreams(worker, id, getApiFunction, metadata)
+    const workerId = nanoid()
+    const worker = new Worker(WORKER_TYPES[type].url, { name: workerId })
+    const streams = this._initWorkerStreams(worker, workerId, getApiFunction, metadata)
+    const commandEngine = new CommandEngine(workerId, streams.command)
 
-    this.workers.set(id, { id, streams, worker })
-    return new Promise((resolve, reject) => {
-
-      let acknowledged = false
-      const initializationError = new Error('Failed to initialize worker.')
-
-      streams.command.once('data', (message) => {
-        if (message.response === 'OK') {
-          acknowledged = true
-          resolve(id)
-        } else {
-          reject(initializationError)
-        }
-      })
-
-      this.command(id, { command: 'ping' })
-
-      setTimeout(() => {
-        if (!acknowledged) {
-          reject(initializationError)
-        }
-      }, 10000)
-    })
-  }
-
-  _handleCommandData (data) {
-    console.log('controller _handleCommandData', data)
+    this.workers.set(workerId, { id: workerId, streams, commandEngine, worker })
+    await this.command(workerId, { command: 'ping' })
+    return workerId
   }
 
   _initWorkerStreams (worker, workerId, getApiFunction, metadata) {
@@ -160,7 +145,6 @@ module.exports = class WebWorkerController extends SafeEventEmitter {
     const mux = setupMultiplex(workerStream, `Worker:${workerId}`)
 
     const commandStream = mux.createStream(PLUGIN_STREAM_NAMES.COMMAND)
-    // commandStream.on('data', this._handleCommandData.bind(this))
 
     const rpcStream = mux.createStream(PLUGIN_STREAM_NAMES.JSON_RPC)
     this._setupWorkerConnection(metadata, rpcStream)
@@ -179,10 +163,10 @@ module.exports = class WebWorkerController extends SafeEventEmitter {
     )
 
     return {
-      // api: apiStream,
+      api: apiStream,
       command: commandStream,
-      // rpc: rpcStream,
-      connection: workerStream, // TODO:WW temp
+      rpc: rpcStream,
+      _connection: workerStream,
     }
   }
 }

@@ -404,7 +404,8 @@ var actions = {
   removePlugin,
   removePlugins,
   clearPlugins,
-  runWorkerPlugin,
+  runDummyWorkerPlugin,
+  removeDummyWorkerPlugin,
 
   resolvePrompt,
   rejectPrompt,
@@ -3107,9 +3108,15 @@ function clearPlugins () {
   }
 }
 
-function runWorkerPlugin () {
+function runDummyWorkerPlugin () {
   return () => {
-    background.runWorkerPlugin()
+    background.runDummyWorkerPlugin()
+  }
+}
+
+function removeDummyWorkerPlugin () {
+  return () => {
+    background.removeDummyWorkerPlugin()
   }
 }
 

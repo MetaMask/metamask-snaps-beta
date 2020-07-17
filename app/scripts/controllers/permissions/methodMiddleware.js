@@ -252,7 +252,6 @@ module.exports = function createRequestMiddleware ({
       saveDomainMetadata({ name })
     }
 
-    // if we make it here, continue down the middleware stack
     return next()
   })
 
@@ -326,7 +325,7 @@ module.exports = function createRequestMiddleware ({
     // input validation
     // we expect requestedPlugins to be an object of the form:
     // { pluginName1: {}, pluginName2: {}, ... }
-    // the object values are placeholders
+    // the empty object values are placeholders
     if (
       typeof requestedPlugins !== 'object' ||
       Array.isArray(requestedPlugins)

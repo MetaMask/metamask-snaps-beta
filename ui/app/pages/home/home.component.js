@@ -53,13 +53,15 @@ export default class Home extends PureComponent {
     removePlugin: PropTypes.func,
     clearPlugins: PropTypes.func,
     clearAllPermissionsData: PropTypes.func,
-    runWorkerPlugin: PropTypes.func,
+    runDummyWorkerPlugin: PropTypes.func,
+    removeDummyWorkerPlugin: PropTypes.func,
     hasPermissionsData: PropTypes.bool,
     hasPlugins: PropTypes.bool,
   }
 
   state = {
     pluginToDelete: '',
+    dummyPluginAdded: false,
   }
 
   componentWillMount () {
@@ -115,6 +117,7 @@ export default class Home extends PureComponent {
       hasPermissionsData,
       hasPlugins,
     } = this.props
+    const { dummyPluginAdded } = this.state
 
     if (forgottenPassword) {
       return <Redirect to={{ pathname: RESTORE_VAULT_ROUTE }} />
@@ -202,10 +205,21 @@ export default class Home extends PureComponent {
 
                   <Button
                     onClick={() => {
-                      this.props.runWorkerPlugin()
+                      if (dummyPluginAdded) {
+                        this.props.removeDummyWorkerPlugin()
+                      } else {
+                        this.props.runDummyWorkerPlugin()
+                        this.setState({
+                          dummyPluginAdded: true,
+                        })
+                      }
                     }}
                   >
-                    { 'Run Worker Plugin' }
+                    {
+                      dummyPluginAdded
+                        ? 'Remove Dummy Worker Plugin'
+                        : 'Run Dummy Worker Plugin'
+                    }
                   </Button>
                 </div>
               </TransactionView>

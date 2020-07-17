@@ -21,7 +21,6 @@ const pluginRestrictedMethodDescriptions = {
   buyEth: 'Forwards the user to the easiest way to obtain ether for the currently-selected network',
   checkHardwareStatus: 'Check if the hardware device is unlocked',
   connectHardware: 'Fetch account list from a Trezor device',
-  createShapeShiftTx: 'Triggers a ShapeShift currency transfer',
   delCustomRpc: 'Delete a selected custom URL',
   estimateGas: 'Estimate the gas required for a transaction',
   fetchInfoToSync: 'Collects all the information for mobile syncing',
@@ -46,12 +45,10 @@ const pluginRestrictedMethodDescriptions = {
   setCurrentLocale: 'Set the current locale, affecting the language rendered',
   setCustomRpc: 'Select a custom URL for an Ethereum RPC provider',
   setFeatureFlag: 'Enable or disable a given feature-flag',
-  setParticipateInMetaMetrics: 'Toggle usage data tracking with MetaMetrics',
   setPreference: 'Update a given user preference',
   setProviderType: 'Update the current provider type',
   setSeedPhraseBackedUp: 'Mark a seed phrase as backed up',
   setSelectedAddress: 'Set the currently-selected address',
-  setUseBlockie: 'Toggle the Blockie identicon format',
   submitPassword: 'Submits the user password and attempts to unlock the vault. This will not be included in production.',
   unlockHardwareWalletAccount: 'Imports an account from a Trezor device',
   updateAndSetCustomRpc: 'Select a custom URL for an Ethereum RPC provider and updating it',
@@ -139,7 +136,7 @@ function getExternalRestrictedMethods (permissionsController, addPrompt) {
           }
 
           // Here is where we would invoke the message on that plugin iff possible.
-          const handler = permissionsController.pluginsController.rpcMessageHandlers.get(origin)
+          const handler = permissionsController.pluginsController.getRpcMessageHandler(origin)
           if (!handler) {
             res.error = ethErrors.rpc.methodNotFound({
               message: `Plugin RPC message handler not found.`, data: req.method,

@@ -21016,7 +21016,7 @@ post-message-stream@^3.0.0:
 
 post-message-stream@rekmarks/post-message-stream#multi-env:
   version "4.0.0"
-  resolved "https://codeload.github.com/rekmarks/post-message-stream/tar.gz/1be6bdf2ffadbd2ae045983656601c7edbb07bb8"
+  resolved "https://codeload.github.com/rekmarks/post-message-stream/tar.gz/aac54488bd56e34118f4b9add80d04186bfb3610"
 
 postcss-flexbugs-fixes@^4.1.0:
   version "4.1.0"
@@ -24717,7 +24717,7 @@ smart-buffer@^4.0.2:
 
 snap-workers@rekmarks/snap-workers:
   version "1.0.0"
-  resolved "https://codeload.github.com/rekmarks/snap-workers/tar.gz/184fb06314898597eb86e930c4dfe0754630386c"
+  resolved "https://codeload.github.com/rekmarks/snap-workers/tar.gz/26e78de4e6dbfccd88d1fd6cf1adff4fae3fef8b"
 
 snapdragon-node@^2.0.1:
   version "2.1.1"
