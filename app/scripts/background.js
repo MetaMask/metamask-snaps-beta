@@ -79,6 +79,10 @@ const openMetamaskTabsIDs = {}
 const localStore = new LocalStore()
 let versionedData
 
+if (process.env.METAMASK_DEBUG) {
+  global.metamaskGetState = localStore.get.bind(localStore)
+}
+
 // initialization flow
 initialize().catch(log.error)
 

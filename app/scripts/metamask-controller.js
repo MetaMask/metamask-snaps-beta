@@ -405,7 +405,7 @@ module.exports = class MetamaskController extends EventEmitter {
       ThreeBoxController: this.threeBoxController.store,
       ABTestController: this.abTestController.store,
       EnsController: this.ensController.store,
-      PluginsController: this.pluginsController.store,
+      PluginsController: this.pluginsController.memStore,
       AssetsController: this.assetsController.store,
       PluginAccountsController: this.pluginAccountsController.store,
       AddressAuditController: this.addressAuditController.store,

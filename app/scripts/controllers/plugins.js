@@ -1,6 +1,5 @@
 const ObservableStore = require('obs-store')
 const EventEmitter = require('safe-event-emitter')
-const extend = require('xtend')
 const { ethErrors, serializeError } = require('eth-json-rpc-errors')
 const nodeify = require('../lib/nodeify')
 
@@ -53,14 +52,17 @@ const SES = (
 class PluginsController extends EventEmitter {
 
   constructor (opts = {}) {
+
     super()
-    const initState = extend({
+    const initState = {
       plugins: {},
       pluginStates: {},
-    }, opts.initState)
-    this.store = new ObservableStore(initState)
+      ...opts.initState,
+    }
+    this.store = new ObservableStore({})
+    this.memStore = new ObservableStore({})
+    this.updateState(initState)
 
-    // TODO:SECURITY disable errorStackMode for production
     this.rootRealm = SES.makeSESRootRealm({
       consoleMode: 'allow',
       errorStackMode: 'allow',
@@ -91,12 +93,35 @@ class PluginsController extends EventEmitter {
     this.adding = {}
   }
 
+  updateState (newState) {
+    this.store.updateState(newState)
+    this.memStore.updateState(this._filterMemStoreState(newState))
+  }
+
+  _filterMemStoreState (newState) {
+    const memState = {
+      ...newState,
+      plugins: {},
+    }
+
+    // remove sourceCode from memState plugin objects
+    if (newState.plugins) {
+      Object.keys(newState.plugins).forEach((name) => {
+        const plugin = { ...newState.plugins[name] }
+        delete plugin.sourceCode
+        memState.plugins[name] = plugin
+      })
+    }
+
+    return memState
+  }
+
   /**
    * Runs existing (installed) plugins.
    */
   runExistingPlugins () {
 
-    const plugins = this.store.getState().plugins
+    const { plugins } = this.store.getState()
 
     if (Object.keys(plugins).length > 0) {
       console.log('running existing plugins', plugins)
@@ -173,7 +198,7 @@ class PluginsController extends EventEmitter {
 
     const newPluginStates = { ...state.pluginStates, [pluginName]: newPluginState }
 
-    this.store.updateState({
+    this.updateState({
       pluginStates: newPluginStates,
     })
   }
@@ -199,7 +224,7 @@ class PluginsController extends EventEmitter {
     // this.accountMessageHandlers.clear()
     this.pluginHandlerHooks.clear()
     const pluginNames = Object.keys(this.store.getState().plugins)
-    this.store.updateState({
+    this.updateState({
       plugins: {},
       pluginStates: {},
     })
@@ -293,7 +318,7 @@ class PluginsController extends EventEmitter {
     })
     this._removeAllPermissionsFor(pluginNames)
 
-    this.store.updateState({
+    this.updateState({
       plugins: newPlugins,
       pluginStates: newPluginStates,
     })
@@ -414,7 +439,6 @@ class PluginsController extends EventEmitter {
       throw new Error(`Problem loading plugin ${pluginName}: ${err.message}`)
     }
 
-    // always retrieve state close to the call to updateState
     const pluginsState = this.store.getState().plugins
 
     // restore relevant plugin state if it exists
@@ -423,7 +447,7 @@ class PluginsController extends EventEmitter {
     }
 
     // store the plugin back in state
-    this.store.updateState({
+    this.updateState({
       plugins: {
         ...pluginsState,
         [pluginName]: plugin,
@@ -670,7 +694,7 @@ class PluginsController extends EventEmitter {
       [],
       `(function () {
         console.log('Welcome to Flavortown.');
-      })();`
+      })();`,
     )
   }
 
@@ -783,7 +807,7 @@ class PluginsController extends EventEmitter {
     const plugin = plugins[pluginName]
     const newPlugin = { ...plugin, [property]: value }
     const newPlugins = { ...plugins, [pluginName]: newPlugin }
-    this.store.updateState({
+    this.updateState({
       plugins: newPlugins,
     })
   }
