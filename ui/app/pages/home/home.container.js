@@ -36,6 +36,7 @@ const mapStateToProps = state => {
     showRestorePrompt,
     selectedAddress,
     permissionsRequests,
+    inlinePluginIsRunning,
   } = metamask
   const accountBalance = getCurrentEthBalance(state)
   const { forgottenPassword, threeBoxLastUpdated } = appState
@@ -65,6 +66,7 @@ const mapStateToProps = state => {
     // TODO:plugins:prod remove
     hasPermissionsData,
     hasPlugins,
+    inlinePluginIsRunning,
   }
 }
 

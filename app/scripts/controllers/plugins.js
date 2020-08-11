@@ -8,6 +8,7 @@ const {
 } = require('./permissions/restrictedMethods')
 const { PLUGIN_PREFIX } = require('./permissions/enums')
 const WorkerController = require('./workers')
+const getInlinePlugin = require('./inlinePlugins')
 
 const ENUMS = {
   // which plugin properties should be serialized
@@ -60,7 +61,9 @@ class PluginsController extends EventEmitter {
       ...opts.initState,
     }
     this.store = new ObservableStore({})
-    this.memStore = new ObservableStore({})
+    this.memStore = new ObservableStore({
+      inlinePluginIsRunning: false,
+    })
     this.updateState(initState)
 
     this.rootRealm = SES.makeSESRootRealm({
@@ -690,16 +693,20 @@ class PluginsController extends EventEmitter {
 
   runDummyWorkerPlugin () {
     this._startPluginInWorker(
-      'fooPlugin',
+      'inlinePlugin',
       [],
-      `(function () {
-        console.log('Welcome to Flavortown.');
-      })();`,
+      getInlinePlugin(),
     )
+    this.memStore.updateState({
+      inlinePluginIsRunning: true,
+    })
   }
 
   removeDummyWorkerPlugin () {
-    this.removePlugin('fooPlugin')
+    this.memStore.updateState({
+      inlinePluginIsRunning: false,
+    })
+    this.removePlugin('inlinePlugin')
   }
 
   async _startPluginInWorker (pluginName, approvedPermissions, sourceCode) {

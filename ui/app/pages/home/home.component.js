@@ -57,11 +57,11 @@ export default class Home extends PureComponent {
     removeDummyWorkerPlugin: PropTypes.func,
     hasPermissionsData: PropTypes.bool,
     hasPlugins: PropTypes.bool,
+    inlinePluginIsRunning: PropTypes.bool,
   }
 
   state = {
     pluginToDelete: '',
-    dummyPluginAdded: false,
   }
 
   componentWillMount () {
@@ -116,8 +116,8 @@ export default class Home extends PureComponent {
       permissionsRequests,
       hasPermissionsData,
       hasPlugins,
+      inlinePluginIsRunning,
     } = this.props
-    const { dummyPluginAdded } = this.state
 
     if (forgottenPassword) {
       return <Redirect to={{ pathname: RESTORE_VAULT_ROUTE }} />
@@ -205,18 +205,15 @@ export default class Home extends PureComponent {
 
                   <Button
                     onClick={() => {
-                      if (dummyPluginAdded) {
+                      if (inlinePluginIsRunning) {
                         this.props.removeDummyWorkerPlugin()
                       } else {
                         this.props.runDummyWorkerPlugin()
-                        this.setState({
-                          dummyPluginAdded: true,
-                        })
                       }
                     }}
                   >
                     {
-                      dummyPluginAdded
+                      inlinePluginIsRunning
                         ? 'Remove Dummy Worker Plugin'
                         : 'Run Dummy Worker Plugin'
                     }
