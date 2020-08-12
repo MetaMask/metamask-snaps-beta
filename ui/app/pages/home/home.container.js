@@ -16,8 +16,8 @@ import {
   turnThreeBoxSyncingOn,
   getThreeBoxLastUpdated,
   removePlugin,
-  runDummyWorkerPlugin,
-  removeDummyWorkerPlugin,
+  runInlineWorkerPlugin,
+  removeInlineWorkerPlugin,
   clearPlugins,
   clearAllPermissionsData,
   setShowRestorePromptToFalse,
@@ -87,8 +87,8 @@ const mapDispatchToProps = (dispatch) => ({
   setShowRestorePromptToFalse: () => dispatch(setShowRestorePromptToFalse()),
   removePlugin: (pluginName) => dispatch(removePlugin(pluginName)),
   clearPlugins: () => dispatch(clearPlugins()),
-  runDummyWorkerPlugin: () => dispatch(runDummyWorkerPlugin()),
-  removeDummyWorkerPlugin: () => dispatch(removeDummyWorkerPlugin()),
+  runInlineWorkerPlugin: () => dispatch(runInlineWorkerPlugin()),
+  removeInlineWorkerPlugin: () => dispatch(removeInlineWorkerPlugin()),
   clearAllPermissionsData: () => dispatch(clearAllPermissionsData()),
 })
 

@@ -691,7 +691,7 @@ module.exports = class PluginsController extends EventEmitter {
     this.apiRequestHandlers.set(pluginName, handler)
   }
 
-  runDummyWorkerPlugin () {
+  runInlineWorkerPlugin () {
     this._startPluginInWorker(
       'inlinePlugin',
       [],
@@ -702,7 +702,7 @@ module.exports = class PluginsController extends EventEmitter {
     })
   }
 
-  removeDummyWorkerPlugin () {
+  removeInlineWorkerPlugin () {
     this.memStore.updateState({
       inlinePluginIsRunning: false,
     })

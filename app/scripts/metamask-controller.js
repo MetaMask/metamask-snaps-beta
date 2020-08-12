@@ -675,8 +675,8 @@ module.exports = class MetamaskController extends EventEmitter {
       removePlugin: this.pluginsController.removePlugin.bind(this.pluginsController),
       removePlugins: this.pluginsController.removePlugins.bind(this.pluginsController),
       clearPluginState: this.pluginsController.clearState.bind(this.pluginsController),
-      runDummyWorkerPlugin: this.pluginsController.runDummyWorkerPlugin.bind(this.pluginsController),
-      removeDummyWorkerPlugin: this.pluginsController.removeDummyWorkerPlugin.bind(this.pluginsController),
+      runInlineWorkerPlugin: this.pluginsController.runInlineWorkerPlugin.bind(this.pluginsController),
+      removeInlineWorkerPlugin: this.pluginsController.removeInlineWorkerPlugin.bind(this.pluginsController),
 
       // prompts
       resolvePrompt: this.promptsController.resolvePrompt.bind(this.promptsController),

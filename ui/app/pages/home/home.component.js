@@ -53,8 +53,8 @@ export default class Home extends PureComponent {
     removePlugin: PropTypes.func,
     clearPlugins: PropTypes.func,
     clearAllPermissionsData: PropTypes.func,
-    runDummyWorkerPlugin: PropTypes.func,
-    removeDummyWorkerPlugin: PropTypes.func,
+    runInlineWorkerPlugin: PropTypes.func,
+    removeInlineWorkerPlugin: PropTypes.func,
     hasPermissionsData: PropTypes.bool,
     hasPlugins: PropTypes.bool,
     inlinePluginIsRunning: PropTypes.bool,
@@ -206,16 +206,16 @@ export default class Home extends PureComponent {
                   <Button
                     onClick={() => {
                       if (inlinePluginIsRunning) {
-                        this.props.removeDummyWorkerPlugin()
+                        this.props.removeInlineWorkerPlugin()
                       } else {
-                        this.props.runDummyWorkerPlugin()
+                        this.props.runInlineWorkerPlugin()
                       }
                     }}
                   >
                     {
                       inlinePluginIsRunning
-                        ? 'Remove Dummy Worker Plugin'
-                        : 'Run Dummy Worker Plugin'
+                        ? 'Remove Inline Worker Plugin'
+                        : 'Run Inline Worker Plugin'
                     }
                   </Button>
                 </div>
