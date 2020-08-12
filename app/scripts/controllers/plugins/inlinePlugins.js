@@ -1,8 +1,10 @@
 
 const plugins = {
-  foo: `
+
+  basic: `
     console.log('Welcome to Flavortown.');
   `,
+
   infiniteLoop: `
     console.log('You are not in Flavortown.');
     let num = 0;
@@ -17,9 +19,10 @@ const plugins = {
       }
       num = (num + 1) % 2e8;
   `,
+
 }
 
-module.exports = function getInlinePlugin (name = 'foo') {
+module.exports = function getInlinePlugin (name = 'basic') {
   if (!plugins[name]) {
     throw new Error('no such inline plugin')
   }

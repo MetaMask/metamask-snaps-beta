@@ -1,13 +1,13 @@
 const ObservableStore = require('obs-store')
 const EventEmitter = require('safe-event-emitter')
 const { ethErrors, serializeError } = require('eth-json-rpc-errors')
-const nodeify = require('../lib/nodeify')
+const nodeify = require('../../lib/nodeify')
 
 const {
   pluginRestrictedMethodDescriptions,
-} = require('./permissions/restrictedMethods')
-const { PLUGIN_PREFIX } = require('./permissions/enums')
-const WorkerController = require('./workers')
+} = require('../permissions/restrictedMethods')
+const { PLUGIN_PREFIX } = require('../permissions/enums')
+const WorkerController = require('../workers')
 const getInlinePlugin = require('./inlinePlugins')
 
 const ENUMS = {
@@ -50,7 +50,7 @@ const SES = (
  * - Start: Initializes the plugin in its SES realm with the authorized permissions.
  */
 
-class PluginsController extends EventEmitter {
+module.exports = class PluginsController extends EventEmitter {
 
   constructor (opts = {}) {
 
@@ -819,5 +819,3 @@ class PluginsController extends EventEmitter {
     })
   }
 }
-
-module.exports = PluginsController
