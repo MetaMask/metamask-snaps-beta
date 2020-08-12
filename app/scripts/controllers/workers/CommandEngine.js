@@ -49,7 +49,7 @@ module.exports = class CommandEngine {
   }
 
   _getNextId () {
-    this._currentCommandId += 1
+    this._currentCommandId = (this._currentCommandId + 1) % Number.MAX_SAFE_INTEGER
     return this._currentCommandId
   }
 }
