@@ -6,7 +6,7 @@ const plugins = {
   `,
 
   infiniteLoop: `
-    console.log('You are not in Flavortown.');
+    console.log('Infinite loop plugin start.');
     let num = 0;
     let time;
     while (true) {
@@ -20,6 +20,13 @@ const plugins = {
       num = (num + 1) % 2e8;
   `,
 
+  memoryLeak: `
+    console.log('Memory leak plugin start.')
+    let str = new Array(1e6).join('foo')
+    while (true) {
+      str = str + str
+    }
+  `,
 }
 
 module.exports = function getInlinePlugin (name = 'basic') {
