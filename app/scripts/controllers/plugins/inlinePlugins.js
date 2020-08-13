@@ -22,9 +22,13 @@ const plugins = {
 
   memoryLeak: `
     console.log('Memory leak plugin start.')
-    let str = new Array(1e6).join('foo')
+    const getStr = () => Math.random().toString(2)
+    const getLongStr = (str) => new Array(1000000).join(str)
+    wallet.leakyBoi = {}
+    let str
     while (true) {
-      str = str + str
+      str = getStr()
+      wallet.leakyBoi[str] = Object.assign({}, wallet.leakyBoi, { [str]: getLongStr(str) })
     }
   `,
 }
