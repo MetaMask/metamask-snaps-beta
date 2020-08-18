@@ -1,4 +1,5 @@
 const fs = require('fs')
+const ObservableStore = require('obs-store')
 const Dnode = require('dnode')
 const nanoid = require('nanoid')
 const pump = require('pump')
@@ -40,9 +41,28 @@ module.exports = class WebWorkerController extends SafeEventEmitter {
   } = {}) {
     super()
     this._setupWorkerConnection = setupWorkerConnection
+    this.store = new ObservableStore({ workers: {} })
     this.workers = new Map()
     this.pluginToWorkerMap = new Map()
     this.workerToPluginMap = new Map()
+  }
+
+  _setWorker (workerId, workerObj) {
+    this.workers.set(workerId, workerObj)
+
+    const newWorkerState = {
+      ...this.store.getState().workers,
+      [workerId]: workerObj,
+    }
+    this.store.updateState({ workers: newWorkerState })
+  }
+
+  _deleteWorker (workerId) {
+    this.workers.delete(workerId)
+
+    const newWorkerState = { ...this.store.getState().workers }
+    delete newWorkerState[workerId]
+    this.store.updateState({ workers: newWorkerState })
   }
 
   async command (workerId, message, timeout) {
@@ -83,7 +103,7 @@ module.exports = class WebWorkerController extends SafeEventEmitter {
     })
     workerObj.worker.terminate()
     this._removePluginAndWorkerMapping(workerId)
-    this.workers.delete(workerId)
+    this._deleteWorker(workerId)
     console.log(`worker:${workerId} terminated`)
   }
 
@@ -135,7 +155,7 @@ module.exports = class WebWorkerController extends SafeEventEmitter {
     const streams = this._initWorkerStreams(worker, workerId, getApiFunction, metadata)
     const commandEngine = new CommandEngine(workerId, streams.command)
 
-    this.workers.set(workerId, { id: workerId, streams, commandEngine, worker })
+    this._setWorker(workerId, { id: workerId, streams, commandEngine, worker })
     await this.command(workerId, { command: 'ping' })
     return workerId
   }

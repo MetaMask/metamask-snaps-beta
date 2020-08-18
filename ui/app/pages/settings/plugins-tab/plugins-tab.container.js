@@ -5,9 +5,11 @@ import { withRouter } from 'react-router-dom'
 import {
   showModal,
   removePlugins,
+  runStressTestPlugins,
 } from '../../../store/actions'
 import {
   getAllPlugins,
+  getAllWorkers,
 } from '../../../selectors/selectors'
 
 const mapStateToProps = state => {
@@ -16,6 +18,7 @@ const mapStateToProps = state => {
   return {
     warning,
     plugins: getAllPlugins(state),
+    workerCount: Object.keys(getAllWorkers(state)).length,
   }
 }
 
@@ -26,6 +29,9 @@ const mapDispatchToProps = dispatch => {
     ),
     removePlugins: (pluginNames) => dispatch(
       removePlugins(pluginNames)
+    ),
+    runStressTestPlugins: () => dispatch(
+      runStressTestPlugins(10)
     ),
   }
 }

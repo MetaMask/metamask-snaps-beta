@@ -1,7 +1,7 @@
 
 const plugins = {
 
-  basic: `
+  idle: `
     console.log('Welcome to Flavortown.');
   `,
 
@@ -33,7 +33,7 @@ const plugins = {
   `,
 }
 
-module.exports = function getInlinePlugin (name = 'basic') {
+module.exports = function getInlinePlugin (name = 'idle') {
   if (!plugins[name]) {
     throw new Error('no such inline plugin')
   }

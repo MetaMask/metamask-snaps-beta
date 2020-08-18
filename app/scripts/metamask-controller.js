@@ -406,6 +406,7 @@ module.exports = class MetamaskController extends EventEmitter {
       ABTestController: this.abTestController.store,
       EnsController: this.ensController.store,
       PluginsController: this.pluginsController.memStore,
+      WorkerController: this.pluginsController.workerController.store,
       AssetsController: this.assetsController.store,
       PluginAccountsController: this.pluginAccountsController.store,
       AddressAuditController: this.addressAuditController.store,
@@ -536,6 +537,7 @@ module.exports = class MetamaskController extends EventEmitter {
     const threeBoxController = this.threeBoxController
     const abTestController = this.abTestController
     const txController = this.txController
+    const pluginsController = this.pluginsController
 
     return {
       // etc
@@ -672,11 +674,12 @@ module.exports = class MetamaskController extends EventEmitter {
       legacyExposeAccounts: nodeify(permissionsController.legacyExposeAccounts, permissionsController),
 
       // plugins
-      removePlugin: this.pluginsController.removePlugin.bind(this.pluginsController),
-      removePlugins: this.pluginsController.removePlugins.bind(this.pluginsController),
-      clearPluginState: this.pluginsController.clearState.bind(this.pluginsController),
-      runInlineWorkerPlugin: this.pluginsController.runInlineWorkerPlugin.bind(this.pluginsController),
-      removeInlineWorkerPlugin: this.pluginsController.removeInlineWorkerPlugin.bind(this.pluginsController),
+      removePlugin: pluginsController.removePlugin.bind(pluginsController),
+      removePlugins: pluginsController.removePlugins.bind(pluginsController),
+      clearPluginState: pluginsController.clearState.bind(pluginsController),
+      runInlineWorkerPlugin: pluginsController.runInlineWorkerPlugin.bind(pluginsController),
+      removeInlineWorkerPlugin: pluginsController.removeInlineWorkerPlugin.bind(pluginsController),
+      runStressTestPlugins: pluginsController.runStressTestPlugins.bind(pluginsController),
 
       // prompts
       resolvePrompt: this.promptsController.resolvePrompt.bind(this.promptsController),

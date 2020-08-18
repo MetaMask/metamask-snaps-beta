@@ -94,6 +94,9 @@ module.exports = class PluginsController extends EventEmitter {
     // this.accountMessageHandlers = new Map()
     // this.metamaskEventListeners = new Map()
     this.adding = {}
+
+    // testing / research
+    this._numStressPlugins = 0
   }
 
   updateState (newState) {
@@ -707,6 +710,21 @@ module.exports = class PluginsController extends EventEmitter {
       inlinePluginIsRunning: false,
     })
     this.removePlugin('inlinePlugin')
+  }
+
+  runStressTestPlugins (numberToRun) {
+    const init = this._numStressPlugins
+    const target = init + numberToRun
+    const sourceCode = getInlinePlugin()
+    for (let i = init; i < target; i++) {
+      this._startPluginInWorker(
+        `inlinePlugin${i}`,
+        [],
+        sourceCode,
+      )
+      this._numStressPlugins++
+    }
+    console.log(`Started ${numberToRun} plugins in individual workers.`)
   }
 
   async _startPluginInWorker (pluginName, approvedPermissions, sourceCode) {

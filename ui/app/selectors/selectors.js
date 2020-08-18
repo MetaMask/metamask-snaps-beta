@@ -68,6 +68,7 @@ const selectors = {
   getFeatureFlags,
   getResourceTokens,
   getResourceAccounts,
+  getAllWorkers,
 }
 
 module.exports = selectors
@@ -358,6 +359,10 @@ function getAdvancedInlineGasShown (state) {
 
 function getAllPermissions (state) {
   return state.metamask.domains || {}
+}
+
+function getAllWorkers (state) {
+  return state.metamask.workers || {}
 }
 
 function getAllPlugins (state) {
