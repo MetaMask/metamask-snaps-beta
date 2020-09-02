@@ -783,13 +783,11 @@ module.exports = class PluginsController extends EventEmitter {
     Object.assign(ethereumProvider, apisToProvide)
 
     try {
-
-      const sessedPlugin = this.rootRealm.evaluate(sourceCode, {
-
+      const endowments = {
+        // snap-metamask bridge api
         wallet: ethereumProvider,
-        console, // Adding console for now for logging purposes.
-        BigInt,
-        setTimeout,
+        // various platform capabilities (danger)
+        console,
         crypto,
         SubtleCrypto,
         fetch,
@@ -797,6 +795,8 @@ module.exports = class PluginsController extends EventEmitter {
         WebSocket,
         Buffer,
         Date,
+        // non-ses primordials
+        BigInt,
         Int8Array,
         Uint8Array,
         Uint8ClampedArray,
@@ -808,35 +808,17 @@ module.exports = class PluginsController extends EventEmitter {
         Float64Array,
         BigInt64Array,
         BigUint64Array,
-
         // timers
+        setTimeout,
         clearTimeout,
         setInterval,
         clearInterval,
+      }
+      // add browser circular global refs
+      endowments.window = endowments
+      endowments.self = endowments
 
-        window: {
-          crypto,
-          SubtleCrypto,
-          setTimeout,
-          clearTimeout,
-          setInterval,
-          clearInterval,
-          fetch,
-          XMLHttpRequest,
-          WebSocket,
-          Int8Array,
-          Uint8Array,
-          Uint8ClampedArray,
-          Int16Array,
-          Uint16Array,
-          Int32Array,
-          Uint32Array,
-          Float32Array,
-          Float64Array,
-          BigInt64Array,
-          BigUint64Array
-        },
-      })
+      const sessedPlugin = this.rootRealm.evaluate(sourceCode, endowments)
       sessedPlugin()
     } catch (err) {
 
