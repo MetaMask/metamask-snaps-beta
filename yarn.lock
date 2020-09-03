@@ -16385,6 +16385,11 @@ kew@^0.7.0:
   resolved "https://registry.yarnpkg.com/kew/-/kew-0.7.0.tgz#79d93d2d33363d6fdd2970b335d9141ad591d79b"
   integrity sha1-edk9LTM2PW/dKXCzNdkUGtWR15s=
 
+key-tree@^1.0.3:
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/key-tree/-/key-tree-1.0.3.tgz#bf64b1efd301e80d6b2ea749faf9772d3f42eaec"
+  integrity sha512-FDwESVMigZxAYbcyu67A+7DPj5qP1TE+lMCEGrVtE4DNW+oNV8L6Z/pNCNM49y10bCXWRMDeRbO23fASkFZ5PA==
+
 keycode@^2.1.9:
   version "2.2.0"
   resolved "https://registry.yarnpkg.com/keycode/-/keycode-2.2.0.tgz#3d0af56dc7b8b8e5cba8d0a97f107204eec22b04"

@@ -4,6 +4,10 @@ const ObservableStore = require('obs-store')
 const EventEmitter = require('safe-event-emitter')
 const extend = require('xtend')
 const { ethErrors, serializeError } = require('eth-json-rpc-errors')
+const {
+  deriveChildKey: bip39Derive,
+  bip39MnemonicToMultipath,
+} = require('key-tree/src/derivers/bip39')
 
 const {
   pluginRestrictedMethodDescriptions,
@@ -74,6 +78,7 @@ class PluginsController extends EventEmitter {
     this._getPermissionsFor = opts._getPermissionsFor
     this.getApi = opts.getApi
     this.getAppKeyForDomain = opts.getAppKeyForDomain
+    this._getPrimaryHdKeyring = opts.getPrimaryHdKeyring
     this.onUnlock = opts.onUnlock
     this.closeAllConnections = opts.closeAllConnections
     this._eventNamesToEventEmitters = this._getEventNamesToEventEmitters(
@@ -607,6 +612,7 @@ class PluginsController extends EventEmitter {
       registerAccountMessageHandler,
       registerApiRequestHandler,
       getAppKey: () => this.getAppKeyForDomain(pluginName),
+      getBip44Entropy: (bip44Code) => this._getBip44Entropy(bip44Code)
       onUnlock: this.onUnlock,
     }
     apiList.forEach(apiKey => {
@@ -614,6 +620,16 @@ class PluginsController extends EventEmitter {
     })
 
     return apisToProvide
+  }
+
+  _getBip44Entropy (bip44Code) {
+    const primaryKeyring = this._getPrimaryHdKeyring()
+    // derive entropy for bip44 code
+    let parentKey = bip39Derive(null, primaryKeyring.mnemonic)
+    parentKey = bip32Derive(parentKey, `44'`)
+    parentKey = bip32Derive(parentKey, `${bip44Code}'`)
+    parentKey = bip32Derive(parentKey, `0'`)
+    return parentKey
   }
 
   _registerRpcMessageHandler (pluginName, handler) {

@@ -337,6 +337,7 @@ module.exports = class MetamaskController extends EventEmitter {
       getApi: this.getPluginsApi.bind(this),
       initState: initState.PluginsController,
       getAppKeyForDomain: this.getAppKeyForDomain.bind(this),
+      getPrimaryHdKeyring: () => this.keyringController.getKeyringsByType('HD Key Tree')[0]
     })
     this.accountsController.pluginsController = this.pluginsController
 

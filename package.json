@@ -126,6 +126,7 @@
     "json-rpc-engine": "^5.1.5",
     "json-rpc-middleware-stream": "^2.1.1",
     "jsonschema": "^1.2.4",
+    "key-tree": "^1.0.3",
     "lodash.debounce": "^4.0.8",
     "lodash.shuffle": "^4.2.0",
     "loglevel": "^1.4.1",
