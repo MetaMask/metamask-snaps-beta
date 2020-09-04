@@ -91,12 +91,43 @@ function getExternalRestrictedMethods (permissionsController, addPrompt) {
       },
     },
 
-    'wallet_manageIdentities': {
-      description: 'Provide accounts to your wallet and be responsible for their security.',
+    'wallet_manageAccounts_*': {
+      description: 'Provide accounts of type "$1" to your wallet and be responsible for their security.',
       method: (req, res, _next, end, engine) => {
+        const methodSegments = req.method.split('_')
+        const accountTypeCode = methodSegments[methodSegments.length - 1]
+        req.params[1].type = accountTypeCode
+        //TODO: Enforce that snaps can only manage their own accounts.
         pluginAccountsController.handleRpcRequest(req, res, _next, end, engine)
       },
     },
+
+    'wallet_accounts_*': {
+      description: 'View all accounts of type "$1" and suggest interactions related to them.',
+      method: (req, res, _next, end, engine) => {
+        const methodSegments = req.method.split('_')
+        const accountTypeCode = methodSegments[methodSegments.length - 1]
+        req.params[1].type = accountTypeCode
+
+        // if no params, get accounts
+        if (!req.params) {
+          //TODO: Add account selector dialog here.
+          res.result = pluginAccountsController.resources.filter(acct => acct.type === accountTypeCode)
+          end()
+        } else {
+          const origin = engine.domain
+          const prior = permissionsController.pluginsController.get(origin)
+
+          try {
+            res.result = await permissionsController.accountsController.sendMessage(req.params);
+          } catch (err) {
+            res.error = err;
+            end(res.error);
+          }
+
+        }
+      },
+    }
 
     'alert': {
       description: 'Show alerts over the current page.',

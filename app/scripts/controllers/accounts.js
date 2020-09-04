@@ -34,6 +34,9 @@ class AccountsController extends EventEmitter {
 
   async getAccounts () {
     const keyAccounts = await this.keyringController.getAccounts()
+    keyAccounts.forEach((key) => {
+      key.type = 'bip44:60'
+    })
     const pluginAccounts = await this.getPluginAccounts()
     return [...keyAccounts, ...pluginAccounts]
   }
@@ -84,6 +87,14 @@ class AccountsController extends EventEmitter {
         throw e
       }
     }
+  }
+
+  async sendMessage (opts) {
+    if (!opts.from) {
+      throw new Error('From is a required field.')
+    }
+    const handler = getHandlerForAccount(opts.from)
+    return handler(this.getOrigin(address), opts)
   }
 
   async fullUpdate () {

@@ -175,7 +175,7 @@ module.exports = class MetamaskController extends EventEmitter {
     this.keyringController.memStore.subscribe((s) => this._onKeyringControllerUpdate(s))
 
     this.pluginAccountsController = new ResourceController({
-      requiredFields: ['address'],
+      requiredFields: ['address', 'type'],
       storageKey: RESOURCE_KEYS.PLUGIN_ACCOUNTS,
     })
 
