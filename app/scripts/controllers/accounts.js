@@ -93,8 +93,8 @@ class AccountsController extends EventEmitter {
     if (!opts.from) {
       throw new Error('From is a required field.')
     }
-    const handler = getHandlerForAccount(opts.from)
-    return handler(this.getOrigin(address), opts)
+    const handler = this.getHandlerForAccount(opts.from)
+    return handler(opts)
   }
 
   async fullUpdate () {
