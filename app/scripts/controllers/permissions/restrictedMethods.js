@@ -74,7 +74,9 @@ function getExternalRestrictedMethods (permissionsController, addPrompt) {
       method: (_, res, __, end) => {
         permissionsController.accountsController.getAccounts()
           .then((accounts) => {
-            res.result = accounts
+            res.result = accounts.filter((account) => {
+              return account.type === 'Ether'
+            })
             end()
           })
           .catch((reason) => {

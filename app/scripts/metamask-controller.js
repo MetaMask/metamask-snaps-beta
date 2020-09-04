@@ -431,7 +431,7 @@ module.exports = class MetamaskController extends EventEmitter {
         ) {
           const permittedAccounts = await this.permissionsController.getAccounts(origin)
           // TODO: figure out plugin account permissions
-          const pluginAccounts = await this.accountsController.getPluginAccounts()
+          const pluginAccounts = await this.accountsController.getEtherPluginAccounts()
           return [ ...permittedAccounts, ...pluginAccounts ]
         }
         return [] // changing this is a breaking change
