@@ -104,7 +104,7 @@ function getExternalRestrictedMethods (permissionsController, addPrompt) {
 
     'wallet_accounts_*': {
       description: 'View all accounts of type "$1" and suggest interactions related to them.',
-      method: async (req, res, _next, end, engine) => {
+      method: async (req, res, _next, end) => {
         const methodSegments = req.method.split('_')
         const accountTypeCode = methodSegments[methodSegments.length - 1]
         req.params[1].type = accountTypeCode
