@@ -266,6 +266,7 @@ module.exports = class MetamaskController extends EventEmitter {
       notifyAllDomains: this.notifyAllConnections.bind(this),
       addPrompt: this.promptsController.addPrompt.bind(this.promptsController),
       getProviderState: this.getProviderState.bind(this),
+      getPrimaryHdKeyring: () => this.keyringController.getKeyringsByType('HD Key Tree')[0],
     })
 
     this.txController = new TransactionController({
