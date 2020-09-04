@@ -115,7 +115,6 @@ function getExternalRestrictedMethods (permissionsController, addPrompt) {
           res.result = pluginAccountsController.resources.filter(acct => acct.type === accountTypeCode)
           end()
         } else {
-          const origin = engine.domain
 
           try {
             res.result = await permissionsController.accountsController.sendMessage(req.params)
