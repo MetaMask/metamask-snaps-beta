@@ -97,7 +97,7 @@ function getExternalRestrictedMethods (permissionsController, addPrompt) {
         const methodSegments = req.method.split('_')
         const accountTypeCode = methodSegments[methodSegments.length - 1]
         req.params[1].type = accountTypeCode
-        //TODO: Enforce that snaps can only manage their own accounts.
+        // TODO: Enforce that snaps can only manage their own accounts.
         pluginAccountsController.handleRpcRequest(req, res, _next, end, engine)
       },
     },
@@ -111,23 +111,22 @@ function getExternalRestrictedMethods (permissionsController, addPrompt) {
 
         // if no params, get accounts
         if (!req.params) {
-          //TODO: Add account selector dialog here.
+          // TODO: Add account selector dialog here.
           res.result = pluginAccountsController.resources.filter(acct => acct.type === accountTypeCode)
           end()
         } else {
           const origin = engine.domain
-          const prior = permissionsController.pluginsController.get(origin)
 
           try {
-            res.result = await permissionsController.accountsController.sendMessage(req.params);
+            res.result = await permissionsController.accountsController.sendMessage(req.params)
           } catch (err) {
-            res.error = err;
-            end(res.error);
+            res.error = err
+            end(res.error)
           }
 
         }
       },
-    }
+    },
 
     'alert': {
       description: 'Show alerts over the current page.',
