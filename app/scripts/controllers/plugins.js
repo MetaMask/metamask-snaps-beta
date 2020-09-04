@@ -4,7 +4,6 @@ const ObservableStore = require('obs-store')
 const EventEmitter = require('safe-event-emitter')
 const extend = require('xtend')
 const { ethErrors, serializeError } = require('eth-json-rpc-errors')
-const { deriveKeyFromPath } = require('key-tree')
 
 
 const {
@@ -76,7 +75,6 @@ class PluginsController extends EventEmitter {
     this._getPermissionsFor = opts._getPermissionsFor
     this.getApi = opts.getApi
     this.getAppKeyForDomain = opts.getAppKeyForDomain
-    this._getPrimaryHdKeyring = opts.getPrimaryHdKeyring
     this.onUnlock = opts.onUnlock
     this.closeAllConnections = opts.closeAllConnections
     this._eventNamesToEventEmitters = this._getEventNamesToEventEmitters(
@@ -610,7 +608,6 @@ class PluginsController extends EventEmitter {
       registerAccountMessageHandler,
       registerApiRequestHandler,
       getAppKey: () => this.getAppKeyForDomain(pluginName),
-      getBip44Entropy: (bip44Code) => this._getBip44Entropy(bip44Code),
       onUnlock: this.onUnlock,
     }
     apiList.forEach(apiKey => {
@@ -618,13 +615,6 @@ class PluginsController extends EventEmitter {
     })
 
     return apisToProvide
-  }
-
-  _getBip44Entropy (bip44Code) {
-    const primaryKeyring = this._getPrimaryHdKeyring()
-    const multipath = `bip39:${primaryKeyring.mnemonic}/bip32:44'/bip32:${bip44Code}'/bip32:0'/bip32:0`
-    const keyMaterial = deriveKeyFromPath(null, multipath)
-    return keyMaterial
   }
 
   _registerRpcMessageHandler (pluginName, handler) {
