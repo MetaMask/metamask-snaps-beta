@@ -35,7 +35,7 @@ class AccountsController extends EventEmitter {
   async getAccounts () {
     const keyAccounts = await this.keyringController.getAccounts()
     keyAccounts.forEach((key) => {
-      key.type = 'bip44:60'
+      key.type = 'slip44:60'
     })
     const pluginAccounts = await this.getPluginAccounts()
     return [...keyAccounts, ...pluginAccounts]
