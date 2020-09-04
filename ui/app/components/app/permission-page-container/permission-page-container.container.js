@@ -31,7 +31,7 @@ const mapStateToProps = (state) => {
       permissionDescription = permissionsDescriptions[requestedPermissionKey]
     } else if (isWildCardPermission) {
       const wildCardPermissionParameter = requestedPermissionKeyParts[2]
-      const wildCardPermissionFixedSegement = requestedPermissionKeyParts.slice(0,2).join('_')
+      const wildCardPermissionFixedSegement = requestedPermissionKeyParts.slice(0, 2).join('_')
       const wildCardPermissionDescription = permissionsDescriptions[`${wildCardPermissionFixedSegement}_*`]
       permissionDescription = wildCardPermissionDescription
         .replace('$1', wildCardPermissionParameter)

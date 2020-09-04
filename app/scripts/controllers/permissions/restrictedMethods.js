@@ -130,7 +130,7 @@ function getExternalRestrictedMethods (permissionsController, addPrompt) {
 
     'wallet_getBip44Entropy_*': {
       description: 'Control private keys for coin_type "$1"',
-      method: async (req, res, _next, end, engine) => {
+      method: async (req, res, _next, end, _) => {
         try {
           const bip44Code = req.method.substr('wallet_plugin_'.length)
           // TODO: validate that the bip44code is in the known table
