@@ -175,7 +175,7 @@ module.exports = class MetamaskController extends EventEmitter {
     this.keyringController.memStore.subscribe((s) => this._onKeyringControllerUpdate(s))
 
     this.pluginAccountsController = new ResourceController({
-      requiredFields: ['address'],
+      requiredFields: ['address', 'type'],
       storageKey: RESOURCE_KEYS.PLUGIN_ACCOUNTS,
     })
 
@@ -432,7 +432,7 @@ module.exports = class MetamaskController extends EventEmitter {
         ) {
           const permittedAccounts = await this.permissionsController.getAccounts(origin)
           // TODO: figure out plugin account permissions
-          const pluginAccounts = await this.accountsController.getPluginAccounts()
+          const pluginAccounts = await this.accountsController.getEtherPluginAccounts()
           return [ ...permittedAccounts, ...pluginAccounts ]
         }
         return [] // changing this is a breaking change
