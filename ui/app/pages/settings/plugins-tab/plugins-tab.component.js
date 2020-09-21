@@ -8,9 +8,7 @@ export default class PluginsTab extends Component {
   static propTypes = {
     warning: PropTypes.string,
     plugins: PropTypes.object.isRequired,
-    workerCount: PropTypes.number.isRequired,
     removePlugins: PropTypes.func.isRequired,
-    runStressTestPlugins: PropTypes.func.isRequired,
     showClearPluginsModal: PropTypes.func.isRequired,
   }
 
@@ -18,14 +16,7 @@ export default class PluginsTab extends Component {
     t: PropTypes.func,
   }
 
-  renderActionButton (
-    mainMessage,
-    descriptionMessage,
-    clickHandler,
-    isDisabled,
-    type = 'primary',
-    className = 'settings-tab__button',
-  ) {
+  renderClearButton (mainMessage, descriptionMessage, clickHandler, isDisabled) {
     return (
       <div className="settings-page__content-row">
         <div className="settings-page__content-item">
@@ -37,9 +28,9 @@ export default class PluginsTab extends Component {
         <div className="settings-page__content-item">
           <div className="settings-page__content-item-col">
             <Button
-              type={type}
+              type="warning"
               large
-              className={className}
+              className="settings-tab__button--orange"
               disabled={isDisabled}
               onClick={event => {
                 event.preventDefault()
@@ -56,35 +47,24 @@ export default class PluginsTab extends Component {
 
   render () {
     const { t } = this.context
-    const { warning, plugins, workerCount, removePlugins } = this.props
+    const { warning } = this.props
     const hasPlugins = Object.keys(this.props.plugins).length > 0
 
     return (
       <div className="settings-page__body">
         { warning && <div className="settings-tab__error">{ warning }</div> }
+        <PluginsList
+          plugins={this.props.plugins}
+          removePlugins={this.props.removePlugins}
+        />
         {
-          this.renderActionButton(
-            'Run Stress Test Plugins',
-            'Runs 10 Stress Test Plugins',
-            this.props.runStressTestPlugins,
-            false,
-          )
-        }
-        {
-          this.renderActionButton(
+          this.renderClearButton(
             t('clearPlugins'),
             t('clearPluginsDescription'),
             this.props.showClearPluginsModal,
-            !hasPlugins,
-            'warning',
-            'settings-tab__button--orange'
+            !hasPlugins
           )
         }
-        <PluginsList
-          plugins={plugins}
-          removePlugins={removePlugins}
-          workerCount={workerCount}
-        />
       </div>
     )
   }

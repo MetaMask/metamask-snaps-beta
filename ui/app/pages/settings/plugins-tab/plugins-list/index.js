@@ -8,7 +8,6 @@ export default class PluginsList extends Component {
   static propTypes = {
     plugins: PropTypes.object.isRequired,
     removePlugins: PropTypes.func.isRequired,
-    workerCount: PropTypes.number.isRequired,
   }
 
   static contextTypes = {
@@ -139,15 +138,6 @@ export default class PluginsList extends Component {
             { t('pluginsDescription') }
           </span>
         </div>
-        {
-          hasPlugins
-            ? (
-              <div className="settings-page__content-item">
-                {`Active workers: ${this.props.workerCount}`}
-              </div>
-            )
-            : null
-        }
         <div className="settings-page__content-item">
           {
             hasPlugins
