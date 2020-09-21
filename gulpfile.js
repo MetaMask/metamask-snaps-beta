@@ -552,8 +552,6 @@ function generateBundler (opts, performBundle) {
   }
 
   browserifyOpts.noParse = [
-    // './node_modules/snap-workers/dist/*',
-    // '**/node_modules/snap-workers/dist/*',
     pathUtil.join(require.resolve('snap-workers').slice(0, -8), 'dist/*')
   ]
 

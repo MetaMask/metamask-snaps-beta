@@ -183,7 +183,7 @@
     "safe-json-stringify": "^1.2.0",
     "ses": "^0.6.5",
     "single-call-balance-checker-abi": "^1.0.0",
-    "snap-workers": "rekmarks/snap-workers",
+    "snap-workers": "./snap-workers-0.0.2.tgz",
     "string.prototype.matchall": "^3.0.1",
     "swappable-obj-proxy": "^1.1.0",
     "textarea-caret": "^3.0.1",
