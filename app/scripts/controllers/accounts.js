@@ -32,14 +32,18 @@ class AccountsController extends EventEmitter {
     })
   }
 
+  // This is really more of a "get ether addresses" method,
+  // the naming is legacy compatability with `eth-keyring-controller`.
   async getAccounts () {
     const keyAccounts = await this.keyringController.getAccounts()
-    const pluginAccounts = await this.getPluginAccounts()
+    const pluginAccounts = await this.getEtherPluginAccounts()
     return [...keyAccounts, ...pluginAccounts]
   }
 
-  async getPluginAccounts () {
-    return this.pluginAccounts.resources.map(acct => acct.address)
+  async getEtherPluginAccounts () {
+    return this.pluginAccounts.resources
+      .filter(acct => acct.type === 'Ether')
+      .map(acct => acct.address)
   }
 
   async exportAccount (address) {
@@ -84,6 +88,14 @@ class AccountsController extends EventEmitter {
         throw e
       }
     }
+  }
+
+  async sendMessage (opts) {
+    if (!opts.from) {
+      throw new Error('From is a required field.')
+    }
+    const handler = this.getHandlerForAccount(opts.from)
+    return handler(opts)
   }
 
   async fullUpdate () {

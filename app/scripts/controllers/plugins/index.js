@@ -6,6 +6,7 @@ const { ethErrors, serializeError } = require('eth-json-rpc-errors')
 const nodeify = require('../../lib/nodeify')
 
 
+
 const {
   pluginRestrictedMethodDescriptions,
 } = require('../permissions/restrictedMethods')
