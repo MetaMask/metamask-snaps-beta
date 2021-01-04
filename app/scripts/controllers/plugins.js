@@ -579,11 +579,11 @@ class PluginsController extends EventEmitter {
 
     const apiList = approvedPermissions
       ? approvedPermissions.map(perm => {
-          const metamaskMethod = perm.match(/metamask_(.+)/)
-          return metamaskMethod
-            ? metamaskMethod[1]
-            : perm
-        })
+        const metamaskMethod = perm.match(/metamask_(.+)/)
+        return metamaskMethod
+          ? metamaskMethod[1]
+          : perm
+      })
       : []
 
     const onMetaMaskEvent = this._createMetaMaskEventListener(pluginName, apiList)
