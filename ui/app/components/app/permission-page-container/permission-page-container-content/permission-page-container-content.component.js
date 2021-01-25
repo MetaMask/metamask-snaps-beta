@@ -69,9 +69,6 @@ export default class PermissionPageContainerContent extends PureComponent {
 
     const items = Object.keys(selectedPermissions).map((methodName) => {
 
-      // TODO:lps:review is this how we want to handle permissions without
-      // descriptions? In all current cases, if this condition triggers,
-      // approving the permissions will fail.
       if (!permissionsDescriptions[methodName]) {
         console.warn('Unknown permission requested.')
       }
@@ -102,7 +99,6 @@ export default class PermissionPageContainerContent extends PureComponent {
     const { domainMetadata } = this.props
     const { t } = this.context
 
-    // TODO:lps change the learnMore link
     return (
       <div className="permission-approval-container__content">
         <section>

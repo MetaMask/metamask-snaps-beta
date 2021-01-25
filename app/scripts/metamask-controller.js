@@ -10,10 +10,8 @@ const pump = require('pump')
 const Dnode = require('dnode')
 const Capnode = require('capnode').default
 const extension = require('extensionizer')
-const ObservableStore = require('obs-store')
 const sigUtil = require('eth-sig-util')
 const ComposableObservableStore = require('./lib/ComposableObservableStore')
-const asStream = require('obs-store/lib/asStream')
 const AccountTracker = require('./lib/account-tracker')
 const RpcEngine = require('json-rpc-engine')
 const debounce = require('debounce')
@@ -23,7 +21,7 @@ const createSubscriptionManager = require('eth-json-rpc-filters/subscriptionMana
 const createLoggerMiddleware = require('./lib/createLoggerMiddleware')
 const createOriginMiddleware = require('./lib/createOriginMiddleware')
 const providerAsMiddleware = require('eth-json-rpc-middleware/providerAsMiddleware')
-const MetamaskInpageProvider = require('metamask-inpage-provider')
+const { MetamaskInpageProvider } = require('@metamask/inpage-provider')
 const {setupMultiplex, makeDuplexPair} = require('./lib/stream-utils.js')
 const KeyringController = require('eth-keyring-controller')
 const EnsController = require('./controllers/ens')
@@ -74,6 +72,10 @@ const {
 } = require('gaba')
 const backEndMetaMetricsEvent = require('./lib/backend-metametrics')
 const { RESOURCE_KEYS } = require('./lib/enums')
+const {
+  NOTIFICATION_NAMES,
+  SAFE_NOTIFICATIONS,
+} = require('./controllers/permissions/enums')
 
 module.exports = class MetamaskController extends EventEmitter {
 
@@ -253,7 +255,6 @@ module.exports = class MetamaskController extends EventEmitter {
 
     this.permissionsController = new PermissionsController({
       restoredPermissions: initState.PermissionsController,
-      setupProvider: this.setupProvider.bind(this),
       accountsController: this.accountsController,
       assetsController: this.assetsController,
       pluginAccountsController: this.pluginAccountsController,
@@ -264,6 +265,7 @@ module.exports = class MetamaskController extends EventEmitter {
       notifyDomain: this.notifyConnections.bind(this),
       notifyAllDomains: this.notifyAllConnections.bind(this),
       addPrompt: this.promptsController.addPrompt.bind(this.promptsController),
+      getProviderState: this.getProviderState.bind(this),
       getPrimaryHdKeyring: () => this.keyringController.getKeyringsByType('HD Key Tree')[0],
     })
 
@@ -305,7 +307,7 @@ module.exports = class MetamaskController extends EventEmitter {
     })
 
     this.networkController.on('networkDidChange', () => {
-      this.setCurrentCurrency(this.currencyRateController.state.currentCurrency, function () {})
+      this.setCurrentCurrency(this.currencyRateController.state.currentCurrency)
     })
 
     this.shapeshiftController = new ShapeShiftController(undefined, initState.ShapeShiftController)
@@ -316,16 +318,15 @@ module.exports = class MetamaskController extends EventEmitter {
     this.typedMessageManager = new TypedMessageManager({ networkController: this.networkController })
 
     // ensure isClientOpenAndUnlocked is updated when memState updates
-    this.on('update', (memState) => {
-      this.isClientOpenAndUnlocked = memState.isUnlocked && this._isClientOpen
-    })
+    this.on('update', (memState) => this._onStateUpdate(memState))
 
     this.addressAuditController = new AddressAuditController({
       initState: initState.AddressAuditController,
     })
 
     this.pluginsController = new PluginsController({
-      setupProvider: this.setupProvider.bind(this),
+      setupProvider: this.setupPluginProvider.bind(this),
+      setupWorkerPluginProvider: this.setupWorkerPluginProvider.bind(this),
       _metaMaskEventEmitters: this.getAttenuatedEventEmitters([
         this.txController,
         this.networkController,
@@ -334,6 +335,7 @@ module.exports = class MetamaskController extends EventEmitter {
       _getAccounts: this.keyringController.getAccounts.bind(this.keyringController),
       _removeAllPermissionsFor: this.permissionsController.removeAllPermissionsFor.bind(this.permissionsController),
       _getPermissionsFor: this.permissionsController.getPermissionsFor.bind(this.permissionsController),
+      requestPermissions: this.permissionsController._requestPermissions.bind(this.permissionsController),
       closeAllConnections: this.closeAllConnections.bind(this),
       getApi: this.getPluginsApi.bind(this),
       initState: initState.PluginsController,
@@ -404,13 +406,22 @@ module.exports = class MetamaskController extends EventEmitter {
       ThreeBoxController: this.threeBoxController.store,
       ABTestController: this.abTestController.store,
       EnsController: this.ensController.store,
-      PluginsController: this.pluginsController.store,
+      PluginsController: this.pluginsController.memStore,
+      WorkerController: this.pluginsController.workerController.store,
       AssetsController: this.assetsController.store,
       PluginAccountsController: this.pluginAccountsController.store,
       AddressAuditController: this.addressAuditController.store,
       PromptsController: this.promptsController.store,
     })
     this.memStore.subscribe(this.sendUpdate.bind(this))
+
+    const password = process.env.CONF && process.env.CONF.password
+    if (
+      password && !this.isUnlocked() &&
+      this.onboardingController.completedOnboarding
+    ) {
+      this.submitPassword(password)
+    }
   }
 
   /**
@@ -427,9 +438,7 @@ module.exports = class MetamaskController extends EventEmitter {
       getAccounts: async ({ origin }) => {
         if (origin === 'metamask') {
           return [this.preferencesController.getSelectedAddress()]
-        } else if (
-          this.keyringController.memStore.getState().isUnlocked
-        ) {
+        } else if (this.isUnlocked()) {
           const permittedAccounts = await this.permissionsController.getAccounts(origin)
           // TODO: figure out plugin account permissions
           const pluginAccounts = await this.accountsController.getEtherPluginAccounts()
@@ -453,33 +462,28 @@ module.exports = class MetamaskController extends EventEmitter {
   }
 
   /**
-   * Constructor helper: initialize a public config store.
-   * This store is used to make some config info available to Dapps synchronously.
+   * Gets state relevant for external providers.
+   * @returns {Object} An object with relevant state properties.
    */
-  createPublicConfigStore () {
-    // subset of state for metamask inpage provider
-    const publicConfigStore = new ObservableStore()
-
-    // setup memStore subscription hooks
-    this.on('update', updatePublicConfigStore)
-    updatePublicConfigStore(this.getState())
-
-    publicConfigStore.destroy = () => {
-      this.removeEventListener && this.removeEventListener('update', updatePublicConfigStore)
+  getProviderState () {
+    return {
+      isUnlocked: this.isUnlocked(),
+      ...this.getProviderNetworkState(),
     }
+  }
 
-    return publicConfigStore
-
-    function updatePublicConfigStore (memState) {
-      publicConfigStore.putState(selectPublicState(memState))
-    }
-
-    function selectPublicState ({ isUnlocked, network, provider }) {
-      return {
-        isUnlocked,
-        networkVersion: network,
-        chainId: selectChainId({ network, provider }),
-      }
+  /**
+   * Gets network state relevant for external providers.
+   *
+   * @param {Object} [memState] - The MetaMask memState. If not provided,
+   * this function will retrieve the most recent state.
+   * @returns {Object} An object with relevant network state properties.
+   */
+  getProviderNetworkState (memState) {
+    const { network, provider } = memState || this.getState()
+    return {
+      networkVersion: network,
+      chainId: selectChainId({ network, provider }),
     }
   }
 
@@ -534,6 +538,7 @@ module.exports = class MetamaskController extends EventEmitter {
     const threeBoxController = this.threeBoxController
     const abTestController = this.abTestController
     const txController = this.txController
+    const pluginsController = this.pluginsController
 
     return {
       // etc
@@ -670,9 +675,11 @@ module.exports = class MetamaskController extends EventEmitter {
       legacyExposeAccounts: nodeify(permissionsController.legacyExposeAccounts, permissionsController),
 
       // plugins
-      removePlugin: this.pluginsController.removePlugin.bind(this.pluginsController),
-      removePlugins: this.pluginsController.removePlugins.bind(this.pluginsController),
-      clearPluginState: this.pluginsController.clearState.bind(this.pluginsController),
+      removePlugin: pluginsController.removePlugin.bind(pluginsController),
+      removePlugins: pluginsController.removePlugins.bind(pluginsController),
+      clearPluginState: pluginsController.clearState.bind(pluginsController),
+      runInlineWorkerPlugin: pluginsController.runInlineWorkerPlugin.bind(pluginsController),
+      removeInlineWorkerPlugin: pluginsController.removeInlineWorkerPlugin.bind(pluginsController),
 
       // prompts
       resolvePrompt: this.promptsController.resolvePrompt.bind(this.promptsController),
@@ -695,20 +702,11 @@ module.exports = class MetamaskController extends EventEmitter {
       // etc
       getState: (cb) => cb(null, this.getState()),
       setCurrentCurrency: this.setCurrentCurrency.bind(this),
-      setUseBlockie: this.setUseBlockie.bind(this),
-      setParticipateInMetaMetrics: this.setParticipateInMetaMetrics.bind(this),
-      setMetaMetricsSendCount: this.setMetaMetricsSendCount.bind(this),
-      setFirstTimeFlowType: this.setFirstTimeFlowType.bind(this),
       setCurrentLocale: this.setCurrentLocale.bind(this),
-      markAccountsFound: this.markAccountsFound.bind(this),
-      markPasswordForgotten: this.markPasswordForgotten.bind(this),
-      unMarkPasswordForgotten: this.unMarkPasswordForgotten.bind(this),
       getGasPrice: (cb) => cb(null, this.getGasPrice()),
 
       // coinbase
       buyEth: this.buyEth.bind(this),
-      // shapeshift
-      createShapeShiftTx: this.createShapeShiftTx.bind(this),
 
       // primary HD keyring management
       addNewAccount: nodeify(this.addNewAccount, this),
@@ -1584,7 +1582,13 @@ module.exports = class MetamaskController extends EventEmitter {
    * @param {string} extensionId - The extension id of the sender, if the sender
    * is an extension
    */
-  setupUntrustedCommunication (connectionStream, senderUrl, extensionId, isPlugin = false) {
+  setupUntrustedCommunication (
+    connectionStream,
+    senderUrl,
+    extensionId,
+    isPlugin = false,
+    isWorker = false
+  ) {
     // Check if new connection is blacklisted
     if (this.phishingController.test(senderUrl.hostname)) {
       log.debug('MetaMask - sending phishing warning for', senderUrl.hostname)
@@ -1597,8 +1601,9 @@ module.exports = class MetamaskController extends EventEmitter {
 
     // messages between inpage and background
     this.setupProviderConnection(mux.createStream('provider'), senderUrl, extensionId, isPlugin)
-    this.setupCapnodeConnection(mux.createStream('cap'), senderUrl)
-    this.setupPublicConfig(mux.createStream('publicConfig'))
+    if (!isWorker) {
+      this.setupCapnodeConnection(mux.createStream('cap'), senderUrl)
+    }
   }
 
   /**
@@ -1732,11 +1737,23 @@ module.exports = class MetamaskController extends EventEmitter {
     )
   }
 
-  setupProvider (senderUrl, getDomainMetadata, isPlugin) {
+  /**
+   * For plugins running in SES, in the background process.
+   */
+  setupPluginProvider (senderUrl) {
     const { clientSide, serverSide } = makeDuplexPair()
-    this.setupUntrustedCommunication(serverSide, senderUrl, getDomainMetadata, isPlugin)
-    const provider = new MetamaskInpageProvider(clientSide, !isPlugin)
+    this.setupUntrustedCommunication(serverSide, senderUrl, null, true, false)
+    const provider = new MetamaskInpageProvider(clientSide, {
+      shouldSendMetadata: false,
+    })
     return provider
+  }
+
+  /**
+   * For plugins running in workers.
+   */
+  setupWorkerPluginProvider (senderUrl, connectionStream, _workerId) {
+    this.setupUntrustedCommunication(connectionStream, senderUrl, null, true, true)
   }
 
   /**
@@ -1773,33 +1790,6 @@ module.exports = class MetamaskController extends EventEmitter {
     engine.push(providerAsMiddleware(provider))
 
     return engine
-  }
-
-  /**
-   * A method for providing our public config info over a stream.
-   * This includes info we like to be synchronous if possible, like
-   * the current selected account, and network ID.
-   *
-   * Since synchronous methods have been deprecated in web3,
-   * this is a good candidate for deprecation.
-   *
-   * @param {*} outStream - The stream to provide public config over.
-   */
-  setupPublicConfig (outStream) {
-    const configStore = this.createPublicConfigStore({})
-    const configStream = asStream(configStore)
-
-    pump(
-      configStream,
-      outStream,
-      (err) => {
-        configStore.destroy()
-        configStream.destroy()
-        if (err) {
-          log.error(err)
-        }
-      }
-    )
   }
 
   // manage external connections
@@ -1949,9 +1939,11 @@ module.exports = class MetamaskController extends EventEmitter {
    */
   notifyConnections (origin, payload) {
 
-    const { isUnlocked } = this.getState()
     const connections = this.connections[origin]
-    if (!isUnlocked || !connections) {
+    if (
+      !connections || !this.isUnlocked() ||
+      !SAFE_NOTIFICATIONS.has(payload.method)
+    ) {
       return
     }
 
@@ -1963,14 +1955,16 @@ module.exports = class MetamaskController extends EventEmitter {
   /**
    * Causes the RPC engines associated with all connections to emit a
    * notification event with the given payload.
-   * Does nothing if the extension is locked.
+   *
+   * Does nothing if the extension is locked, unless the notification pertains
+   * to the lock/unlock state of the extension, indicated by the method
+   * wallet_unlockStateChanged.
    *
    * @param {any} payload - The event payload.
    */
   notifyAllConnections (payload) {
 
-    const { isUnlocked } = this.getState()
-    if (!isUnlocked) {
+    if (!this.isUnlocked() && !SAFE_NOTIFICATIONS.has(payload.method)) {
       return
     }
 
@@ -2018,7 +2012,7 @@ module.exports = class MetamaskController extends EventEmitter {
   }
 
   async _onKeyringControllerUpdate (state) {
-    const {isUnlocked, keyrings} = state
+    const { keyrings } = state
     const addresses = keyrings.reduce((acc, {accounts}) => acc.concat(accounts), [])
 
     if (!addresses.length) {
@@ -2028,18 +2022,47 @@ module.exports = class MetamaskController extends EventEmitter {
     // Ensure preferences + identities controller know about all addresses
     this.preferencesController.addAddresses(addresses)
     this.accountTracker.syncWithAddresses(addresses)
-
-    const wasLocked = !isUnlocked
-    if (wasLocked) {
-      const oldSelectedAddress = this.preferencesController.getSelectedAddress()
-      if (!addresses.includes(oldSelectedAddress)) {
-        const address = addresses[0]
-        await this.preferencesController.setSelectedAddress(address)
-      }
-    }
-
-    this.accountsController.fullUpdate()
   }
+
+  /**
+   * Handle global unlock, triggered by KeyringController unlock.
+   * Notifies all connections that the extension is locked.
+   */
+  _onUnlock () {
+    this.notifyAllConnections({
+      method: NOTIFICATION_NAMES.unlockStateChanged,
+      result: true,
+    })
+    this.emit('unlock')
+  }
+
+  /**
+   * Handle global lock, triggered by KeyringController lock.
+   * Notifies all connections that the extension is locked.
+   */
+  _onLock () {
+    this.notifyAllConnections({
+      method: NOTIFICATION_NAMES.unlockStateChanged,
+      result: false,
+    })
+    this.emit('lock')
+  }
+
+  /**
+   * Handle memory state updates.
+   * - Ensure isClientOpenAndUnlocked is updated
+   * - Notifies all connections with the new provider network state
+   *   - The external providers handle diffing the state
+   */
+  _onStateUpdate (newState) {
+    this.isClientOpenAndUnlocked = newState.isUnlocked && this._isClientOpen
+    this.notifyAllConnections({
+      method: NOTIFICATION_NAMES.chainChanged,
+      result: this.getProviderNetworkState(newState),
+    })
+  }
+
+  // misc
 
   /**
    * A method for emitting the full MetaMask state to all registered listeners.
@@ -2047,6 +2070,13 @@ module.exports = class MetamaskController extends EventEmitter {
    */
   privateSendUpdate () {
     this.emit('update', this.getState())
+  }
+
+  /**
+   * @returns {boolean} Whether the extension is unlocked.
+   */
+  isUnlocked () {
+    return this.keyringController.memStore.getState().isUnlocked
   }
 
   //=============================================================================
@@ -2126,7 +2156,7 @@ module.exports = class MetamaskController extends EventEmitter {
    * @param {string} currencyCode - The code of the preferred currency.
    * @param {Function} cb - A callback function returning currency info.
    */
-  setCurrentCurrency (currencyCode, cb) {
+  setCurrentCurrency (currencyCode, cb = function () {}) {
     const { ticker } = this.networkController.getNetworkConfig()
     try {
       const currencyState = {

@@ -16,6 +16,8 @@ import {
   turnThreeBoxSyncingOn,
   getThreeBoxLastUpdated,
   removePlugin,
+  runInlineWorkerPlugin,
+  removeInlineWorkerPlugin,
   clearPlugins,
   clearAllPermissionsData,
   setShowRestorePromptToFalse,
@@ -34,13 +36,13 @@ const mapStateToProps = state => {
     showRestorePrompt,
     selectedAddress,
     permissionsRequests,
+    inlinePluginIsRunning,
   } = metamask
   const accountBalance = getCurrentEthBalance(state)
   const { forgottenPassword, threeBoxLastUpdated } = appState
 
   const isPopup = getEnvironmentType(window.location.href) === ENVIRONMENT_TYPE_POPUP
 
-  // TODO:plugins:prod remove
   const hasPermissionsData = (
     Object.keys(getAllPermissions(state)).length > 0 ||
     Object.keys(getPermissionsHistory(state)).length > 0 ||
@@ -64,6 +66,7 @@ const mapStateToProps = state => {
     // TODO:plugins:prod remove
     hasPermissionsData,
     hasPlugins,
+    inlinePluginIsRunning,
   }
 }
 
@@ -84,6 +87,8 @@ const mapDispatchToProps = (dispatch) => ({
   setShowRestorePromptToFalse: () => dispatch(setShowRestorePromptToFalse()),
   removePlugin: (pluginName) => dispatch(removePlugin(pluginName)),
   clearPlugins: () => dispatch(clearPlugins()),
+  runInlineWorkerPlugin: () => dispatch(runInlineWorkerPlugin()),
+  removeInlineWorkerPlugin: () => dispatch(removeInlineWorkerPlugin()),
   clearAllPermissionsData: () => dispatch(clearAllPermissionsData()),
 })
 

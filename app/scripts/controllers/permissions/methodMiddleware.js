@@ -13,7 +13,7 @@ const { PLUGIN_PREFIX, PLUGIN_PREFIX_REGEX } = require('./enums')
  */
 module.exports = function createRequestMiddleware ({
   origin, isPlugin, store, metadataStoreKey, getAccounts,
-  requestPermissions, installPlugins, getPlugins,
+  requestPermissions, installPlugins, getPlugins, getProviderState,
 }) {
   return createAsyncMiddleware(async (req, res, next) => {
 
@@ -28,6 +28,8 @@ module.exports = function createRequestMiddleware ({
       res.error = ethErrors.rpc.invalidRequest({ data: req })
       return
     }
+
+    let accounts
 
     switch (req.method) {
 
@@ -44,7 +46,7 @@ module.exports = function createRequestMiddleware ({
       case 'eth_requestAccounts':
 
         // first, just try to get accounts
-        let accounts = await getAccounts()
+        accounts = await getAccounts()
         if (accounts.length > 0) {
           res.result = accounts
           return
@@ -101,6 +103,15 @@ module.exports = function createRequestMiddleware ({
           res.result = await handleInstallPlugins(req.params[0])
         } catch (err) {
           res.error = err
+        }
+        return
+
+      case 'wallet_getProviderState':
+
+        accounts = await getAccounts()
+        res.result = {
+          ...getProviderState(),
+          accounts,
         }
         return
 
@@ -241,7 +252,6 @@ module.exports = function createRequestMiddleware ({
       saveDomainMetadata({ name })
     }
 
-    // if we make it here, continue down the middleware stack
     return next()
   })
 
@@ -315,7 +325,7 @@ module.exports = function createRequestMiddleware ({
     // input validation
     // we expect requestedPlugins to be an object of the form:
     // { pluginName1: {}, pluginName2: {}, ... }
-    // the object values are placeholders
+    // the empty object values are placeholders
     if (
       typeof requestedPlugins !== 'object' ||
       Array.isArray(requestedPlugins)

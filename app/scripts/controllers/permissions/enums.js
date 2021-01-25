@@ -1,6 +1,12 @@
 
 const pluginPrefix = 'wallet_plugin_'
 
+const NOTIFICATION_NAMES = {
+  accountsChanged: 'wallet_accountsChanged',
+  unlockStateChanged: 'wallet_unlockStateChanged',
+  chainChanged: 'wallet_chainChanged',
+}
+
 module.exports = {
   WALLET_PREFIX: 'wallet_',
   PLUGIN_PREFIX: pluginPrefix,
@@ -11,9 +17,21 @@ module.exports = {
   CAVEAT_NAMES: {
     exposedAccounts: 'exposedAccounts',
   },
-  NOTIFICATION_NAMES: {
-    accountsChanged: 'wallet_accountsChanged',
-  },
+
+  /**
+   * All notification names.
+   */
+  NOTIFICATION_NAMES,
+
+  /**
+   * Notifications that should be sent regardless of whether
+   * the extension is locked or the domain is permitted.
+   */
+  SAFE_NOTIFICATIONS: new Set([
+    NOTIFICATION_NAMES.unlockStateChanged,
+    NOTIFICATION_NAMES.chainChanged,
+  ]),
+
   SAFE_METHODS: [
     'web3_sha3',
     'net_listening',

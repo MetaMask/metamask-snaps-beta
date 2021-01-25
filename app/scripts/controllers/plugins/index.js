@@ -2,14 +2,17 @@
 
 const ObservableStore = require('obs-store')
 const EventEmitter = require('safe-event-emitter')
-const extend = require('xtend')
 const { ethErrors, serializeError } = require('eth-json-rpc-errors')
+const nodeify = require('../../lib/nodeify')
+
 
 
 const {
   pluginRestrictedMethodDescriptions,
-} = require('./permissions/restrictedMethods')
-const { PLUGIN_PREFIX } = require('./permissions/enums')
+} = require('../permissions/restrictedMethods')
+const { PLUGIN_PREFIX } = require('../permissions/enums')
+const WorkerController = require('../workers')
+const getInlinePlugin = require('./inlinePlugins')
 
 const ENUMS = {
   // which plugin properties should be serialized
@@ -38,11 +41,11 @@ const SES = (
     : require('ses')
 )
 
-const createGetDomainMetadataFunction = (pluginName) => {
-  return async () => {
-    return { name: pluginName }
-  }
-}
+// const createGetDomainMetadataFunction = (pluginName) => {
+//   return async () => {
+//     return { name: pluginName }
+//   }
+// }
 
 /*
  * A plugin is initialized in three phases:
@@ -51,17 +54,22 @@ const createGetDomainMetadataFunction = (pluginName) => {
  * - Start: Initializes the plugin in its SES realm with the authorized permissions.
  */
 
-class PluginsController extends EventEmitter {
+module.exports = class PluginsController extends EventEmitter {
 
   constructor (opts = {}) {
+
     super()
-    const initState = extend({
+    const initState = {
       plugins: {},
       pluginStates: {},
-    }, opts.initState)
-    this.store = new ObservableStore(initState)
+      ...opts.initState,
+    }
+    this.store = new ObservableStore({})
+    this.memStore = new ObservableStore({
+      inlinePluginIsRunning: false,
+    })
+    this.updateState(initState)
 
-    // TODO:SECURITY disable errorStackMode for production
     this.rootRealm = SES.makeSESRootRealm({
       consoleMode: 'allow',
       errorStackMode: 'allow',
@@ -69,23 +77,53 @@ class PluginsController extends EventEmitter {
     })
 
     this.setupProvider = opts.setupProvider
+    this.workerController = new WorkerController({
+      setupWorkerConnection: opts.setupWorkerPluginProvider,
+    })
 
     this._getAccounts = opts._getAccounts
     this._removeAllPermissionsFor = opts._removeAllPermissionsFor
     this._getPermissionsFor = opts._getPermissionsFor
     this.getApi = opts.getApi
     this.getAppKeyForDomain = opts.getAppKeyForDomain
-    this.onUnlock = opts.onUnlock
     this.closeAllConnections = opts.closeAllConnections
+    this._requestPermissions = opts.requestPermissions
     this._eventNamesToEventEmitters = this._getEventNamesToEventEmitters(
       opts._metaMaskEventEmitters
     )
 
-    this.rpcMessageHandlers = new Map()
-    this.apiRequestHandlers = new Map()
-    this.accountMessageHandlers = new Map()
-    this.metamaskEventListeners = new Map()
+    this.pluginHandlerHooks = new Map()
+    // this.rpcMessageHandlers = new Map()
+    // this.apiRequestHandlers = new Map()
+    // this.accountMessageHandlers = new Map()
+    // this.metamaskEventListeners = new Map()
     this.adding = {}
+
+    // testing / research
+    this._numStressPlugins = 0
+  }
+
+  updateState (newState) {
+    this.store.updateState(newState)
+    this.memStore.updateState(this._filterMemStoreState(newState))
+  }
+
+  _filterMemStoreState (newState) {
+    const memState = {
+      ...newState,
+      plugins: {},
+    }
+
+    // remove sourceCode from memState plugin objects
+    if (newState.plugins) {
+      Object.keys(newState.plugins).forEach((name) => {
+        const plugin = { ...newState.plugins[name] }
+        delete plugin.sourceCode
+        memState.plugins[name] = plugin
+      })
+    }
+
+    return memState
   }
 
   /**
@@ -93,7 +131,7 @@ class PluginsController extends EventEmitter {
    */
   runExistingPlugins () {
 
-    const plugins = this.store.getState().plugins
+    const { plugins } = this.store.getState()
 
     if (Object.keys(plugins).length > 0) {
       console.log('running existing plugins', plugins)
@@ -109,15 +147,16 @@ class PluginsController extends EventEmitter {
         perm => perm.parentCapability
       )
 
-      const ethereumProvider = this.setupProvider(
-        { hostname: pluginName },
-        createGetDomainMetadataFunction(pluginName),
-        true
-      )
+      // const ethereumProvider = this.setupProvider(
+      //   { hostname: pluginName },
+      //   // createGetDomainMetadataFunction(pluginName),
+      //   // true
+      // )
 
       try {
 
-        this._startPlugin(pluginName, approvedPermissions, sourceCode, ethereumProvider)
+        // this._startPlugin(pluginName, approvedPermissions, sourceCode, ethereumProvider)
+        this._startPluginInWorker(pluginName, approvedPermissions, sourceCode)
       } catch (err) {
 
         console.warn(`failed to start '${pluginName}', deleting it`)
@@ -164,12 +203,12 @@ class PluginsController extends EventEmitter {
    * @param {string} pluginName - The name of the plugin whose state should be updated.
    * @param {Object} newPluginState - The new state of the plugin.
    */
-  updatePluginState (pluginName, newPluginState) {
+  async updatePluginState (pluginName, newPluginState) {
     const state = this.store.getState()
 
     const newPluginStates = { ...state.pluginStates, [pluginName]: newPluginState }
 
-    this.store.updateState({
+    this.updateState({
       pluginStates: newPluginStates,
     })
   }
@@ -180,7 +219,7 @@ class PluginsController extends EventEmitter {
    *
    * @param {string} pluginName - The name of the plugin whose state to get.
    */
-  getPluginState (pluginName) {
+  async getPluginState (pluginName) {
     return this.store.getState().pluginStates[pluginName]
   }
 
@@ -189,18 +228,20 @@ class PluginsController extends EventEmitter {
    * handlers, event listeners, and permissions; tear down all plugin providers.
    */
   clearState () {
-    this._removeAllMetaMaskEventListeners()
-    this.rpcMessageHandlers.clear()
-    this.apiRequestHandlers.clear()
-    this.accountMessageHandlers.clear()
+    // this._removeAllMetaMaskEventListeners()
+    // this.rpcMessageHandlers.clear()
+    // this.apiRequestHandlers.clear()
+    // this.accountMessageHandlers.clear()
+    this.pluginHandlerHooks.clear()
     const pluginNames = Object.keys(this.store.getState().plugins)
-    this.store.updateState({
+    this.updateState({
       plugins: {},
       pluginStates: {},
     })
     pluginNames.forEach(name => {
       this.closeAllConnections(name)
     })
+    this.workerController.terminateAll()
     this._removeAllPermissionsFor(pluginNames)
   }
 
@@ -275,16 +316,19 @@ class PluginsController extends EventEmitter {
     const newPluginStates = { ...state.pluginStates }
 
     pluginNames.forEach(name => {
-      this._removeMetaMaskEventListeners(name)
-      this.rpcMessageHandlers.delete(name)
-      this.apiRequestHandlers.delete(name)
+      // this._removeMetaMaskEventListeners(name)
+      // this.rpcMessageHandlers.delete(name)
+      // this.apiRequestHandlers.delete(name)
+      // this.accountMessageHandlers.delete(name)
+      this._removePluginHandlerHooks(name)
       this.closeAllConnections(name)
+      this.workerController.terminateWorkerOf(name)
       delete newPlugins[name]
       delete newPluginStates[name]
     })
     this._removeAllPermissionsFor(pluginNames)
 
-    this.store.updateState({
+    this.updateState({
       plugins: newPlugins,
       pluginStates: newPluginStates,
     })
@@ -306,20 +350,21 @@ class PluginsController extends EventEmitter {
 
     try {
 
-      const ethereumProvider = this.setupProvider(
-        { hostname: pluginName },
-        createGetDomainMetadataFunction(pluginName),
-        true
-      )
+      // const ethereumProvider = this.setupProvider(
+      //   { hostname: pluginName },
+      //   // createGetDomainMetadataFunction(pluginName),
+      //   // true
+      // )
 
       const { sourceCode } = await this.add(pluginName)
 
-      const { approvedPermissions } = await this.authorize(
-        pluginName, ethereumProvider
-      )
+      const approvedPermissions = await this.authorize(pluginName)
 
-      await this.run(
-        pluginName, approvedPermissions, sourceCode, ethereumProvider
+      // await this._startPlugin(
+      //   pluginName, approvedPermissions, sourceCode, ethereumProvider
+      // )
+      await this._startPluginInWorker(
+        pluginName, approvedPermissions, sourceCode
       )
 
       return this.getSerializable(pluginName)
@@ -404,7 +449,6 @@ class PluginsController extends EventEmitter {
       throw new Error(`Problem loading plugin ${pluginName}: ${err.message}`)
     }
 
-    // always retrieve state close to the call to updateState
     const pluginsState = this.store.getState().plugins
 
     // restore relevant plugin state if it exists
@@ -413,7 +457,7 @@ class PluginsController extends EventEmitter {
     }
 
     // store the plugin back in state
-    this.store.updateState({
+    this.updateState({
       plugins: {
         ...pluginsState,
         [pluginName]: plugin,
@@ -428,53 +472,29 @@ class PluginsController extends EventEmitter {
    * Must be called in order. See processRequestedPlugin.
    *
    * @param {string} pluginName - The name of the plugin.
-   * @param {Object} ethereumProvider - The plugin's Ethereum provider object.
    * @returns {Promise} - Resolves to the plugin's approvedPermissions, or rejects on error.
    */
-  authorize (pluginName, ethereumProvider) {
-    return new Promise((resolve, reject) => {
+  async authorize (pluginName) {
+    console.log(`authorizing ${pluginName}`)
+    const pluginsState = this.store.getState().plugins
+    const plugin = pluginsState[pluginName]
+    const { initialPermissions } = plugin
 
-      console.log(`authorizing ${pluginName}`)
-      const pluginsState = this.store.getState().plugins
-      const plugin = pluginsState[pluginName]
-      const { initialPermissions } = plugin
+    // Don't prompt if there are no permissions requested:
+    if (Object.keys(initialPermissions).length === 0) {
+      return {}
+    }
 
-      // Don't prompt if there are no permissions requested:
-      if (Object.keys(initialPermissions).length === 0) {
-        return resolve({})
-      }
-
-      ethereumProvider.sendAsync({
-        method: 'wallet_requestPermissions',
-        jsonrpc: '2.0',
-        params: [ initialPermissions ],
-      }, (err, res) => {
-
-        if (err) {
-          reject(err)
-        }
-
-        const approvedPermissions = res.result.map(perm => perm.parentCapability)
-
-        resolve({ approvedPermissions })
-      })
-    })
-      .finally(() => {
-        delete this.adding[pluginName]
-      })
-  }
-
-  /**
-   * Attempts to run a plugin. See _startPlugin for details.
-   *
-   * @param {string} pluginName - The name of the plugin.
-   * @param {Array<string>} approvedPermissions - The plugin's approved permissions.
-   * Should always be a value returned from the permissions controller.
-   * @param {string} sourceCode - The source code of the plugin.
-   * @param {Object} ethereumProvider - The plugin's Ethereum provider object.
-   */
-  async run (pluginName, approvedPermissions, sourceCode, ethereumProvider) {
-    return this._startPlugin(pluginName, approvedPermissions, sourceCode, ethereumProvider)
+    try {
+      const approvedPermissions = await this._requestPermissions(
+        pluginName, initialPermissions
+      )
+      return approvedPermissions.map(perm => perm.parentCapability)
+    } catch (err) {
+      throw err
+    } finally {
+      delete this.adding[pluginName]
+    }
   }
 
   async apiRequest (plugin, origin) {
@@ -608,13 +628,62 @@ class PluginsController extends EventEmitter {
       registerAccountMessageHandler,
       registerApiRequestHandler,
       getAppKey: () => this.getAppKeyForDomain(pluginName),
-      onUnlock: this.onUnlock,
     }
     apiList.forEach(apiKey => {
       apisToProvide[apiKey] = possibleApis[apiKey]
     })
 
     return apisToProvide
+  }
+
+  /**
+   * Generate the APIs to provide for the given plugin.
+   *
+   * @param {string} pluginName - The name of the plugin.
+   * @param {Array<string>} approvedPermissions - The plugin's approved permissions.
+   */
+  _generateApisToProvideForWorker (pluginName, approvedPermissions) {
+
+    const apiList = approvedPermissions
+      ? approvedPermissions.map(perm => {
+        const metamaskMethod = perm.match(/metamask_(.+)/)
+        return metamaskMethod
+          ? metamaskMethod[1]
+          : perm
+      })
+      : []
+
+    // TODO:WW: event support
+    // const onMetaMaskEvent = this._createMetaMaskEventListener(pluginName, apiList)
+
+    const possibleApis = {
+      updatePluginState: nodeify(this.updatePluginState, this, pluginName),
+      getPluginState: nodeify(this.getPluginState, this, pluginName),
+      // onNewTx: () => {},
+      ...this.getApi(),
+    }
+
+    // const registerRpcMessageHandler = this._registerRpcMessageHandler.bind(this, pluginName)
+
+    // TODO:WW account message handlers
+    // const registerAccountMessageHandler = this._registerAccountMessageHandler.bind(this, pluginName)
+
+    // TODO:WW capnode support? Could we just have a single routing/forwarding layer? :thinking_face:
+    // const registerApiRequestHandler = this._registerApiRequestHandler.bind(this, pluginName)
+
+    const apisToProvide = {
+      // These handlers are now created in the snap worker
+      // onMetaMaskEvent,
+      // registerRpcMessageHandler,
+      // registerAccountMessageHandler,
+      // registerApiRequestHandler,
+      getAppKey: nodeify(this.getAppKeyForDomain, this, pluginName),
+    }
+    apiList.forEach(apiKey => {
+      apisToProvide[apiKey] = possibleApis[apiKey]
+    })
+
+    return { api: apisToProvide, apiKeys: Object.keys(apisToProvide) }
   }
 
   _registerRpcMessageHandler (pluginName, handler) {
@@ -627,6 +696,75 @@ class PluginsController extends EventEmitter {
 
   _registerApiRequestHandler (pluginName, handler) {
     this.apiRequestHandlers.set(pluginName, handler)
+  }
+
+  runInlineWorkerPlugin () {
+    this._startPluginInWorker(
+      'inlinePlugin',
+      [],
+      getInlinePlugin(),
+    )
+    this.memStore.updateState({
+      inlinePluginIsRunning: true,
+    })
+  }
+
+  removeInlineWorkerPlugin () {
+    this.memStore.updateState({
+      inlinePluginIsRunning: false,
+    })
+    this.removePlugin('inlinePlugin')
+  }
+
+  runStressTestPlugins (numberToRun) {
+    const init = this._numStressPlugins
+    const target = init + numberToRun
+    const sourceCode = getInlinePlugin()
+    for (let i = init; i < target; i++) {
+      this._startPluginInWorker(
+        `inlinePlugin${i}`,
+        [],
+        sourceCode,
+      )
+      this._numStressPlugins++
+    }
+    console.log(`Started ${numberToRun} plugins in individual workers.`)
+  }
+
+  async _startPluginInWorker (pluginName, approvedPermissions, sourceCode) {
+    const { api, apiKeys } = this._generateApisToProvideForWorker(pluginName, approvedPermissions)
+    const workerId = await this.workerController.createPluginWorker(
+      { hostname: pluginName },
+      () => api
+    )
+    this._createPluginHandlerHooks(pluginName, workerId)
+    await this.workerController.startPlugin(workerId, {
+      pluginName,
+      sourceCode,
+      backgroundApiKeys: apiKeys,
+    })
+  }
+
+  getRpcMessageHandler (pluginName) {
+    const handlers = this.pluginHandlerHooks.get(pluginName)
+    return handlers ? handlers.rpcHook : undefined
+  }
+
+  _createPluginHandlerHooks (pluginName, workerId) {
+    const rpcHook = async (origin, request) => {
+      return await this.workerController.command(workerId, {
+        command: 'pluginRpc',
+        data: {
+          origin,
+          request,
+        },
+      })
+    }
+    this.pluginHandlerHooks.set(pluginName, { rpcHook })
+  }
+
+  _removePluginHandlerHooks (pluginName) {
+    this.pluginHandlerHooks.delete(pluginName)
   }
 
   /**
@@ -727,10 +865,8 @@ class PluginsController extends EventEmitter {
     const plugin = plugins[pluginName]
     const newPlugin = { ...plugin, [property]: value }
     const newPlugins = { ...plugins, [pluginName]: newPlugin }
-    this.store.updateState({
+    this.updateState({
       plugins: newPlugins,
     })
   }
 }
-
-module.exports = PluginsController

@@ -53,8 +53,11 @@ export default class Home extends PureComponent {
     removePlugin: PropTypes.func,
     clearPlugins: PropTypes.func,
     clearAllPermissionsData: PropTypes.func,
+    runInlineWorkerPlugin: PropTypes.func,
+    removeInlineWorkerPlugin: PropTypes.func,
     hasPermissionsData: PropTypes.bool,
     hasPlugins: PropTypes.bool,
+    inlinePluginIsRunning: PropTypes.bool,
   }
 
   state = {
@@ -113,6 +116,7 @@ export default class Home extends PureComponent {
       permissionsRequests,
       hasPermissionsData,
       hasPlugins,
+      inlinePluginIsRunning,
     } = this.props
 
     if (forgottenPassword) {
@@ -197,6 +201,22 @@ export default class Home extends PureComponent {
                     disabled={!hasPermissionsData}
                   >
                     { 'Delete All Permissions' }
+                  </Button>
+
+                  <Button
+                    onClick={() => {
+                      if (inlinePluginIsRunning) {
+                        this.props.removeInlineWorkerPlugin()
+                      } else {
+                        this.props.runInlineWorkerPlugin()
+                      }
+                    }}
+                  >
+                    {
+                      inlinePluginIsRunning
+                        ? 'Remove Inline Worker Plugin'
+                        : 'Run Inline Worker Plugin'
+                    }
                   </Button>
                 </div>
               </TransactionView>
