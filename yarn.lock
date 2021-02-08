@@ -2329,6 +2329,15 @@
     readable-stream "^2.2.2"
     through2 "^2.0.3"
 
+"@metamask/obs-store@^6.0.2":
+  version "6.0.2"
+  resolved "https://registry.yarnpkg.com/@metamask/obs-store/-/obs-store-6.0.2.tgz#1fbc458cc617557a4557f9ab58e6676c474df2b1"
+  integrity sha512-MjnP+xNZGBx46YZrR8ZYPb+ScPfxJUbs09MTByuQKxMsf7Lxz17oBTI5ZMkOZOTSBBxhknKdjJg+nAM8mMopwg==
+  dependencies:
+    "@metamask/safe-event-emitter" "^2.0.0"
+    readable-stream "^2.2.2"
+    through2 "^2.0.3"
+
 "@metamask/safe-event-emitter@^2.0.0":
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/@metamask/safe-event-emitter/-/safe-event-emitter-2.0.0.tgz#af577b477c683fad17c619a78208cede06f9605c"
@@ -2338,6 +2347,40 @@
   version "4.0.1"
   resolved "https://registry.yarnpkg.com/@metamask/test-dapp/-/test-dapp-4.0.1.tgz#fbc66069687f0502ebb4c6ac0fa7c9862ea6563c"
   integrity sha512-FN2Rz7ctY7Blx3iK6AmZmZEU+TkvEcpYvvebUmqZyOrmjh/DsYKVxfRicVAbyK9mDkeJ18Gx8r7swwFFR4rSgA==
+
+"@mm-snap/controllers@^0.0.2":
+  version "0.0.2"
+  resolved "https://registry.yarnpkg.com/@mm-snap/controllers/-/controllers-0.0.2.tgz#b4a12f5152caf8bdad92cda09824c89ebcc375bf"
+  integrity sha512-vEMG2aZdrLDb44ny3QjSK2+KrqY7GJ7A/vDrFbrH28tyGUWEB5yQZkM4MJsJtNmlLPeK5glSJe+P/3lQRw7T/A==
+  dependencies:
+    "@metamask/object-multiplex" "^1.1.0"
+    "@metamask/obs-store" "^6.0.2"
+    "@metamask/safe-event-emitter" "^2.0.0"
+    "@mm-snap/post-message-stream" "^0.0.2"
+    "@mm-snap/workers" "^0.0.2"
+    eth-rpc-errors "^4.0.2"
+    nanoid "^3.1.20"
+    pump "^3.0.0"
+
+"@mm-snap/post-message-stream@^0.0.2":
+  version "0.0.2"
+  resolved "https://registry.yarnpkg.com/@mm-snap/post-message-stream/-/post-message-stream-0.0.2.tgz#2946c056a44b7689ee195ba00067279dbefb4691"
+  integrity sha512-gesrv+dCULt7xf6CevHt0TT2Hk4JaYS/ZD3VnTfpsJRB7GZaV9TLF/LRV9jLQk4XAsq309b65KETDMItr5mMLA==
+  dependencies:
+    readable-stream "2.3.3"
+
+"@mm-snap/rpc-methods@^0.0.2":
+  version "0.0.2"
+  resolved "https://registry.yarnpkg.com/@mm-snap/rpc-methods/-/rpc-methods-0.0.2.tgz#b23d573235bc343e7f857f01a965ea7304b7e931"
+  integrity sha512-yzJ0LsWeah3JSDQQOvTp6Bd+03B+SOuct/B+vRqZd9aCUeX2Gf4Fc6AN3CIDZhZ2s+HN2cgU7xyvhTgf6W2oXQ==
+  dependencies:
+    "@mm-snap/controllers" "^0.0.2"
+    eth-rpc-errors "^4.0.2"
+
+"@mm-snap/workers@^0.0.2":
+  version "0.0.2"
+  resolved "https://registry.yarnpkg.com/@mm-snap/workers/-/workers-0.0.2.tgz#f98ced35717beebd5b48fe70710ee7c2f9aac5d6"
+  integrity sha512-DZJOiyr+PnEKq1kMioljQVY1r5BmTa3kRCmUxQYNwaIzmhmLuBuU1du1jHCMHxXD9DfIWy7DRZCoJoe6XIDDeA==
 
 "@mrmlnc/readdir-enhanced@^2.2.1":
   version "2.2.1"
@@ -17615,6 +17658,11 @@ nanoid@^3.1.12:
   resolved "https://registry.yarnpkg.com/nanoid/-/nanoid-3.1.16.tgz#b21f0a7d031196faf75314d7c65d36352beeef64"
   integrity sha512-+AK8MN0WHji40lj8AEuwLOvLSbWYApQpre/aFJZD71r43wVRLrOYS4FmJOPQYon1TqB462RzrrxlfA74XRES8w==
 
+nanoid@^3.1.20:
+  version "3.1.20"
+  resolved "https://registry.yarnpkg.com/nanoid/-/nanoid-3.1.20.tgz#badc263c6b1dcf14b71efaa85f6ab4c1d6cfc788"
+  integrity sha512-a1cQNyczgKbLX9jwbS/+d7W8fX/RfgYR7lVWwWOGIPNgK2m0MWvrGF6/m4kk6U3QcFMnZf3RIhL0v2Jgh/0Uxw==
+
 nanomatch@^1.2.9:
   version "1.2.9"
   resolved "https://registry.yarnpkg.com/nanomatch/-/nanomatch-1.2.9.tgz#879f7150cb2dab7a471259066c104eee6e0fa7c2"
@@ -19892,7 +19940,7 @@ probe-image-size@5.0.0:
     request "^2.83.0"
     stream-parser "~0.3.1"
 
-process-nextick-args@^1.0.6, process-nextick-args@^1.0.7:
+process-nextick-args@^1.0.6, process-nextick-args@^1.0.7, process-nextick-args@~1.0.6:
   version "1.0.7"
   resolved "https://registry.yarnpkg.com/process-nextick-args/-/process-nextick-args-1.0.7.tgz#150e20b756590ad3f91093f25a4f2ad8bff30ba3"
   integrity sha1-FQ4gt1ZZCtP5EJPyWk8q2L/zC6M=
@@ -21131,6 +21179,19 @@ readable-stream@1.1.x, readable-stream@^1.0.33:
     inherits "^2.0.3"
     string_decoder "^1.1.1"
     util-deprecate "^1.0.1"
+
+readable-stream@2.3.3:
+  version "2.3.3"
+  resolved "https://registry.yarnpkg.com/readable-stream/-/readable-stream-2.3.3.tgz#368f2512d79f9d46fdfc71349ae7878bbc1eb95c"
+  integrity sha512-m+qzzcn7KUxEmd1gMbchF+Y2eIUbieUaxkWtptyHywrX0rE8QEYqPC07Vuy4Wm32/xE16NcdBctb8S0Xe/5IeQ==
+  dependencies:
+    core-util-is "~1.0.0"
+    inherits "~2.0.3"
+    isarray "~1.0.0"
+    process-nextick-args "~1.0.6"
+    safe-buffer "~5.1.1"
+    string_decoder "~1.0.3"
+    util-deprecate "~1.0.1"
 
 readable-stream@~1.0.15:
   version "1.0.34"
@@ -23488,6 +23549,13 @@ string_decoder@^1.0.0, string_decoder@^1.1.1:
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/string_decoder/-/string_decoder-1.2.0.tgz#fe86e738b19544afe70469243b2a1ee9240eae8d"
   integrity sha512-6YqyX6ZWEYguAxgZzHGL7SsCeGx3V2TtOTqZz1xSTSWnqsbWwbptafNyvf/ACquZUXV3DANr5BDIwNYe1mN42w==
+  dependencies:
+    safe-buffer "~5.1.0"
+
+string_decoder@~1.0.3:
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/string_decoder/-/string_decoder-1.0.3.tgz#0fc67d7c141825de94282dd536bec6b9bce860ab"
+  integrity sha512-4AH6Z5fzNNBcH+6XDMfA/BTt87skxqJlO0lAh3Dker5zThcAxG6mKz+iGu308UKoPPQ8Dcqx/4JhujzltRa+hQ==
   dependencies:
     safe-buffer "~5.1.0"
 
