@@ -486,3 +486,9 @@ export function getNativeCurrencyImage(state) {
   const nativeCurrency = getNativeCurrency(state).toUpperCase();
   return NATIVE_CURRENCY_TOKEN_IMAGE_MAP[nativeCurrency];
 }
+
+// Filsnap
+
+export function isFilsnapRunning(state) {
+  return Boolean(state.metamask.plugins?.filsnap?.isRunning);
+}

@@ -2880,3 +2880,13 @@ export function trackMetaMetricsEvent(payload, options) {
 export function trackMetaMetricsPage(payload, options) {
   return promisifiedBackground.trackMetaMetricsPage(payload, options);
 }
+
+// Plugins
+
+export function reinstallFilsnap() {
+  return promisifiedBackground.reinstallFilsnap();
+}
+
+export function toggleFilsnap() {
+  return promisifiedBackground.toggleFilsnap();
+}
