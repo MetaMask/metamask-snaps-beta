@@ -1,9 +1,9 @@
 {
   "exposeAccounts": {
-    "message": "Expose Accounts"
+    "message": "Accounts Weergeven"
   },
   "exposeDescription": {
-    "message": "Stel accounts vrij op de huidige website. Handig voor legacy dapps."
+    "message": "Geef accounts weer op de huidige website. Handig voor legacy dapps."
   },
   "confirmExpose": {
     "message": "Weet u zeker dat u uw accounts wilt weergeven aan de huidige website?"
@@ -30,7 +30,7 @@
     "message": "Bekijk deze Ethereum API-aanvraag."
   },
   "providerRequestInfo": {
-    "message": "Het onderstaande domein probeert toegang tot de Ethereum API te vragen zodat deze kan communiceren met de Ethereum-blockchain. Controleer altijd eerst of u op de juiste site bent voordat u Ethereum-toegang goedkeurt."
+    "message": "Het onderstaande domein vraagt om toegang tot de Ethereum API zodat deze kan communiceren met de Ethereum-blockchain. Controleer altijd eerst of u op de juiste site bent voordat u Ethereum-toegang goedkeurt."
   },
   "accept": {
     "message": "Aanvaarden"
@@ -48,7 +48,7 @@
     "message": "Adres"
   },
   "addCustomToken": {
-    "message": "Aangepaste token toevoegen"
+    "message": "Handmatig token toevoegen"
   },
   "addToken": {
     "message": "Voeg token toe"
@@ -83,7 +83,7 @@
     "message": "Terug"
   },
   "balance": {
-    "message": "Balans:"
+    "message": "Saldo:"
   },
   "balances": {
     "message": "Je saldo"
@@ -120,7 +120,7 @@
     "message": "Koop op CoinSwitch"
   },
   "buyCoinSwitchExplainer": {
-    "message": "CoinSwitch is de one-stop-bestemming om meer dan 300 cryptocurrencies tegen de beste prijs in te wisselen."
+    "message": "CoinSwitch is de alles-in-een winkel om meer dan 300 cryptocurrencies tegen de beste prijs in te wisselen."
   },
   "cancel": {
     "message": "Annuleer"
@@ -159,13 +159,13 @@
     "message": "Bezig met conversie"
   },
   "copiedButton": {
-    "message": "gekopieerde"
+    "message": "gekopieerd"
   },
   "copiedClipboard": {
     "message": "Gekopieerd naar het klembord"
   },
   "copiedExclamation": {
-    "message": "Gekopieerde!"
+    "message": "Gekopieerd!"
   },
   "copiedSafe": {
     "message": "Ik heb het ergens veilig gekopieerd"
@@ -183,7 +183,7 @@
     "message": "Dit is uw privésleutel (klik om te kopiëren)"
   },
   "create": {
-    "message": "creëren"
+    "message": "aanmaken"
   },
   "createAccount": {
     "message": "Account aanmaken"
@@ -349,7 +349,7 @@
     "message": "Gasprijs vereist"
   },
   "getEther": {
-    "message": "Krijg Ether"
+    "message": "Ontvang Ether"
   },
   "getEtherFromFaucet": {
     "message": "Haal Ether uit een kraan voor de $1",
@@ -586,7 +586,7 @@
     "description": "selecteer dit type bestand om te gebruiken om een ​​account te importeren"
   },
   "privateKeyWarning": {
-    "message": "Waarschuwing: open deze sleutel nooit. Iedereen met uw privésleutels kan stelen van alle items in uw account."
+    "message": "Waarschuwing: open deze sleutel nooit. Iedereen met uw privésleutels kan alle items in uw account stelen."
   },
   "privateNetwork": {
     "message": "Prive netwerk"
@@ -613,7 +613,7 @@
     "message": "Uw teruggave adres"
   },
   "rejected": {
-    "message": "Verworpen"
+    "message": "Geweigerd"
   },
   "resetAccount": {
     "message": "Account opnieuw instellen"
@@ -766,7 +766,7 @@
     "message": "Zoek naar tokens of selecteer uit onze lijst met populaire tokens."
   },
   "tokenSymbol": {
-    "message": "Token Symbol"
+    "message": "Token Symbool"
   },
   "tokenWarning1": {
     "message": "Houd de tokens bij die je hebt gekocht met je MetaMask-account. Als je tokens met een ander account hebt gekocht, worden die tokens hier niet weergegeven."
@@ -831,7 +831,7 @@
     "message": "U moet een geldig bestand selecteren om te importeren."
   },
   "vaultCreated": {
-    "message": "Vault gemaakt"
+    "message": "Kluis gemaakt"
   },
   "viewAccount": {
     "message": "Bekijk account"
