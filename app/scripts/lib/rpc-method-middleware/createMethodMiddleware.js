@@ -1,17 +1,23 @@
-import { permittedMethods } from '@mm-snap/rpc-methods';
+import { permittedMethods, selectHooks } from '@mm-snap/rpc-methods';
 import { ethErrors } from 'eth-rpc-errors';
 import handlers from './handlers';
 
+const getImplementation = ({ implementation, hookNames }) => {
+  return (req, res, next, end, hooks) => {
+    implementation(req, res, next, end, selectHooks(hooks, hookNames));
+  };
+};
+
 const handlerMap = handlers.reduce((map, handler) => {
   for (const methodName of handler.methodNames) {
-    map.set(methodName, handler.implementation);
+    map.set(methodName, getImplementation(handler));
   }
   return map;
 }, new Map());
 
 const pluginHandlerMap = permittedMethods.reduce((map, handler) => {
   for (const methodName of handler.methodNames) {
-    map.set(methodName, handler.implementation);
+    map.set(methodName, getImplementation(handler));
   }
   return map;
 }, new Map());

@@ -1,4 +1,7 @@
-import { restrictedMethods as restrictedPluginMethods } from '@mm-snap/rpc-methods';
+import {
+  restrictedMethods as restrictedPluginMethods,
+  selectHooks,
+} from '@mm-snap/rpc-methods';
 
 /**
  * @typedef RestrictedMethodHooks
@@ -25,20 +28,30 @@ import { restrictedMethods as restrictedPluginMethods } from '@mm-snap/rpc-metho
  * @param {RestrictedMethodHooks} hooks - Restricted method hooks.
  */
 export default function getRestrictedMethods({
+  addPlugin,
+  clearSnapState,
   getIdentities,
   getKeyringAccounts,
-  addPlugin,
+  getMnemonic,
   getPlugin,
   getPluginRpcHandler,
+  getSnapState,
+  handleAssetRequest,
   showConfirmation,
+  updateSnapState,
 }) {
   return {
     ...getCommonRestrictedMethods({ getIdentities, getKeyringAccounts }),
     ...getPluginRestrictedMethods({
       addPlugin,
+      clearSnapState,
       getPlugin,
       getPluginRpcHandler,
+      getMnemonic,
+      getSnapState,
+      handleAssetRequest,
       showConfirmation,
+      updateSnapState,
     }),
   };
 }
@@ -50,7 +63,7 @@ export function getPluginRestrictedMethods(hooks) {
   return restrictedPluginMethods.reduce((restrictedMethods, handler) => {
     restrictedMethods[handler.methodNames[0]] = {
       description: handler.permissionDescription,
-      method: handler.implementationGetter(hooks),
+      method: handler.getImplementation(selectHooks(hooks, handler.hookNames)),
     };
     return restrictedMethods;
   }, {});

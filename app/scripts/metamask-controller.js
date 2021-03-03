@@ -23,7 +23,10 @@ import {
   CurrencyRateController,
   PhishingController,
 } from '@metamask/controllers';
-import { PluginController } from '@mm-snap/controllers';
+import {
+  PluginController,
+  ExternalResourceController,
+} from '@mm-snap/controllers';
 import { TRANSACTION_STATUSES } from '../../shared/constants/transaction';
 import { MAINNET_CHAIN_ID } from '../../shared/constants/network';
 import ComposableObservableStore from './lib/ComposableObservableStore';
@@ -70,6 +73,10 @@ export const METAMASK_CONTROLLER_EVENTS = {
   // Fired after state changes that impact the extension badge (unapproved msg count)
   // The process of updating the badge happens in app/scripts/background.js.
   UPDATE_BADGE: 'updateBadge',
+};
+
+const RESOURCE_KEYS = {
+  ASSETS: 'snaps:resources:assets',
 };
 
 export default class MetamaskController extends EventEmitter {
@@ -130,6 +137,12 @@ export default class MetamaskController extends EventEmitter {
       openPopup: opts.openPopup,
       network: this.networkController,
       migrateAddressBookState: this.migrateAddressBookState.bind(this),
+    });
+
+    this.assetsController = new ExternalResourceController({
+      requiredFields: ['symbol', 'balance', 'identifier', 'decimals'],
+      storageKey: RESOURCE_KEYS.ASSETS,
+      initialResources: initState.AssetsController,
     });
 
     this.metaMetricsController = new MetaMetricsController({
@@ -272,6 +285,9 @@ export default class MetamaskController extends EventEmitter {
     this.pluginController = new PluginController({
       setupWorkerPluginProvider: this.setupWorkerPluginProvider.bind(this),
       closeAllConnections: this.removeAllConnections.bind(this),
+      getPermissions: this.permissionsController.getPermissions.bind(
+        this.permissionsController,
+      ),
       hasPermission: this.permissionsController.hasPermission.bind(
         this.permissionsController,
       ),
@@ -293,11 +309,23 @@ export default class MetamaskController extends EventEmitter {
       getRestrictedMethods,
       {
         addPlugin: this.pluginController.add.bind(this.pluginController),
+        clearSnapState: (fromDomain) =>
+          this.pluginController.updatePluginState(fromDomain, {}),
+        getMnemonic: this.getPrimaryKeyringMnemonic.bind(this),
         getPlugin: this.pluginController.get.bind(this.pluginController),
         getPluginRpcHandler: this.pluginController.getRpcMessageHandler.bind(
           this.pluginController,
         ),
+        getSnapState: this.pluginController.getPluginState.bind(
+          this.pluginController,
+        ),
+        handleAssetRequest: this.assetsController.handleRpcRequest.bind(
+          this.assetsController,
+        ),
         showConfirmation: window.confirm, // Eventually, a template confirmation.
+        updateSnapState: this.pluginController.updatePluginState.bind(
+          this.pluginController,
+        ),
       },
     );
 
@@ -464,6 +492,7 @@ export default class MetamaskController extends EventEmitter {
       PermissionsMetadata: this.permissionsController.store,
       PluginController: this.pluginController.store,
       ThreeBoxController: this.threeBoxController.store,
+      AssetsController: this.assetsController.store,
     });
 
     this.memStore = new ComposableObservableStore(null, {
@@ -493,6 +522,7 @@ export default class MetamaskController extends EventEmitter {
       SwapsController: this.swapsController.store,
       EnsController: this.ensController.store,
       ApprovalController: this.approvalController,
+      AssetsController: this.assetsController.store,
     });
     this.memStore.subscribe(this.sendUpdate.bind(this));
 
@@ -662,6 +692,7 @@ export default class MetamaskController extends EventEmitter {
       swapsController,
       threeBoxController,
       txController,
+      assetsController,
     } = this;
 
     return {
@@ -995,7 +1026,10 @@ export default class MetamaskController extends EventEmitter {
       removeInlinePlugin: nodeify(
         pluginController.removeInlinePlugin.bind(pluginController),
       ),
-      clearPlugins: nodeify(pluginController.clearState.bind(pluginController)),
+      clearPlugins: nodeify(() => {
+        pluginController.clearState()
+        assetsController.clearResources()
+      }),
     };
   }
 
@@ -1274,6 +1308,17 @@ export default class MetamaskController extends EventEmitter {
     const { identities } = this.preferencesController.store.getState();
     const address = Object.keys(identities)[0];
     this.preferencesController.setSelectedAddress(address);
+  }
+
+  /**
+   * Gets the mnemonic of the user's primary keyring.
+   */
+  getPrimaryKeyringMnemonic() {
+    const keyring = this.keyringController.getKeyringsByType('HD Key Tree')[0];
+    if (!keyring.mnemonic) {
+      throw new Error('Primary keyring mnemonic unavailable.');
+    }
+    return keyring.mnemonic;
   }
 
   //
@@ -2292,19 +2337,6 @@ export default class MetamaskController extends EventEmitter {
         getPlugins: pluginController.getPermittedPlugins.bind(
           pluginController,
           origin,
-        ),
-        getSnapState: pluginController.getPluginState.bind(
-          pluginController,
-          origin,
-        ),
-        updateSnapState: pluginController.updatePluginState.bind(
-          pluginController,
-          origin,
-        ),
-        clearSnapState: pluginController.updatePluginState.bind(
-          pluginController,
-          origin,
-          {},
         ),
         requestPermissions: permissionsController.requestPermissions.bind(
           permissionsController,

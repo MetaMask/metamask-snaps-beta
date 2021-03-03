@@ -157,6 +157,16 @@ export class PermissionsController {
   }
 
   /**
+   * Returns the permissions for the given origin.
+   *
+   * @param {string} origin - The origin whose permissions to retrieve.
+   * @returns {IOcapLdCapability[]} The permissions for the given origin.
+   */
+  getPermissions(origin) {
+    return this.permissions.getPermissionsForDomain(origin);
+  }
+
+  /**
    * Returns whether the given origin has the given permission.
    *
    * @param {string} origin - The origin to check.
@@ -700,10 +710,6 @@ export class PermissionsController {
     }
 
     const restrictedMethods = getRestrictedMethods({
-      // addPlugin,
-      // getPlugin,
-      // getPluginRpcHandler,
-      // showConfirmation,
       ...hooks,
       getIdentities: this._getIdentities.bind(this),
       getKeyringAccounts: this.getKeyringAccounts.bind(this),

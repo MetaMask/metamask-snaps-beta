@@ -19,6 +19,7 @@ const conf = require('rc')('metamask', {
   SEGMENT_HOST: process.env.SEGMENT_HOST,
   SEGMENT_WRITE_KEY: process.env.SEGMENT_WRITE_KEY,
   SEGMENT_LEGACY_WRITE_KEY: process.env.SEGMENT_LEGACY_WRITE_KEY,
+  WATCHED_DEPENDENCIES: process.env.WATCHED_DEPENDENCIES,
 });
 
 const baseManifest = require('../../app/manifest/_base.json');
@@ -352,7 +353,9 @@ function createScriptTasks({ browserPlatforms, livereload }) {
 
     // Live reload - minimal rebundle on change
     if (opts.devMode) {
-      bundler = watchify(bundler);
+      bundler = watchify(bundler, {
+        ignoreWatch: [getIgnoreWatchValue()],
+      });
       // on any file update, re-runs the bundler
       bundler.on('update', () => {
         performBundle();
@@ -390,4 +393,21 @@ function beep() {
 function gracefulError(err) {
   console.warn(err);
   beep();
+}
+
+function getIgnoreWatchValue() {
+  const deps = conf.WATCHED_DEPENDENCIES;
+  if (deps && !Array.isArray(deps)) {
+    throw new Error('WATCHED_DEPENDENCIES must be an array if specified.');
+  }
+
+  if (!deps || deps.length === 0) {
+    return '**/node_modules/**';
+  }
+
+  const depsString = deps.reduce(
+    (fullStr, dep) => (fullStr ? `${fullStr}|${dep}` : dep),
+    '',
+  );
+  return new RegExp(`.*\\/node_modules\\/(?!${depsString}\\/).*`, 'ug');
 }
