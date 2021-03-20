@@ -74,11 +74,6 @@ export default class Home extends PureComponent {
     originOfCurrentTab: PropTypes.string,
     disableWeb3ShimUsageAlert: PropTypes.func.isRequired,
     pendingApprovals: PropTypes.arrayOf(PropTypes.object).isRequired,
-    runInlinePlugin: PropTypes.func,
-    removeInlinePlugin: PropTypes.func,
-    inlinePluginIsRunning: PropTypes.bool,
-    clearPlugins: PropTypes.func,
-    clearPermissions: PropTypes.func,
   };
 
   state = {
@@ -292,48 +287,6 @@ export default class Home extends PureComponent {
     );
   };
 
-  renderPluginButtons = () => {
-    const {
-      inlinePluginIsRunning,
-      removeInlinePlugin,
-      runInlinePlugin,
-      clearPlugins,
-      clearPermissions,
-    } = this.props;
-
-    return (
-      <div>
-        <Button
-          onClick={() => {
-            clearPlugins();
-          }}
-        >
-          Delete All Plugins
-        </Button>
-
-        <Button
-          onClick={() => {
-            clearPermissions();
-          }}
-        >
-          Delete All Permissions
-        </Button>
-
-        <Button
-          onClick={() => {
-            if (inlinePluginIsRunning) {
-              removeInlinePlugin();
-            } else {
-              runInlinePlugin();
-            }
-          }}
-        >
-          {inlinePluginIsRunning ? 'Remove Inline Plugin' : 'Run Inline Plugin'}
-        </Button>
-      </div>
-    );
-  };
-
   render() {
     const { t } = this.context;
     const {
@@ -372,7 +325,6 @@ export default class Home extends PureComponent {
             : null}
           <div className="home__main-view">
             <MenuBar />
-            {this.renderPluginButtons()}
             <div className="home__balance-wrapper">
               <EthOverview />
             </div>

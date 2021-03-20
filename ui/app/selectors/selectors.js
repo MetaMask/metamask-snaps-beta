@@ -467,3 +467,9 @@ export function getIsSwapsChain(state) {
   const chainId = getCurrentChainId(state);
   return ALLOWED_SWAPS_CHAIN_IDS[chainId];
 }
+
+// Filsnap
+
+export function isFilsnapRunning(state) {
+  return Boolean(state.metamask.plugins?.['filsnap']?.isRunning);
+}

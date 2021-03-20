@@ -16,10 +16,6 @@ import {
   restoreFromThreeBox,
   turnThreeBoxSyncingOn,
   getThreeBoxLastUpdated,
-  runInlinePlugin,
-  removeInlinePlugin,
-  clearPlugins,
-  clearPermissions,
   setShowRestorePromptToFalse,
   setConnectedStatusPopoverHasBeenShown,
   setDefaultHomeActiveTabName,
@@ -57,7 +53,6 @@ const mapStateToProps = (state) => {
     defaultHomeActiveTabName,
     swapsState,
     pendingApprovals = {},
-    inlinePluginIsRunning,
   } = metamask;
   const accountBalance = getCurrentEthBalance(state);
   const { forgottenPassword, threeBoxLastUpdated } = appState;
@@ -108,7 +103,6 @@ const mapStateToProps = (state) => {
     originOfCurrentTab,
     shouldShowWeb3ShimUsageNotification,
     pendingApprovals: Object.values(pendingApprovals),
-    inlinePluginIsRunning,
   };
 };
 
@@ -135,10 +129,6 @@ const mapDispatchToProps = (dispatch) => ({
     setWeb3ShimUsageAlertDismissed(origin),
   disableWeb3ShimUsageAlert: () =>
     setAlertEnabledness(ALERT_TYPES.web3ShimUsage, false),
-  runInlinePlugin: () => dispatch(runInlinePlugin()),
-  removeInlinePlugin: () => dispatch(removeInlinePlugin()),
-  clearPlugins: () => dispatch(clearPlugins()),
-  clearPermissions: () => dispatch(clearPermissions()),
 });
 
 export default compose(

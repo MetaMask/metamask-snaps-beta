@@ -68,6 +68,7 @@ import MetaMetricsController from './controllers/metametrics';
 import { segment, segmentLegacy } from './lib/segment';
 import createMetaRPCHandler from './lib/createMetaRPCHandler';
 import { WORKER_BLOB_URL } from './lib/worker-blob';
+import { FILSNAP_NAME, setupFilsnap } from './lib/filsnap';
 
 export const METAMASK_CONTROLLER_EVENTS = {
   // Fired after state changes that impact the extension badge (unapproved msg count)
@@ -538,8 +539,19 @@ export default class MetamaskController extends EventEmitter {
     // TODO:LegacyProvider: Delete
     this.publicConfigStore = this.createPublicConfigStore();
 
-    // Run existing plugins
-    this.pluginController.runExistingPlugins();
+    // Run filsnap
+    setupFilsnap(this.permissionsController, this.pluginController);
+
+    // Setup some background hooks
+    global.clearPermissions = () => this.permissionsController.clearPermissions();
+    global.clearPlugins = () => {
+      this.pluginController.clearState();
+      this.assetsController.clearResources();
+    }
+    global.clearPermsAndPlugins = () => {
+      global.clearPermissions();
+      global.clearPlugins();
+    }
   }
 
   /**
@@ -1020,15 +1032,18 @@ export default class MetamaskController extends EventEmitter {
       ),
 
       // Plugins
-      runInlinePlugin: nodeify(
-        pluginController.runInlinePlugin.bind(pluginController),
-      ),
-      removeInlinePlugin: nodeify(
-        pluginController.removeInlinePlugin.bind(pluginController),
-      ),
-      clearPlugins: nodeify(() => {
-        pluginController.clearState()
-        assetsController.clearResources()
+      reinstallFilsnap: nodeify(async () => {
+        pluginController.removePlugin(FILSNAP_NAME);
+        assetsController.deleteResourcesFor(FILSNAP_NAME);
+        await setupFilsnap(permissionsController, pluginController);
+      }),
+
+      toggleFilsnap: nodeify(async () => {
+        if (pluginController.isRunning(FILSNAP_NAME)) {
+          pluginController.stopPlugin(FILSNAP_NAME);
+        } else {
+          await pluginController.startPlugin(FILSNAP_NAME);
+        }
       }),
     };
   }
@@ -2169,7 +2184,13 @@ export default class MetamaskController extends EventEmitter {
     if (isInternal) {
       origin = 'metamask';
     } else if (isPlugin) {
-      origin = new URL(sender.url).toString();
+      try {
+        origin = new URL(sender.url).toString();
+      } catch (_) {
+        // TODO: Sometimes the origin isn't an URL, and we should probably
+        // handle it better than by means of this hack.
+        origin = sender.url;
+      }
     } else {
       origin = new URL(sender.url).origin;
     }

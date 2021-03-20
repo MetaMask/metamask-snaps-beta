@@ -2876,14 +2876,12 @@ export function trackMetaMetricsPage(payload, options) {
   return promisifiedBackground.trackMetaMetricsPage(payload, options);
 }
 
-export function runInlinePlugin() {
-  return promisifiedBackground.runInlinePlugin();
+// Plugins
+
+export function reinstallFilsnap() {
+  return promisifiedBackground.reinstallFilsnap();
 }
 
-export function removeInlinePlugin() {
-  return promisifiedBackground.removeInlinePlugin();
-}
-
-export function clearPlugins() {
-  return promisifiedBackground.clearPlugins();
+export function toggleFilsnap() {
+  return promisifiedBackground.toggleFilsnap();
 }

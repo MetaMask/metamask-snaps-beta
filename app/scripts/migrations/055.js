@@ -23,7 +23,7 @@ function transformState(state) {
   ) {
     state.IncomingTransactionsController.incomingTxLastFetchedBlockByChainId = mapKeys(
       state.IncomingTransactionsController.incomingTxLastFetchedBlocksByNetwork,
-      (_, key) => NETWORK_TYPE_TO_ID_MAP[key].chainId,
+      (_, key) => NETWORK_TYPE_TO_ID_MAP[key]?.chainId,
     );
     delete state.IncomingTransactionsController
       .incomingTxLastFetchedBlocksByNetwork;
