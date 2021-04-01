@@ -73,11 +73,20 @@ async function withFixtures(options, testSuite) {
     if (process.env.SELENIUM_BROWSER === 'chrome') {
       const errors = await driver.checkBrowserForConsoleErrors(driver);
       if (errors.length) {
-        const errorReports = errors.map((err) => err.message);
-        const errorMessage = `Errors found in browser console:\n${errorReports.join(
-          '\n',
-        )}`;
-        throw new Error(errorMessage);
+        const errorReports = [];
+        errors.forEach((err) => {
+          // Irrelevant sentry error
+          if (!err.message?.includes('minified code')) {
+            errorReports.push(err.message);
+          }
+        });
+
+        if (errorReports.length > 0) {
+          const errorMessage = `Errors found in browser console:\n${errorReports.join(
+            '\n',
+          )}`;
+          throw new Error(errorMessage);
+        }
       }
     }
   } catch (error) {
