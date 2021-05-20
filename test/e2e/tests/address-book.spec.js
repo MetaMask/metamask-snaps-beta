@@ -1,5 +1,4 @@
 const { strict: assert } = require('assert');
-const { By, Key, until } = require('selenium-webdriver');
 const { withFixtures } = require('../helpers');
 
 describe('Address Book', function () {
@@ -22,68 +21,53 @@ describe('Address Book', function () {
       },
       async ({ driver }) => {
         await driver.navigate();
-        const passwordField = await driver.findElement(By.css('#password'));
-        await passwordField.sendKeys('correct horse battery staple');
-        await passwordField.sendKeys(Key.ENTER);
+        await driver.fill('#password', 'correct horse battery staple');
+        await driver.press('#password', driver.Key.ENTER);
 
-        await driver.clickElement(By.css('[data-testid="eth-overview-send"]'));
+        await driver.clickElement('[data-testid="eth-overview-send"]');
 
-        const inputAddress = await driver.findElement(
-          By.css('input[placeholder="Search, public address (0x), or ENS"]'),
-        );
-        await inputAddress.sendKeys(
+        await driver.fill(
+          'input[placeholder="Search, public address (0x), or ENS"]',
           '0x2f318C334780961FB129D2a6c30D0763d9a5C970',
         );
 
-        await driver.clickElement(
-          By.css('.dialog.send__dialog.dialog--message'),
-        );
+        await driver.clickElement('.dialog.send__dialog.dialog--message');
 
-        const addressBookAddModal = await driver.findElement(
-          By.css('span .modal'),
-        );
-        await driver.findElement(By.css('.add-to-address-book-modal'));
-        const addressBookInput = await driver.findElement(
-          By.css('.add-to-address-book-modal__input'),
-        );
-        await addressBookInput.sendKeys('Test Name 1');
-        await driver.clickElement(
-          By.css('.add-to-address-book-modal__footer .btn-primary'),
-        );
-        await driver.wait(until.stalenessOf(addressBookAddModal));
+        // wait for address book modal to be visible
+        const addressModal = await driver.findElement('span .modal');
 
-        const inputAmount = await driver.findElement(
-          By.css('.unit-input__input'),
+        await driver.findElement('.add-to-address-book-modal');
+        await driver.fill('.add-to-address-book-modal__input', 'Test Name 1');
+        await driver.clickElement(
+          '.add-to-address-book-modal__footer .btn-primary',
         );
-        await inputAmount.sendKeys('1');
+        // wait for address book modal to be removed from DOM
+        await addressModal.waitForElementState('hidden');
+
+        const inputAmount = await driver.findElement('.unit-input__input');
+        await inputAmount.fill('1');
 
         const inputValue = await inputAmount.getAttribute('value');
         assert.equal(inputValue, '1');
 
-        await driver.clickElement(
-          By.xpath(`//button[contains(text(), 'Next')]`),
-        );
+        await driver.clickElement({ text: 'Next', tag: 'button' });
 
-        await driver.clickElement(
-          By.xpath(`//button[contains(text(), 'Confirm')]`),
-        );
+        await driver.clickElement({ text: 'Confirm', tag: 'button' });
 
-        await driver.clickElement(By.css('[data-testid="home__activity-tab"]'));
+        await driver.clickElement('[data-testid="home__activity-tab"]');
         await driver.wait(async () => {
           const confirmedTxes = await driver.findElements(
-            By.css(
-              '.transaction-list__completed-transactions .transaction-list-item',
-            ),
+            '.transaction-list__completed-transactions .transaction-list-item',
           );
           return confirmedTxes.length === 1;
         }, 10000);
 
-        const txValues = await driver.findElement(
-          By.css('.transaction-list-item__primary-currency'),
-        );
-        await driver.wait(
-          until.elementTextMatches(txValues, /-1\s*ETH/u),
-          10000,
+        await driver.waitForSelector(
+          {
+            css: '.transaction-list-item__primary-currency',
+            text: '-1 ETH',
+          },
+          { timeout: 10000 },
         );
       },
     );
@@ -91,56 +75,45 @@ describe('Address Book', function () {
   it('Sends to an address book entry', async function () {
     await withFixtures(
       {
-        dapp: true,
         fixtures: 'address-entry',
         ganacheOptions,
         title: this.test.title,
       },
       async ({ driver }) => {
         await driver.navigate();
-        const passwordField = await driver.findElement(By.css('#password'));
-        await passwordField.sendKeys('correct horse battery staple');
-        await passwordField.sendKeys(Key.ENTER);
+        await driver.fill('#password', 'correct horse battery staple');
+        await driver.press('#password', driver.Key.ENTER);
 
-        await driver.clickElement(By.css('[data-testid="eth-overview-send"]'));
+        await driver.clickElement('[data-testid="eth-overview-send"]');
         const recipientRowTitle = await driver.findElement(
-          By.css('.send__select-recipient-wrapper__group-item__title'),
+          '.send__select-recipient-wrapper__group-item__title',
         );
         const recipientRowTitleString = await recipientRowTitle.getText();
         assert.equal(recipientRowTitleString, 'Test Name 1');
         await driver.clickElement(
-          By.css('.send__select-recipient-wrapper__group-item'),
+          '.send__select-recipient-wrapper__group-item',
         );
 
-        const inputAmount = await driver.findElement(
-          By.css('.unit-input__input'),
-        );
-        await inputAmount.sendKeys('2');
+        await driver.fill('.unit-input__input', '2');
 
-        await driver.clickElement(
-          By.xpath(`//button[contains(text(), 'Next')]`),
-        );
+        await driver.clickElement({ text: 'Next', tag: 'button' });
 
-        await driver.clickElement(
-          By.xpath(`//button[contains(text(), 'Confirm')]`),
-        );
+        await driver.clickElement({ text: 'Confirm', tag: 'button' });
 
-        await driver.clickElement(By.css('[data-testid="home__activity-tab"]'));
+        await driver.clickElement('[data-testid="home__activity-tab"]');
         await driver.wait(async () => {
           const confirmedTxes = await driver.findElements(
-            By.css(
-              '.transaction-list__completed-transactions .transaction-list-item',
-            ),
+            '.transaction-list__completed-transactions .transaction-list-item',
           );
           return confirmedTxes.length === 1;
         }, 10000);
 
-        const txValues = await driver.findElement(
-          By.css('.transaction-list-item__primary-currency'),
-        );
-        await driver.wait(
-          until.elementTextMatches(txValues, /-2\s*ETH/u),
-          10000,
+        await driver.waitForSelector(
+          {
+            css: '.transaction-list-item__primary-currency',
+            text: '-2 ETH',
+          },
+          { timeout: 10000 },
         );
       },
     );

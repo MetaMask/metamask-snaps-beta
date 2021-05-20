@@ -1,6 +1,33 @@
 const { promises: fs } = require('fs');
 const { strict: assert } = require('assert');
 const { until, error: webdriverError, By } = require('selenium-webdriver');
+const cssToXPath = require('css-to-xpath');
+
+/**
+ * Temporary workaround to patch selenium's element handle API with methods
+ * that match the playwright API for Elements
+ * @param {Object} element - Selenium Element
+ * @returns {Object} modified Selenium Element
+ */
+function wrapElementWithAPI(element, driver) {
+  element.press = (key) => element.sendKeys(key);
+  element.fill = async (input) => {
+    // The 'fill' method in playwright replaces existing input
+    await element.clear();
+    await element.sendKeys(input);
+  };
+  element.waitForElementState = async (state, timeout) => {
+    switch (state) {
+      case 'hidden':
+        return await driver.wait(until.stalenessOf(element), timeout);
+      case 'visible':
+        return await driver.wait(until.elementIsVisible(element), timeout);
+      default:
+        throw new Error(`Provided state: '${state}' is not supported`);
+    }
+  };
+  return element;
+}
 
 class Driver {
   /**
@@ -13,6 +40,13 @@ class Driver {
     this.browser = browser;
     this.extensionUrl = extensionUrl;
     this.timeout = timeout;
+    // The following values are found in
+    // https://github.com/SeleniumHQ/selenium/blob/trunk/javascript/node/selenium-webdriver/lib/input.js#L50-L110
+    // These should be replaced with string constants 'Enter' etc for playwright.
+    this.Key = {
+      BACK_SPACE: '\uE003',
+      ENTER: '\uE007',
+    };
   }
 
   buildLocator(locator) {
@@ -28,8 +62,31 @@ class Driver {
       // xpath locator.
       return By.xpath(locator.xpath);
     } else if (locator.text) {
-      // Providing a text prop, and optionally a tag, will use xpath to look
-      // for an element with the tag that has matching text.
+      // Providing a text prop, and optionally a tag or css prop, will use
+      // xpath to look for an element with the tag that has matching text.
+      if (locator.css) {
+        // When providing css prop we use cssToXPath to build a xpath string
+        // We provide two cases to check for, first a text node of the
+        // element that matches the text provided OR we test the stringified
+        // contents of the element in the case where text is split across
+        // multiple children. In the later case non literal spaces are stripped
+        // so we do the same with the input to provide a consistent API.
+        const xpath = cssToXPath
+          .parse(locator.css)
+          .where(
+            cssToXPath.xPathBuilder
+              .string()
+              .contains(locator.text)
+              .or(
+                cssToXPath.xPathBuilder
+                  .string()
+                  .contains(locator.text.split(' ').join('')),
+              ),
+          )
+          .toXPath();
+        return By.xpath(xpath);
+      }
+      // The tag prop is optional and further refines which elements match
       return By.xpath(
         `//${locator.tag ?? '*'}[contains(text(), '${locator.text}')]`,
       );
@@ -37,6 +94,18 @@ class Driver {
     throw new Error(
       `The locator '${locator}' is not supported by the E2E test driver`,
     );
+  }
+
+  async fill(rawLocator, input) {
+    const element = await this.findElement(rawLocator);
+    await element.fill(input);
+    return element;
+  }
+
+  async press(rawLocator, keys) {
+    const element = await this.findElement(rawLocator);
+    await element.press(keys);
+    return element;
   }
 
   async delay(time) {
@@ -47,6 +116,30 @@ class Driver {
     await this.driver.wait(condition, timeout);
   }
 
+  async waitForSelector(
+    rawLocator,
+    { timeout = this.timeout, state = 'visible' } = {},
+  ) {
+    // Playwright has a waitForSelector method that will become a shallow
+    // replacement for the implementation below. It takes an option options
+    // bucket that can include the state attribute to wait for elements that
+    // match the selector to be removed from the DOM.
+    const selector = this.buildLocator(rawLocator);
+    let element;
+    if (!['visible', 'detached'].includes(state)) {
+      throw new Error(`Provided state selector ${state} is not supported`);
+    }
+    if (state === 'visible') {
+      element = await this.driver.wait(until.elementLocated(selector), timeout);
+    } else if (state === 'detached') {
+      element = await this.driver.wait(
+        until.stalenessOf(await this.findElement(selector)),
+        timeout,
+      );
+    }
+    return wrapElementWithAPI(element, this);
+  }
+
   async quit() {
     await this.driver.quit();
   }
@@ -55,14 +148,18 @@ class Driver {
 
   async findElement(rawLocator) {
     const locator = this.buildLocator(rawLocator);
-    return await this.driver.wait(until.elementLocated(locator), this.timeout);
+    const element = await this.driver.wait(
+      until.elementLocated(locator),
+      this.timeout,
+    );
+    return wrapElementWithAPI(element, this);
   }
 
   async findVisibleElement(rawLocator) {
     const locator = this.buildLocator(rawLocator);
     const element = await this.findElement(locator);
     await this.driver.wait(until.elementIsVisible(element), this.timeout);
-    return element;
+    return wrapElementWithAPI(element, this);
   }
 
   async findClickableElement(rawLocator) {
@@ -72,12 +169,16 @@ class Driver {
       this.driver.wait(until.elementIsVisible(element), this.timeout),
       this.driver.wait(until.elementIsEnabled(element), this.timeout),
     ]);
-    return element;
+    return wrapElementWithAPI(element, this);
   }
 
   async findElements(rawLocator) {
     const locator = this.buildLocator(rawLocator);
-    return await this.driver.wait(until.elementsLocated(locator), this.timeout);
+    const elements = await this.driver.wait(
+      until.elementsLocated(locator),
+      this.timeout,
+    );
+    return elements.map((element) => wrapElementWithAPI(element, this));
   }
 
   async findClickableElements(rawLocator) {
@@ -92,7 +193,7 @@ class Driver {
         return acc;
       }, []),
     );
-    return elements;
+    return elements.map((element) => wrapElementWithAPI(element, this));
   }
 
   async clickElement(rawLocator) {

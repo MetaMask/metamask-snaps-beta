@@ -26,6 +26,7 @@ module.exports = {
     'test-*/**',
     'docs/**',
     'coverage/',
+    'jest-coverage/',
     'development/chromereload.js',
     'app/vendor/**',
     'test/e2e/send-eth-with-private-key-test/**',
@@ -36,7 +37,7 @@ module.exports = {
 
   extends: [
     '@metamask/eslint-config',
-    '@metamask/eslint-config/config/nodejs',
+    '@metamask/eslint-config-nodejs',
     'prettier',
   ],
 
@@ -48,19 +49,16 @@ module.exports = {
   },
 
   rules: {
-    // Prettier changes and reasoning
-
-    'prettier/prettier': 'error',
-    'import/no-unassigned-import': 'off',
-    'prefer-object-spread': 'error',
     'default-param-last': 'off',
+    'prefer-object-spread': 'error',
     'require-atomic-updates': 'off',
+
+    'import/no-unassigned-import': 'off',
 
     'no-invalid-this': 'off',
     '@babel/no-invalid-this': 'error',
 
-    // prettier handles these
-    semi: 'off',
+    // Prettier handles this
     '@babel/semi': 'off',
 
     'node/no-process-env': 'off',
@@ -72,7 +70,7 @@ module.exports = {
   },
   overrides: [
     {
-      files: ['ui/**/*.js', 'test/lib/render-helpers.js'],
+      files: ['ui/**/*.js', 'test/lib/render-helpers.js', 'test/jest/*.js'],
       plugins: ['react'],
       extends: ['plugin:react/recommended', 'plugin:react-hooks/recommended'],
       rules: {
@@ -90,7 +88,7 @@ module.exports = {
     },
     {
       files: ['test/e2e/**/*.spec.js'],
-      extends: ['@metamask/eslint-config/config/mocha'],
+      extends: ['@metamask/eslint-config-mocha'],
       rules: {
         'mocha/no-hooks-for-single-case': 'off',
         'mocha/no-setup-in-describe': 'off',
@@ -110,9 +108,29 @@ module.exports = {
     },
     {
       files: ['**/*.test.js'],
-      extends: ['@metamask/eslint-config/config/mocha'],
+      excludedFiles: ['ui/**/*.test.js', 'ui/__mocks__/*.js'],
+      extends: ['@metamask/eslint-config-mocha'],
       rules: {
         'mocha/no-setup-in-describe': 'off',
+      },
+    },
+    {
+      files: ['**/__snapshots__/*.snap'],
+      plugins: ['jest'],
+      rules: {
+        'jest/no-large-snapshots': [
+          'error',
+          { maxSize: 50, inlineMaxSize: 50 },
+        ],
+      },
+    },
+    {
+      files: ['ui/**/*.test.js', 'ui/__mocks__/*.js'],
+      extends: ['@metamask/eslint-config-jest'],
+      rules: {
+        'jest/no-restricted-matchers': 'off',
+        'import/unambiguous': 'off',
+        'import/named': 'off',
       },
     },
     {
@@ -138,6 +156,7 @@ module.exports = {
         'test/lib/wait-until-called.js',
         'test/env.js',
         'test/setup.js',
+        'jest.config.js',
       ],
       parserOptions: {
         sourceType: 'script',

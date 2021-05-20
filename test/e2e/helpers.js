@@ -22,6 +22,8 @@ async function withFixtures(options, testSuite) {
     driverOptions,
     mockSegment,
     title,
+    failOnConsoleError = true,
+    dappPath = undefined,
   } = options;
   const fixtureServer = new FixtureServer();
   const ganacheServer = new Ganache();
@@ -35,15 +37,20 @@ async function withFixtures(options, testSuite) {
     await fixtureServer.start();
     await fixtureServer.loadState(path.join(__dirname, 'fixtures', fixtures));
     if (dapp) {
-      const dappDirectory = path.resolve(
-        __dirname,
-        '..',
-        '..',
-        'node_modules',
-        '@metamask',
-        'test-dapp',
-        'dist',
-      );
+      let dappDirectory;
+      if (dappPath) {
+        dappDirectory = path.resolve(__dirname, dappPath);
+      } else {
+        dappDirectory = path.resolve(
+          __dirname,
+          '..',
+          '..',
+          'node_modules',
+          '@metamask',
+          'test-dapp',
+          'dist',
+        );
+      }
       dappServer = createStaticServer(dappDirectory);
       dappServer.listen(dappPort);
       await new Promise((resolve, reject) => {
@@ -73,19 +80,14 @@ async function withFixtures(options, testSuite) {
     if (process.env.SELENIUM_BROWSER === 'chrome') {
       const errors = await driver.checkBrowserForConsoleErrors(driver);
       if (errors.length) {
-        const errorReports = [];
-        errors.forEach((err) => {
-          // Irrelevant sentry error
-          if (!err.message?.includes('minified code')) {
-            errorReports.push(err.message);
-          }
-        });
-
-        if (errorReports.length > 0) {
-          const errorMessage = `Errors found in browser console:\n${errorReports.join(
-            '\n',
-          )}`;
+        const errorReports = errors.map((err) => err.message);
+        const errorMessage = `Errors found in browser console:\n${errorReports.join(
+          '\n',
+        )}`;
+        if (failOnConsoleError) {
           throw new Error(errorMessage);
+        } else {
+          console.error(new Error(errorMessage));
         }
       }
     }
