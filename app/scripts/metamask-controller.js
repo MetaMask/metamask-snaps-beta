@@ -28,6 +28,7 @@ import {
 import {
   PluginController,
   ExternalResourceController,
+  WorkerController,
 } from '@mm-snap/controllers';
 import { TRANSACTION_STATUSES } from '../../shared/constants/transaction';
 import { MAINNET_CHAIN_ID } from '../../shared/constants/network';
@@ -303,8 +304,29 @@ export default class MetamaskController extends EventEmitter {
       initState.PermissionsMetadata,
     );
 
+    this.workerController = new WorkerController({
+      setupWorkerConnection: this.setupWorkerPluginProvider.bind(this),
+      workerUrl: WORKER_BLOB_URL,
+    });
+
+    const pluginControllerMessenger = controllerMessenger.getRestricted({
+      name: 'PluginController',
+    });
+
     this.pluginController = new PluginController({
-      setupWorkerPluginProvider: this.setupWorkerPluginProvider.bind(this),
+      command: this.workerController.command.bind(this.workerController),
+      createPluginWorker: this.workerController.createPluginWorker.bind(
+        this.workerController,
+      ),
+      startPlugin: this.workerController.startPlugin.bind(
+        this.workerController,
+      ),
+      terminateAll: this.workerController.terminateAll.bind(
+        this.workerController,
+      ),
+      terminateWorkerOf: this.workerController.terminateWorkerOf.bind(
+        this.workerController,
+      ),
       closeAllConnections: this.removeAllConnections.bind(this),
       getPermissions: this.permissionsController.getPermissions.bind(
         this.permissionsController,
@@ -321,8 +343,8 @@ export default class MetamaskController extends EventEmitter {
       getAppKeyForDomain: this.keyringController.exportAppKeyForAddress.bind(
         this.keyringController,
       ),
-      workerUrl: WORKER_BLOB_URL,
-      initState: initState.PluginController,
+      state: initState.PluginController,
+      messenger: pluginControllerMessenger,
     });
 
     this.permissionsController.initializePermissions(
@@ -508,7 +530,7 @@ export default class MetamaskController extends EventEmitter {
       IncomingTransactionsController: this.incomingTransactionsController.store,
       PermissionsController: this.permissionsController.permissions,
       PermissionsMetadata: this.permissionsController.store,
-      PluginController: this.pluginController.store,
+      PluginController: this.pluginController,
       ThreeBoxController: this.threeBoxController.store,
       NotificationController: this.notificationController,
     });
@@ -541,6 +563,7 @@ export default class MetamaskController extends EventEmitter {
         SwapsController: this.swapsController.store,
         EnsController: this.ensController.store,
         ApprovalController: this.approvalController,
+        PluginController: this.pluginController.memStore,
         NotificationController: this.notificationController,
       },
       controllerMessenger,
