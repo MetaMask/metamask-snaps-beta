@@ -563,7 +563,7 @@ export default class MetamaskController extends EventEmitter {
         SwapsController: this.swapsController.store,
         EnsController: this.ensController.store,
         ApprovalController: this.approvalController,
-        PluginController: this.pluginController.memStore,
+        PluginController: this.pluginController,
         NotificationController: this.notificationController,
       },
       controllerMessenger,
